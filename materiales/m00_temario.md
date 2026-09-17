@@ -3,55 +3,23 @@
 ### 1. Introducción a la programación e infraestructura
 
 - ¿Qué significa programar en un proyecto de ciencia de datos?
-- Cómo funciona un entorno de programación:
-  - sistema operativo;
-  - sistema de archivos;
-  - terminal;
-  - procesos.
+- Cómo funciona un entorno de programación
 - Diferencia entre trabajar de manera local y remota.
-- Configuración del entorno local:
-  - instalación de Python;
-  - instalación de Git;
-  - VS Code;
-  - WSL2 en Windows;
-  - terminal en macOS/Linux.
+- Configuración del entorno local
 - Estructura básica de un proyecto de ciencia de datos.
-- Relación entre:
-  - código;
-  - datos;
-  - dependencias;
-  - configuración;
-  - resultados.
 - Reproducibilidad en proyectos de ciencia de datos para políticas públicas.
 
 ### 2. Bash y CLI esencial
 
 - ¿Qué es una shell?
-- Navegación por el sistema de archivos:
-  - `pwd`;
-  - `ls`;
-  - `cd`.
+- Navegación por el sistema de archivos
 - Rutas relativas y absolutas.
-- Manipulación de archivos y directorios:
-  - `mkdir`;
-  - `touch`;
-  - `cp`;
-  - `mv`;
-  - `rm`.
-- Visualización de archivos:
-  - `cat`;
-  - `head`;
-  - `tail`;
-  - `less`.
-- Búsqueda de información:
-  - `grep`;
-  - `find`.
-- Entrada y salida estándar.
+- Manipulación de archivos y directorios
+- Visualización de archivos
+- Búsqueda de información
+- Entrada y salida estándar
 - Redirecciones:
-  - `>`;
-  - `>>`.
 - Pipes:
-  - `|`.
 - Permisos básicos.
 - Ejecución de scripts desde terminal.
 - Uso de CLI para inspeccionar datos, logs y resultados de procesos.
@@ -60,20 +28,10 @@
 
 - ¿Por qué versionar código y análisis?
 - Repositorio local y repositorio remoto.
-- Flujo básico de Git:
-  - `git status`;
-  - `git add`;
-  - `git commit`;
-  - `git push`;
-  - `git pull`.
-- Historial de cambios:
-  - `git log`.
-- Revisión de modificaciones:
-  - `git diff`.
-- Ramas:
-  - creación;
-  - cambio entre ramas;
-  - integración mediante `merge`.
+- Flujo básico de Git
+- Historial de cambios
+- Revisión de modificaciones
+- Ramas
 - Resolución básica de conflictos.
 - GitHub como plataforma de colaboración.
 - Pull requests.
@@ -90,19 +48,6 @@
 - Estructura de un proyecto de Python para ciencia de datos.
 - Introducción a `uv`.
 - Crear y administrar ambientes.
-- Instalar y eliminar dependencias.
-- `pyproject.toml`.
-- `uv.lock`.
-- Sincronización de ambientes:
-  - `uv sync`.
-- Ejecución de código dentro del ambiente:
-  - `uv run`.
-- Diferencia entre notebooks y scripts.
-- Organización de:
-  - código;
-  - datos;
-  - resultados;
-  - documentación.
 - Reproducibilidad entre distintas computadoras y personas.
 
 ### 5. Variables de entorno, credenciales y configuración
@@ -110,9 +55,6 @@
 - Diferencia entre código y configuración.
 - ¿Qué es una variable de entorno?
 - Consultar y definir variables desde terminal.
-- Uso de variables de entorno desde Python.
-- Archivos `.env`.
-- `.env.example`.
 - Manejo de:
   - passwords;
   - API keys;
@@ -123,23 +65,20 @@
 - Riesgos al compartir repositorios.
 - Manejo responsable de información sensible y datos administrativos.
 
-### 6. Datos, SQL y bases de datos
+### 6. Análisis de datos en CLI
+
+- Inspección rápida de archivos de datos.
+- Composición de comandos mediante pipes.
+- Inspección rápida de archivos grandes.
+- Revisión de logs.
+- Verificación de resultados sin abrir un notebook.
+- Cuándo utilizar CLI y cuándo utilizar Python.
+
+### 7. Datos, SQL y bases de datos
 
 - Archivos tabulares versus bases de datos.
 - Limitaciones de CSV y Excel.
-- Introducción al modelo relacional.
-- Tablas, filas y columnas.
-- Llaves primarias.
-- Llaves foráneas.
-- Relaciones entre tablas.
-- SQL básico:
-  - `SELECT`;
-  - `FROM`;
-  - `WHERE`;
-  - `ORDER BY`;
-  - `GROUP BY`;
-  - funciones de agregación.
-- Combinación de tablas mediante `JOIN`.
+- SQL básico
 - Conexión desde Python a una base de datos.
 - Introducción a PostgreSQL.
 - Separación entre:
@@ -148,23 +87,6 @@
   - procesamiento;
   - análisis.
 - Consideraciones para trabajar con datos administrativos en política pública.
-
-### 7. Análisis de datos en CLI
-
-- Inspección rápida de archivos de datos.
-- Conteo de observaciones:
-  - `wc`.
-- Búsqueda de patrones:
-  - `grep`.
-- Ordenamiento:
-  - `sort`.
-- Eliminación de duplicados:
-  - `uniq`.
-- Composición de comandos mediante pipes.
-- Inspección rápida de archivos grandes.
-- Revisión de logs.
-- Verificación de resultados sin abrir un notebook.
-- Cuándo utilizar CLI y cuándo utilizar Python.
 
 ### 8. Docker y ambientes reproducibles
 
@@ -193,19 +115,12 @@
 - Cliente y servidor.
 - Introducción a HTTP.
 - URLs y endpoints.
-- Métodos principales:
-  - `GET`;
-  - `POST`.
-- Parámetros.
-- Headers.
-- Códigos de respuesta.
+- Métodos principales
 - JSON.
 - Consumo de APIs desde Python.
 - Uso de `requests`.
 - Autenticación.
 - API keys y tokens.
-- Paginación.
-- Manejo básico de errores.
 - Límites de uso.
 - Lectura de documentación de APIs.
 - Obtención de datos públicos mediante APIs.
@@ -232,17 +147,8 @@
 
 ### 11. Agentes de programación
 
-- Diferencia entre:
-  - chatbot;
-  - asistente de código;
-  - agente.
+- Diferencia entre chatbot, asistente de código y agente.
 - ¿Qué puede hacer un agente?
-  - leer archivos;
-  - explorar repositorios;
-  - modificar código;
-  - ejecutar comandos;
-  - consultar documentación;
-  - correr pruebas.
 - Dar contexto a un agente.
 - Formular tareas computacionales.
 - Pedir que explore antes de modificar.
@@ -269,3 +175,4 @@
   - información institucional.
 - Uso responsable de agentes en proyectos de ciencia de datos para políticas públicas.
 - Git como mecanismo para auditar y revertir cambios producidos por agentes.
+
