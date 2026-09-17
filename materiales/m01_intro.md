@@ -21,7 +21,7 @@ A lo largo de todas las etapas del diseño de un producto de datos, es fundament
 > — *Tim O'Reilly (2021)*
 
 
-Programar consiste en escribir instrucciones que una computadora puede ejecutar para realizar una tarea.
+Entonces, programar consiste en escribir instrucciones que una computadora puede ejecutar para realizar una tarea.
 
 En ciencia de datos, estas instrucciones pueden utilizarse para:
 
@@ -50,9 +50,11 @@ Para que este código se ejecute correctamente, necesitamos un **entorno de prog
 
 ## 1.2 El entorno de programación
 
-Cuando ejecutamos código intervienen diferentes componentes.
+Un entorno de programación es el conjunto de herramientas y configuraciones que necesitamos para escribir, ejecutar y trabajar con código en una computadora.
 
-Una representación simplificada es:
+> El entorno de programación es todo lo que necesitamos alrededor del código para que éste pueda ejecutarse correctamente en nuestra computadora.
+
+Cuando ejecutamos código intervienen diferentes componentes, una representación muy simplificada es:
 
 ```text
 Computadora
@@ -87,20 +89,13 @@ El objetivo no es convertirnos en especialistas en administración de sistemas, 
 * identificar errores;
 * trabajar de forma reproducible;
 * colaborar con otras personas;
-* utilizar agentes y herramientas de inteligencia artificial de manera informada.
 
 
 ## 1.3 Sistema operativo
 
 El **sistema operativo** es el software principal que administra los recursos de una computadora.
 
-Algunos ejemplos son:
-
-* Windows;
-* macOS;
-* Linux.
-
-El sistema operativo administra, entre otras cosas:
+Los clásicos son Windows, macOS y Linux. El sistema operativo administra, entre otras cosas:
 
 * archivos;
 * memoria;
@@ -111,35 +106,25 @@ El sistema operativo administra, entre otras cosas:
 
 Aunque Python funciona en los tres sistemas operativos, existen diferencias importantes en la manera de interactuar con ellos.
 
-En este curso buscaremos trabajar con un entorno similar a Linux.
+> En este curso buscaremos trabajar con un entorno similar a Linux.
 
-### macOS y Linux
+#### macOS y Linux
 
-macOS y Linux incluyen terminales que permiten utilizar muchas herramientas de tipo Unix directamente.
+Linux y macOS pertenecen al mundo “Unix-like”: comparten una forma similar de organizar el sistema, trabajar con archivos, procesos y terminales. Por eso muchos comandos funcionan casi igual en ambos.
 
-### Windows
+#### Windows
 
-En Windows utilizaremos **WSL2 (Windows Subsystem for Linux)**.
+Windows por otro lado, ha estado más orientado al uso mediante interfaz gráfica, teniendo una arquitectura distinta. Durante el curso  utilizaremos **WSL2 (Windows Subsystem for Linux)** que permite ejecutar un entorno Linux dentro de Windows.
 
-WSL permite ejecutar un entorno Linux dentro de Windows.
-
-Conceptualmente tendremos:
-
-```text
-Windows
-│
-└── WSL
-    │
-    └── Linux
-        ├── terminal
-        ├── Python
-        ├── Git
-        └── otras herramientas
 ```
+macOS ─────┐
+           ├── entorno tipo Unix
+Linux ─────┘
 
-Esto permite que quienes utilizan Windows trabajen en un entorno similar al de quienes utilizan macOS o Linux.
-
-
+Windows ───── arquitectura distinta
+   │
+   └── WSL → entorno Linux dentro de Windows
+```
 
 ## 1.4 Sistema de archivos
 
@@ -220,14 +205,11 @@ Nos permitirá:
 * interactuar con servidores;
 * supervisar acciones realizadas por agentes.
 
+Aunque frecuentemente utilizamos Terminal y sheel como sinónimos, conceptualmente son diferentes.
 
-### Terminal y shell no son exactamente lo mismo
+- La **terminal** es la interfaz donde escribimos comandos.
 
-Aunque frecuentemente utilizamos ambos términos como sinónimos, conceptualmente son diferentes.
-
-La **terminal** es la interfaz donde escribimos comandos.
-
-La **shell** es el programa que interpreta esos comandos.
+- La **shell** es el programa que interpreta esos comandos.
 
 Algunas shells comunes son:
 
@@ -244,16 +226,14 @@ pwd
 
 la shell interpreta el comando y solicita al sistema operativo mostrar el directorio en el que nos encontramos.
 
-En macOS moderno, la shell predeterminada suele ser `zsh`.
-
-En muchos sistemas Linux es común encontrar `bash`.
-
-Durante el curso los comandos que utilizaremos serán compatibles, en su mayoría, con ambas.
-
 
 ## 1.6 Programas e intérpretes
 
-Python es un **lenguaje de programación**, pero para ejecutar código necesitamos tener instalado un programa capaz de interpretarlo.
+[<img src="https://www.python.org/static/community_logos/python-logo.png" width="200"/>](https://www.python.org/psf/about/)
+
+Python es un **lenguaje de programación**, pero para ejecutar código necesitamos tener instalado un programa capaz de interpretarlo, o sea Python. 
+
+En este sentido: Python es tanto el nombre del lenguaje como el nombre del programa que usamos para ejecutar código escrito en ese lenguaje.
 
 Podemos verificar si Python se encuentra disponible escribiendo:
 
@@ -267,58 +247,12 @@ o, dependiendo del sistema:
 python3 --version
 ```
 
-Conceptualmente ocurre algo como:
 
-```text
-archivo_instrucciones.py
-    │
-    ▼
-Python
-    │
-    ▼
-Sistema operativo
-    │
-    ▼
-Resultado
-```
-
-
-## 1.7 Procesos
-
-Cuando ejecutamos un programa, el sistema operativo crea un **proceso**.
-
-Un proceso es, de manera simplificada, un programa que se encuentra en ejecución.
-
-Por ejemplo, si ejecutamos:
-
-```bash
-python analisis.py
-```
-
-el sistema operativo crea un proceso de Python.
-
-También son procesos:
-
-* VS Code;
-* un navegador;
-* PostgreSQL;
-* Jupyter;
-* Docker.
-
-Esto será importante posteriormente cuando ejecutemos tareas que:
-
-* tardan varios minutos;
-* utilizan muchos recursos;
-* corren como servicios;
-* se ejecutan dentro de contenedores.
+## 1.7 Herramientas: Git
 
 
 
-## 1.8 Git
-
-Git es un sistema de **control de versiones**.
-
-Nos permite registrar los cambios que hacemos en un proyecto.
+Git es un sistema de **control de versiones**. Nos permite registrar los cambios que hacemos en un proyecto.
 
 Conceptualmente:
 
@@ -351,7 +285,7 @@ git --version
 ```
 
 
-## 1.9 ¿Qué es un proyecto reproducible?
+## 1.8 ¿Qué es un proyecto reproducible?
 
 Uno de los conceptos centrales del curso será la **reproducibilidad**.
 
@@ -391,9 +325,9 @@ También necesitamos conocer:
 Durante el curso iremos incorporando herramientas para resolver cada una de estas preguntas.
 
 
-## 1.10 ¿Por qué importa la reproducibilidad en política pública?
+## 1.9 ¿Por qué importa la reproducibilidad?
 
-Los análisis utilizados en política pública pueden servir para:
+Los análisis utilizados pueden servir para:
 
 * describir un problema;
 * asignar recursos;
@@ -423,7 +357,7 @@ También está relacionada con:
 * mantenimiento;
 * auditoría.
 
-## 1.11 Un modelo mental para el curso
+## 1.10 Wrap up
 
 A lo largo del curso construiremos progresivamente un proyecto que puede verse de esta forma:
 
@@ -471,12 +405,11 @@ Estas herramientas no son temas aislados.
 Cada una resuelve una parte distinta del problema de construir análisis computacionales que puedan ser entendidos, compartidos y reproducidos.
 
 
-
-## 1.12 Primer ejercicio: verificar nuestro entorno
+## 1.11 Primer ejercicio: verificar nuestro entorno
 
 El objetivo de este ejercicio es verificar que las herramientas básicas funcionan.
 
-### Paso 1. Abrir una terminal
+#### Paso 1. Abrir una terminal
 
 Abre la terminal correspondiente a tu sistema.
 
@@ -487,7 +420,7 @@ pwd
 ```
 
 
-### Paso 2. Crear un directorio para el ejercicio
+#### Paso 2. Crear un directorio para el ejercicio
 
 ```bash
 mkdir intro-programacion
@@ -504,55 +437,5 @@ Verifica dónde te encuentras:
 ```bash
 pwd
 ```
-
-
-## Para recordar
-
-Durante el curso no necesitamos memorizar todos los comandos.
-
-Lo importante es construir un modelo mental de cómo se relacionan las herramientas.
-
-```text
-Sistema operativo
-      ↓
-Sistema de archivos
-      ↓
-Terminal / Shell
-      ↓
-Herramientas
-  ├── Python
-  └── Git
-      ↓
-Proyecto
-      ↓
-Código + Datos + Configuración
-      ↓
-Resultados reproducibles
-```
-
-A partir de la siguiente sesión comenzaremos a interactuar con este entorno utilizando **Bash y la línea de comandos**.
-
-
-## Detalle de herramientas
-
-### "Social coding"
-
-[<img src="https://about.gitlab.com/images/press/logo/print/jpg/gitlab-logo-150.jpg" width="140"/>](gitlab.com)
-
-Gitlab es una herramienta que permite gestionar, administrar, colaborar, supervisar código por medio de repositorios. Está construido sobre Git, que es un sistema de control de versiones que realiza un seguimiento de los cambios en cualquier conjunto de archivos de computadora. Generalmente se usa para coordinar trabajo entre personas que desarrollan código fuente en colaboración. 
-
-Se tiene un repositorio por proyecto donde se deposita todo el código y se hace la colaboración correspondiente para su desarrollo. 
-
-### Lenguajes de programación 
-
-[<img src="https://www.python.org/static/community_logos/python-logo.png" width="200"/>](https://www.python.org/psf/about/)
-
-Uno de los programas que más se utiliza para Ciencia de datos, es Python por ser un Software libre y de fácil aprendizaje.
-
-### Almacenamiento de bases de datos
-
-[<img src="https://www.postgresql.org/media/img/about/press/elephant.png" width="65"/>](https://www.postgresql.org/)
-
-PostgreSQl es un sistema de gestión de bases de datos relacionales de código abierto y utiliza SQL como lenguaje de consulta.
 
 
