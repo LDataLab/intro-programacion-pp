@@ -56,7 +56,7 @@
 
 ## Temario general
 
-[Click para temario detallado](materiales/m00_temario.md)
+[Temario detallado](materiales/m00_temario.md)
 
 1. Introducción a la programación e infraestructura
 2. Bash y CLI esencial
