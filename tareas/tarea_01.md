@@ -17,9 +17,7 @@ Ubuntu                         macOS / Unix
                   │
                   ▼
               bash / zsh
-                  │
-                  ▼
-                 Git 
+
 ```
 
 A partir de este punto buscaremos que, independientemente del sistema operativo de tu computadora, trabajemos con herramientas y comandos lo más similares posible.
