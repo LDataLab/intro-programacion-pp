@@ -348,3 +348,19 @@ La(s) captura(s) deben permitir verificar que los comandos se ejecutaron correct
 
 Ejecuta `exit` **al final**, ya que este comando cierra la sesión actual de la terminal.
 
+#### Install Tree 
+
+Para WSL:
+
+```
+sudo apt install tree
+```
+
+Para Mac:
+
+- Tienen que tener instalado Homebrew: https://brew.sh/
+- Luego de tener Homebrew ya pueden instalar tree
+    
+```
+brew install tree
+```
