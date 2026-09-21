@@ -296,7 +296,7 @@ C:\Users\...
 Más adelante veremos con mayor detalle qué significa esta diferencia.
 
 
-## Parte 11. Verificación final
+## Parte 7. Verificación final
 
 Ejecuta los siguientes comandos:
 
@@ -312,10 +312,11 @@ uname -a
 git --version
 ```
 
-
 # Entrega
 
-Entrega **una o varias capturas de pantalla de tu terminal** en la que puedan observarse los resultados de los siguientes comandos (cada uno se corre de manera diferente):
+Entrega **una o varias capturas de pantalla de tu terminal**, reunidas en un solo archivo **PDF** que entregarás en Canvas, en las que puedan observarse los resultados de los siguientes comandos.
+
+Cada comando debe ejecutarse de manera independiente:
 
 ```bash
 git --version
@@ -329,44 +330,23 @@ tree
 tree -L 2
 tree -hs
 touch <file_name>
+cat <file_name>
 exit
 ```
 
-La captura debe permitir verificar que los comandos se ejecutaron correctamente.
+En el caso de:
 
----
-
-# Checklist
-
-Antes de entregar verifica que:
-
-* [ ] Puedo abrir la terminal que utilizaré durante el curso.
-* [ ] Si tengo Windows, instalé WSL2 y Ubuntu.
-* [ ] Si tengo Windows, estoy ejecutando los comandos dentro de Ubuntu.
-* [ ] Git está instalado.
-* [ ] Configuré mi nombre y correo en Git.
-* [ ] Creé el directorio `~/projects`.
-* [ ] El mensaje `Todo listo para comenzar` aparece correctamente.
-
----
-
-# ¿Qué acabamos de configurar?
-
-Al finalizar esta tarea tenemos:
-
-```text
-Sistema operativo
-      │
-      ▼
-Terminal / Shell
-      │
-      ▼
-Git 
-      │
-      ▼
-Proyecto
+```bash
+touch <file_name>
 ```
 
+sustituye `<file_name>` por el nombre de un archivo de tu elección. Por ejemplo:
 
+```bash
+touch prueba.txt
+```
 
+La(s) captura(s) deben permitir verificar que los comandos se ejecutaron correctamente.
+
+Ejecuta `exit` **al final**, ya que este comando cierra la sesión actual de la terminal.
 
