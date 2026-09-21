@@ -19,7 +19,7 @@ Ubuntu                         macOS / Unix
               bash / zsh
                   │
                   ▼
-           Git + uv + Python
+                 Git 
 ```
 
 A partir de este punto buscaremos que, independientemente del sistema operativo de tu computadora, trabajemos con herramientas y comandos lo más similares posible.
@@ -296,26 +296,7 @@ C:\Users\...
 Más adelante veremos con mayor detalle qué significa esta diferencia.
 
 
-## Parte 11. Inicializar Git
-
-Dentro de tu proyecto ejecuta:
-
-```bash
-git init
-```
-
-Después:
-
-```bash
-git status
-```
-
-No es necesario hacer ningún commit todavía.
-
-Por ahora solamente queremos comprobar que Git puede reconocer nuestro proyecto.
-
-
-## Parte 12. Verificación final
+## Parte 11. Verificación final
 
 Ejecuta los siguientes comandos:
 
@@ -331,18 +312,24 @@ uname -a
 git --version
 ```
 
-```bash
-git status
-```
-
 
 # Entrega
 
-Entrega **una captura de pantalla de tu terminal** en la que puedan observarse los resultados de los siguientes comandos:
+Entrega **una o varias capturas de pantalla de tu terminal** en la que puedan observarse los resultados de los siguientes comandos (cada uno se corre de manera diferente):
 
 ```bash
 git --version
 pwd
+ls -l
+ls -a
+ls -la
+ls -lh
+ls -lha
+tree
+tree -L 2
+tree -hs
+touch <file_name>
+exit
 ```
 
 La captura debe permitir verificar que los comandos se ejecutaron correctamente.
@@ -359,8 +346,6 @@ Antes de entregar verifica que:
 * [ ] Git está instalado.
 * [ ] Configuré mi nombre y correo en Git.
 * [ ] Creé el directorio `~/projects`.
-* [ ] Creé el proyecto `tarea-1`.
-* [ ] Puedo ejecutar `git status`.
 * [ ] El mensaje `Todo listo para comenzar` aparece correctamente.
 
 ---
@@ -379,13 +364,9 @@ Terminal / Shell
 Git 
       │
       ▼
-Python
-      │
-      ▼
 Proyecto
 ```
 
-Todavía no necesitamos entender en detalle cómo funciona cada una de estas piezas.
 
-A lo largo del curso iremos estudiando **qué hace cada herramienta, cómo se relacionan y por qué son importantes para construir proyectos reproducibles de ciencia de datos**.
+
 
