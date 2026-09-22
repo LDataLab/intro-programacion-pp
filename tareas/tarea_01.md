@@ -17,9 +17,7 @@ Ubuntu                         macOS / Unix
                   │
                   ▼
               bash / zsh
-                  │
-                  ▼
-           Git + uv + Python
+
 ```
 
 A partir de este punto buscaremos que, independientemente del sistema operativo de tu computadora, trabajemos con herramientas y comandos lo más similares posible.
@@ -296,26 +294,7 @@ C:\Users\...
 Más adelante veremos con mayor detalle qué significa esta diferencia.
 
 
-## Parte 11. Inicializar Git
-
-Dentro de tu proyecto ejecuta:
-
-```bash
-git init
-```
-
-Después:
-
-```bash
-git status
-```
-
-No es necesario hacer ningún commit todavía.
-
-Por ahora solamente queremos comprobar que Git puede reconocer nuestro proyecto.
-
-
-## Parte 12. Verificación final
+## Parte 7. Verificación final
 
 Ejecuta los siguientes comandos:
 
@@ -331,61 +310,57 @@ uname -a
 git --version
 ```
 
-```bash
-git status
-```
-
-
 # Entrega
 
-Entrega **una captura de pantalla de tu terminal** en la que puedan observarse los resultados de los siguientes comandos:
+Entrega **una o varias capturas de pantalla de tu terminal**, reunidas en un solo archivo **PDF** que entregarás en Canvas, en las que puedan observarse los resultados de los siguientes comandos.
+
+Cada comando debe ejecutarse de manera independiente:
 
 ```bash
 git --version
 pwd
+ls -l
+ls -a
+ls -la
+ls -lh
+ls -lha
+tree
+tree -L 2
+tree -hs
+touch <file_name>
+cat <file_name>
+exit
 ```
 
-La captura debe permitir verificar que los comandos se ejecutaron correctamente.
+En el caso de:
 
----
-
-# Checklist
-
-Antes de entregar verifica que:
-
-* [ ] Puedo abrir la terminal que utilizaré durante el curso.
-* [ ] Si tengo Windows, instalé WSL2 y Ubuntu.
-* [ ] Si tengo Windows, estoy ejecutando los comandos dentro de Ubuntu.
-* [ ] Git está instalado.
-* [ ] Configuré mi nombre y correo en Git.
-* [ ] Creé el directorio `~/projects`.
-* [ ] Creé el proyecto `tarea-1`.
-* [ ] Puedo ejecutar `git status`.
-* [ ] El mensaje `Todo listo para comenzar` aparece correctamente.
-
----
-
-# ¿Qué acabamos de configurar?
-
-Al finalizar esta tarea tenemos:
-
-```text
-Sistema operativo
-      │
-      ▼
-Terminal / Shell
-      │
-      ▼
-Git 
-      │
-      ▼
-Python
-      │
-      ▼
-Proyecto
+```bash
+touch <file_name>
 ```
 
-Todavía no necesitamos entender en detalle cómo funciona cada una de estas piezas.
+sustituye `<file_name>` por el nombre de un archivo de tu elección. Por ejemplo:
 
-A lo largo del curso iremos estudiando **qué hace cada herramienta, cómo se relacionan y por qué son importantes para construir proyectos reproducibles de ciencia de datos**.
+```bash
+touch prueba.txt
+```
 
+La(s) captura(s) deben permitir verificar que los comandos se ejecutaron correctamente.
+
+Ejecuta `exit` **al final**, ya que este comando cierra la sesión actual de la terminal.
+
+#### Install Tree 
+
+Para WSL:
+
+```
+sudo apt install tree
+```
+
+Para Mac:
+
+- Tienen que tener instalado Homebrew: https://brew.sh/
+- Luego de tener Homebrew ya pueden instalar tree
+    
+```
+brew install tree
+```
