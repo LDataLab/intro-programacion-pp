@@ -9,11 +9,6 @@ format:
     highlight-style: github
     embed-resources: true
 
-execute:
-  echo: false
-  warning: false
-  message: false
-
 date: today
 ---
 
