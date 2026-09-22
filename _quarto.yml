@@ -1,0 +1,29 @@
+project:
+  type: website
+
+website:
+  navbar:
+    background: "#f5ddce"
+    href: "index.html"      # ← esto lo hace link
+
+
+html:
+  theme: minty
+  toc: false
+
+format:
+  revealjs:
+    theme: white
+    highlight-style: ayu
+    code-block-border-left: "#ecbb9a"
+    code-overflow: wrap
+    footer: "[← Regresar al inicio](../index.html)"  # ← esto
+
+lang: es-MX
+
+execute:
+  echo: false
+  warning: false
+  freeze: auto
+  cache: true
+
