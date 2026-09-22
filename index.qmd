@@ -1,0 +1,55 @@
+---
+title: "Introducción a la programación para políticas públicas"
+subtitle: "Materiales"
+
+format:
+  html:
+    other-links:
+      - text: Repo del curso
+        href: https://github.com/LDataLab/intro-programacion-pp
+        icon: github
+
+author:
+  - name: Elena Villalobos Nolasco
+    orcid: 0009-0005-6389-291X
+    email: villalobos_elena@tec.mx
+    affiliations: Escuela de Gobierno y Transformación Pública
+
+bibliography: references.bib
+---
+
+## Slides
+
+::: {.callout-tip collapse="false"}
+### 01: Introducción a programación
+- [Material 01](materiales/m01_intro.html) 
+
+:::
+
+
+## Calendario
+
+<details>
+<summary><strong>Ver calendario del curso</strong></summary>
+
+| Clase | Tema                                      | Observaciones | Fecha            |
+|------:|-------------------------------------------|---------------|------------------|
+| 01    | Introducción a CD                         |               | [2026-09-14 Mon] |
+| 02    | Formulación de proyectos en CD            | T1            | [2026-09-21 Mon] |
+| 03    | Datos                                     | ST1           | [2026-09-28 Mon] |
+| 04    | EDA y GEDA                                | ST2           | [2026-10-05 Mon] |
+| 05    | Elementos de modelado                     | T2            | [2026-10-12 Mon] |
+| 06    | Algoritmos de aprendizaje supervisado     |               | [2026-10-19 Mon] |
+| 07    | Métricas                                  | T3            | [2026-10-26 Mon] |
+| 08    | Algoritmos de aprendizaje no supervisado  | Midterm       | [2026-11-02 Mon] |
+| 09    | Introducción a NLP                        |               | [2026-11-09 Mon] |
+| 10    | —                                         | Asueto, T4    | [2026-11-16 Mon] |
+| 11    | Ética, postmodelado y causalidad          |               | [2026-11-23 Mon] |
+| 12    | —                                         | Final         | [2026-11-30 Mon] |
+
+- **T#**: Tarea y número de tarea.
+- **ST#**: Sesión técnica y número de sesión.
+- **Midterm**: Evaluación intermedia.
+- **Final**: Evaluación final.
+
+</details>
