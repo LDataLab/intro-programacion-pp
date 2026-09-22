@@ -1,6 +1,6 @@
 ---
 title: "Introducción a la programación para políticas públicas"
-subtitle: "Materiales"
+subtitle: "Materiales del clase"
 
 format:
   html:
