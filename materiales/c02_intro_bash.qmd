@@ -1,5 +1,5 @@
 ---
-title: "Tarea 2: Exploración de datos"
+title: "Bash y CLI"
 format:
   html:
     toc: true
@@ -137,8 +137,6 @@ ssh-keygen -t rsa -b 4096 -C "tu_correo@dominio.com"
 
 El algoritimo ed25519 es más moderno y recomendado. Cada vez que quieras conectarte a un servidor, puedes crear una nueva llave o utilizar la que ya tienes, **OJO: Solo comparte tu llave pública en servidores seguros.**
 
-### Conectarte a bastion
-
 SSH hace la conexión segura esto es solo sintaxis: 
 
 ```
@@ -164,7 +162,7 @@ ssh -i ~/.ssh/id_rsa <tu_usuario>@bastion.egobiernoytp.io -o ServerAliveInterval
 ```
 
 
-### Conexión de bastión a Gitlab utilizando SSH
+### Conexión a Github utilizando SSH
 
 Cuando trabajamos con repositorios en GitHub/GitLab/Codeberg/etc., podemos conectarnos de dos formas:
 
@@ -173,7 +171,7 @@ Cuando trabajamos con repositorios en GitHub/GitLab/Codeberg/etc., podemos conec
 
 Nosotros como ya sabemos utilizar ssh, haremos la conexión de bastión a Gitlab de la siguiente manera: 
 
-- Copiar tu llave pública en Gitlab:
+- Copiar tu llave pública en Github:
 	- Da click en tu foto de perfil, luego: `Preferences → SSH Keys → Add new key`
 	- Pega la llave en donde dice key y quita la Expiration date. 
 

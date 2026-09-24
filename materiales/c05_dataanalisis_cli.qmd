@@ -122,41 +122,6 @@ Banderas de grep:
 - `-E`: Usa expresiones regulares extendidas (regex)
 
 
-### AWK
-
-Es una herramienta de procesamiento de texto que te permite extraer, filtrar, modificar y realizar operaciones matemáticas sobre columnas de datos en archivos. Opera mucho mejor sobre archivos `.csv`.
-
-
-Estructura básica de un comando awk, donde `-F','` indica que el delimitador entre columnas son _comas_, el patrón especifica en qué filas quieres realizar la acción, y la acción es lo que realizarás sobre esas filas.
-```{.sh}
-awk -F',' 'patrón {acción}' archivo
-```
-
-En la siguiente línea sólo estamos haciendo el print de la columna 1, observa que no hay patrón:
-```{.sh}
-awk -F',' '{print $1, $3}' <archivo>
-```
-
-Filtar por carácter
-```{.sh}
-awk -F',' '$3 == '<string>' {print $1}' <archivo>
-```
-
-Filtar `==`,`!=`, `>`, `>=`, `<`, `<=`  por número
-```
-awk -F',' '$1 > <número> {print $1}' <archivo>
-```
-
-Podemos hacer la suma de valores de la columna 1. Observa como en la siguiente línea estamos definiendo una variable y a su vez le estamos sumando (acumulando) los valores de los renglones.
-```{.sh}
- awk -F',' '{suma += $1} {print suma}' <archivo>
-```
-
-END aquí esta indicando que esa acción debería de correrse después de que todas las líneas hayan sido procesadas
-```{.sh}
- awk -F',' '{suma += $1} END {print suma}' <archivo>
-```
-
 ### CSVKIT
 
 Es una herramienta para convertir y trabajar con archivos `.csv`, que es el archivo por default tabular más flexible con el que puedes trabajar desde la línea de comandos. Básicamente hace tu vida más fácil. 

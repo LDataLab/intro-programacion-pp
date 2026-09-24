@@ -26,6 +26,30 @@ bibliography: references.bib
 
 :::
 
+::: {.callout-tip collapse="false"}
+### 02: Bash, CLI e infraestructura
+
+Introduccción a Bash y CLI
+
+- [Material 02](materiales/c02_intro_bash.html) 
+
+Instalación de protocolo SSH
+
+- [Material 03](materiales/m01_ssh.html) 
+
+Análisis de datos básico en CLI
+
+- [Material 04](materiales/m05_dataanalisis_cli.html) 
+
+:::
+
+::: {.callout-caution collapse="true"}
+### 01: Introducción a programación
+- [Material 01](materiales/m01_intro.html) 
+
+:::
+
+
 
 ## Calendario
 
@@ -34,22 +58,23 @@ bibliography: references.bib
 
 | Clase | Tema                                      | Observaciones | Fecha            |
 |------:|-------------------------------------------|---------------|------------------|
-| 01    | Introducción a CD                         |               | [2026-09-14 Mon] |
-| 02    | Formulación de proyectos en CD            | T1            | [2026-09-21 Mon] |
-| 03    | Datos                                     | ST1           | [2026-09-28 Mon] |
-| 04    | EDA y GEDA                                | ST2           | [2026-10-05 Mon] |
-| 05    | Elementos de modelado                     | T2            | [2026-10-12 Mon] |
-| 06    | Algoritmos de aprendizaje supervisado     |               | [2026-10-19 Mon] |
-| 07    | Métricas                                  | T3            | [2026-10-26 Mon] |
-| 08    | Algoritmos de aprendizaje no supervisado  | Midterm       | [2026-11-02 Mon] |
-| 09    | Introducción a NLP                        |               | [2026-11-09 Mon] |
-| 10    | —                                         | Asueto, T4    | [2026-11-16 Mon] |
-| 11    | Ética, postmodelado y causalidad          |               | [2026-11-23 Mon] |
-| 12    | —                                         | Final         | [2026-11-30 Mon] |
+| 01    | Introducción a la programación            | T1            | [2026-09-17 Thu] |
+| 02    | Bash y CLI; Infraestructura               | T2            | [2026-09-24 Thu] |
+| 03    | Git/Github                                | T3            | [2026-10-01 Thu] |
+| 04    | Ambientes virtuales Python                |               | [2026-10-08 Thu] |
+| 05    | Configuración Python                      | T4            | [2026-10-15 Thu] |
+| 06    | Variables de entorno y credenciales       |               | [2026-10-22 Thu] |
+| 07    | Datos, SQL y bases de datos               | Midterm       | [2026-10-29 Thu] |
+| 08    | Docker y ambientes reproducibles          |               | [2026-11-05 Thu] |
+| 09    | APIS y servicios externos                 | T5            | [2026-11-12 Thu] |
+| 10    | Automatización y verificación automática  | T6*           | [2026-11-19 Thu] |
+| 11    | Agentes de programación                   |               | [2026-11-26 Thu] |
+| 12    | Evaluación                                | Final         | [2026-12-03 Thu] |
 
 - **T#**: Tarea y número de tarea.
-- **ST#**: Sesión técnica y número de sesión.
 - **Midterm**: Evaluación intermedia.
 - **Final**: Evaluación final.
 
 </details>
+
+

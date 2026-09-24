@@ -11,19 +11,19 @@ website:
     style: "docked"        # o "floating"
     background: "#fdf4f0"  # color opcional
     contents:
-      - section: "**Documentos**"
-        contents:
-          - text: "Temario"
-            href: materiales/m00_temario.html
-          - text: "Instalación Python"
-            href: materiales/m00_instalacion_python.html
       - section: "**Tareas**"
         contents:
           - text: "1. Set up"
             href: tareas/tarea_01_q.html
           - text: "2. Install uv"
             href: tareas/tarea_02.html
- 
+      - section: "**Documentos**"
+        contents:
+          - text: "Temario detallado"
+            href: materiales/m00_temario.html
+          - text: "Instalación Python"
+            href: materiales/m00_instalacion_python.html
+
 
 html:
   theme: minty
