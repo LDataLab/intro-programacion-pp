@@ -40,13 +40,13 @@ esto es el **file system**, el cual es básicamente un árbol de información qu
 guarda los datos en una abstracción que llamamos archivos y ordena **los archivos en
 carpetas y directorios**, los cuales pueden contener otros directorios.
 
-**TODO** en los sistemas operativos Unix (Linux, MacOs), es un **archivo**. Muchos
+- TODO en los sistemas operativos Unix (Linux, MacOs), es un **archivo**. Muchos
 de los comandos de CLI o shell tienen que ver con la manipulación del file system. 
 
 
 ## Comandos principales
 
-- Encuentra la Terminal en Mac y PowerShell en Windows, y coloca 
+- Encuentra la Terminal en macOS y WSL en Windows, y coloca 
 
 ```{.sh}
 echo "Hola Mundo"

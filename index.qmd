@@ -32,7 +32,7 @@ bibliography: references.bib
 ### 02: Bash, CLI e infraestructura
 
 - Introduccción a Bash y CLI
-    - [Material 02](materiales/m01_intro_bash.html) 
+    - [Material 02](materiales/m02_intro_bash.html) 
 
 - Análisis de datos básico en CLI:
     - [Material 03](materiales/m03_data_cli.html) 
