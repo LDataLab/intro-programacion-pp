@@ -1,0 +1,87 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Introducción a la programación para políticas públicas 
+
+> Programar es hablar con las computadoras, decirles qué quieres que hagan, no sólo una vez, sino de formas que persistan; que puedan variar como el lenguaje humano, con una estructura repetible pero con distintos verbos y objetos.  
+> — *Tim O'Reilly (2021)*
+
+## Programación para ciencia de datos
+
+### Motivación
+
+Como científicos de datos diseñamos, construimos y desarrollamos **productos de datos**: sistemas que utilizan información existente y se integran en el contexto específico de las organizaciones para apoyar a los tomadores de decisiones. Estos productos están diseñados para colocar información clave de manera **oportuna**, **confiable** y **accionable**.
+
+- Resuelven problemas específicos.
+- Están basados en datos.
+- Tienen un impacto directo en la política pública.
+
+A lo largo de todas las etapas del diseño de un producto de datos, es fundamental conocer las herramientas que nos permiten ser más eficientes en el manejo, transformación y análisis de la información.
+
+
+![](../imgs/pipeline.png)
+
+El presente curso tiene un enfoque que ofrece múltiples ventajas y puede ayudarte a convertirte en un científico de datos más eficiente y productivo. En particular, nos centraremos en la **Interfaz de Línea de Comandos (CLI)**, un mecanismo que permite interactuar con el sistema operativo mediante texto simple.
+
+Mientras que la mayoría de las personas está familiarizada con la interfaz gráfica (GUI), aprender a usar la línea de comandos te dará acceso a herramientas más potentes, versátiles y automatizables.
+
+### ¿Por qué CLI?
+
+- **Agilidad**: Permite interactuar de forma más rápida y directa con los datos. Tecleas un comando, presionas Enter y se ejecuta de inmediato.
+- **Capacidad ampliada**: La línea de comandos se integra fácilmente con otras tecnologías y amplifica su poder — ya sea conectando la salida de una herramienta con la entrada de otra, reutilizando código en distintos programas (como Python o SQL), entre otras posibilidades.
+- **Escalabilidad y replicabilidad**: Automatizar procesos, repetir pasos y replicar resultados es parte esencial en la construcción de productos de datos robustos y sostenibles.
+
+
+## Infraestructura para ciencia de datos en la EGobiernoyTP
+
+Programar en nuestra infraestructura te permite:
+
+- Colaboración 
+- Seguridad
+- Recursos computacionales más poderosos (no locales)
+
+
+### Servicios de cómputo en la nube 
+
+[<img src="https://docs.aws.amazon.com/assets/r/images/aws_logo_light.svg" width="65"/>](https://aws.amazon.com/console/)
+
+AWS es una plataforma que ofrece diversos servicios computacionales en la nube, algunos de estos son:
+
+- Servidores virtuales en la nube (EC2)
+- Almacenamiento escalable en la nube (S3)
+- Servicios de datos relacionales (PostgreSQL)
+
+Para la infraestructura de la EGobiernoyTP se utiliza una EC2 llamada **bastión** que es una computadora potente para uso general de la EGobiernoyTP. El bucket S3 y el PostgresSQL se explicarán en las siguientes secciones. 
+
+### "Social coding"
+
+[<img src="https://about.gitlab.com/images/press/logo/print/jpg/gitlab-logo-150.jpg" width="140"/>](gitlab.com)
+
+Gitlab es una herramienta que permite gestionar, administrar, colaborar, supervisar código por medio de repositorios. Está construido sobre Git, que es un sistema de control de versiones que realiza un seguimiento de los cambios en cualquier conjunto de archivos de computadora. Generalmente se usa para coordinar trabajo entre personas que desarrollan código fuente en colaboración. 
+
+Se tiene un repositorio por proyecto donde se deposita todo el código y se hace la colaboración correspondiente para su desarrollo. 
+
+### Lenguajes de programación 
+
+[<img src="https://www.python.org/static/community_logos/python-logo.png" width="200"/>](https://www.python.org/psf/about/)
+
+Uno de los programas que más se utiliza para Ciencia de datos, es Python por ser un Software libre y de fácil aprendizaje.
+
+### Almacenamiento de bases de datos
+
+[<img src="https://www.postgresql.org/media/img/about/press/elephant.png" width="65"/>](https://www.postgresql.org/)
+
+PostgreSQl es un sistema de gestión de bases de datos relacionales de código abierto y utiliza SQL como lenguaje de consulta.
+
+### Todo junto
+
+
+<img src="../imgs/infra.jpg" width="600" height="450">

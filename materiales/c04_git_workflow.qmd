@@ -1,0 +1,180 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Flujo de trabajo de Gitlab
+
+## 1. Crear un *issue* 
+
+Para iniciar un flujo de trabajo colaborativo, es necesario comenzar siempre con la creación de un *issue* para describir y compartir el trabajo que se realizará.
+
+- Vamos a la pestaña de issues: 
+
+</div>
+
+<div align="center">
+<img src="../imgs/create_issue_0.png" width="500">
+</div>
+
+</div>
+
+- Damos click en la pestaña azul donde dice New issue: 
+
+
+<div align="center">
+<img src="../imgs/create_issue_1.png" width="500">
+</div>
+
+</div>
+
+- Colocamos un título descriptivo y corto de la descripción del trabajo que realizarás, en este caso el título es mi primer issue. En la descripción pones detalles del espacio de trabajo, como objetivo del issue o descripción de la tarea. 
+- Y le pones, Create issue. 
+
+<div align="center">
+<img src="../imgs/create_issue_3.png" width="500">
+</div>
+
+- Y verás cómo se habrá creado un nuevo issue con un número asignado que utilizarás para crear tu rama. 
+
+</div>
+
+<div align="center">
+<img src="../imgs/create_issue_4.png" width="500">
+</div>
+
+
+
+- Podrás también ver en la lista que tu issue se generó de manera correcta.
+
+</div>
+
+<div align="center">
+<img src="../imgs/create_issue_5.png" width="500">
+</div>
+
+- Ahora tienes que crear tu rama, que es tu espacio de trabajo, con el número que te asignó gitlab, que para este caso es el número 4. 
+
+## 2. Crear una rama a partir de otra rama. 
+
+En bastión debes crear una rama a partir de la cual se te indique que tienes que jalar los cambios. Para esto, primero tienes que asegurarte que estás en la rama a partir de la cual harás tu issue. Nota: para este ejemplo utilizaremos una rama llamada `issue_1`.
+
+- Observa con `git status`, el estado de tus cambios y en que rama estás, en este caso estamos en `develop` y nos pasaremos a la rama `issue_1`. Si te sale algo como lo que sigue es que estás listo para hacer el cambio a otra rama. Todo lo que salga entre `< >`, es lo que tendrías que reemplazar si utilizas otra rama o archivo. 
+
+```
+On branch develop
+Your branch is up to date with 'origin/develop'.
+
+nothing to commit, working tree clean
+```
+
+- Para asegurarte que estés trabajando con los cambios que están en gitlab, baja todos los cambios con:
+
+```
+git pull origin <develop>
+```
+
+- Para bajar los información del repositorio
+
+```
+git fetch
+```
+
+- Para cambiarte a una rama existente en gitlab (que es la rama de la cual partirás para hacer tu trabajo): 
+
+```
+git switch <issue_1>
+```
+
+En este proceso lo que hicimos fue actualizar tu rama local de develop, actualizar la información del repositorio y pasarte a una rama ya existente (issue_1).
+
+## 3. Registro de cambios y subirlos a gitlab
+
+Con esto ya abriste tu espacio de trabajo (rama) en el cual estarás comiteando todos los cambios con:
+
+```
+git status
+```
+
+```
+git add <nombre_archivo>
+```
+
+```
+git status
+```
+
+```
+git commit -m "<Descripción de tu cambio>"
+```
+
+Y para subir tus cambios locales a gitlab, es con:
+
+```
+git push
+```
+
+## 4. Merge request: Integrar tu trabajo a otra rama 
+
+Una vez que tengas tus cambios actualizados en bastión y en gitlab, tendrás que integrarlos a otra rama. Esto lo haremos a través de gitlab.
+
+- Te vas a la pestaña de Merge Request, y le pones New Merge Request (botón azul).
+
+</div>
+
+<div align="center">
+<img src="../imgs/merge_request_1.png" width="500">
+</div>
+
+- Te preguntará de cual rama quieres jalar los cambios y hacia donde los quieres depositar. En el workflow usual del centro, se te especificará hacia cual rama meter tus cambios. En este caso los cambios provienen de `issue_4_ele` y se van a la rama `practica_1`. Y luedo le darás Compare branches and continue.
+
+</div>
+
+<div align="center">
+<img src="../imgs/merge_request_2.png" width="500">
+</div>
+
+
+- Luego coloca el título del merge request y haz una descripción.
+
+</div>
+
+<div align="center">
+<img src="../imgs/merge_request_3.png" width="500">
+</div>
+
+- En esta misma página en la parte inferior podrás observar las características de tu merge request, cuántos y cuáles commits hiciste. Además, deja por default la opción de Delete source branch when merge request is accepted, para que se elimine la rama en gitlab. Ahí mismo podrás darle click a Changes, en esta caso sólo hay un archivo. Toma en cuenta que siempre es ideal cambiar un archivo a la vez, para que sea más fluido el workflow del centro. Por último, ya con revisado esto crea el merge request. 
+
+</div>
+
+<div align="center">
+<img src="../imgs/merge_request_4.png" width="500">
+</div>
+
+
+</div>
+
+<div align="center">
+<img src="../imgs/merge_request_5.png" width="500">
+</div>
+
+
+- Lo ideal es que cada vez que hagas un merge request, no tengas conflictos con la rama con la que estás haciendo el merge, y si eso es correcto te debería salir como en la siguiente imagen. 
+
+</div>
+
+<div align="center">
+<img src="../imgs/merge_request_6.png" width="500">
+</div>
+
+
+En esta parte, esperarás a que se revise tu trabajo y si se aceptó se hará merge a la rama que lo solicitaste. 
+
+
+

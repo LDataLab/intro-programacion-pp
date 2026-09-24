@@ -1,3 +1,14 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
 ## Temario general
 
 ### 1. Introducción a la programación e infraestructura

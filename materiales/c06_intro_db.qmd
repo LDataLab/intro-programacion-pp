@@ -1,0 +1,258 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Introducción a bases de datos
+
+## Bases de datos
+
+PostgreSQL es un **sistema de gestión de bases de datos relacional de código abierto** y muy poderoso. Se utiliza para **almacenar, gestionar y recupera datos estructurados**. Lo que distingue a PostgreSQL es su robustez, su capacidad para manejar grandes cantidades de datos, y su extensibilidad.
+
+Toma en cuenta que una base de datos es donde se almacenan datos estructurados que varias personas o aplicaciones pueden acceder 
+**simultáneamente**. Cuando varias personas tienen acceso a la misma base de datos, todas pueden ver y modificar tablas,
+siempre y cuando tengan los permisos adecuados. 
+
+- Si varios usuarios tienen acceso a una base de datos en común (es decir, todos pueden conectarse a la misma base de datos), 
+**cualquier cambio** que haga uno de ellos (como la creación de tablas, inserción de datos o eliminación de registros) 
+**es visible para los demás**.
+
+- Es importante destacar que no es necesario que cada persona cree las mismas tablas en su propia sesión;
+las tablas creadas por un usuario son parte de la base de datos global, y por lo tanto están disponibles para todos.
+
+- Al tener acceso compartido a la base de datos, todos los usuarios pueden colaborar en tiempo real.
+Si un usuario agrega datos, esos datos estarán **disponibles de inmediato para los demás**.
+Si otro usuario crea una nueva tabla, esta tabla será visible para todos sin necesidad de hacer configuraciones adicionales.
+
+
+### Esquemas 
+
+En las bases de datos se utilizan esquemas que son como un contenedor o estructura organizativa que agrupa tablas y otros
+objetos de la base de datos. Básicamente es una forma de organizar los objetos de la base de datos. Para esta base de datos 
+utilizamos el esquema de acuerdo a las distintas etapas del pipeline de un producto de datos, estos esquemas son `raw`, `clean` y `ontology`. 
+
+- En `raw` se almacenan los datos en su forma original o cruda, tal como fueron obtenidos de las fuentes externas sin ningún tipo de procesamiento o limpieza.
+- En `clean` los datos han sido limpiado, transformados y estructurados para ser utilizados en análisis posteriores. 
+- En `ontology` se colocan los datos listos para modelado o análisis más avanzados. 
+
+Puedes tener tantos esquemas sean necesarios para mantener ordenada tu base de datos. 
+
+
+### Roles
+
+Un rol en PostgreSQL es una entidad que puede poseer objetos de la base de datos (como tablas) y puede tener permisos sobre esos
+objetos. Los roles son como cuentas de usuario o grupos de permisos que definen qué acciones puede realizar un usuario en la base de
+datos. Un usuario puede tener varios roles, y cada rol puede tener diferentes permisos (lectura, escritura, modificación, etc.). 
+
+## Conexión a base de datos
+
+Primero veamos cómo conectarnos a la base de datos con variables de ambiente:
+
+### Variables de ambiente
+
+Un archivo `.envrc` se usa para definir variables de entorno de manera automática cuando ingresas a un directorio específico en tu 
+terminal. Es parte de una herramienta llamada `direnv`, que permite que estas variables de entorno se carguen o descarguen 
+dinámicamente al entrar o salir de un directorio. 
+
+- **Este archivo se configura una vez**. 
+- Esto es útil para proyectos que necesitan configuraciones específicas sin modificar el entorno global del sistema.
+- El archivo `.envrc` manda a llamar un archivo llamado `.secrets` donde colocas tus credenciales específicas de usuarios.
+
+1. Haces pull de `develop` en tu rama. Verás que el archivo `.envrc` fue creado. 
+
+2. Creas el archivo `.secrets` en la raíz de tu repositorio:
+```{.sh}
+nano .secrets
+```
+
+3. Dentro del archivo colocas las siguientes variables modificando lo correspondiente (lo que está dentro de los símbolos `<>`):
+
+```{.sh}
+export PGUSER=<usuario_bastion>
+export PGHOST=<host>
+export PGPASSWORD=<password>
+```
+
+4. Para activarlo, solo lo tendrás que correr una vez con la siguiente línea:
+
+```{.sh}
+direnv allow
+```
+
+4. Ahora cada vez que entres a ese repositorio automáticamente esas variables se van a cargar y verás algo así:
+
+<div align="center">
+<img src="../imgs/variables_ambiente.png" width="500">
+</div>
+
+5. Esto quiere decir que la información para conectarte a la base de datos se cargará automáticamente cada vez que entres a ese repositorio. Entonces para conectarte a la base de datos solo coloca el siguiente comando: 
+
+```{.sh}
+psql
+```
+
+Y te debe salir algo así:
+
+<div align="center">
+<img src="../imgs/base_datos.png" width="500">
+</div>
+
+#### Para que tu base de datos se vea bonita: 
+
+Crea un nuevo archivo en la raíz de tu usuario que tenga el nombre de `.psqlrc` y coloca la siguiente información:
+
+```
+cd
+nano .psqlrc
+```
+
+Copia y pega la siguiente información
+
+```{.sql}
+\set PROMPT1 '(%n@%m:%>) %`date +%H:%M:%S` [%/] \n%x%\n'
+\set PROMPT2 ''
+\set PROMPT3 ''
+\pset null '¤'
+\pset linestyle 'unicode'
+\pset unicode_border_linestyle single
+\pset unicode_column_linestyle single
+\pset unicode_header_linestyle double
+\set intervalstyle to 'postgres_verbose';
+\setenv LESS '-iMFXSx4R'
+\set HISTSIZE 10000
+```
+
+
+### Principales comandos (CLI) para ver la base de datos PostgresQL (psql)
+
+Si no tienes las variables de ambiente activadas, el comando para entrar a una base de datos es: 
+
+```
+psql -h <host> -U <usuario> -d <nombre_base_datos>
+```
+
+Para ver qué rol tienes:
+
+```{.sql}
+select current_user;
+```
+
+El rol con el que todos estaremos trabajando para la base de datos es `several_db_rw`, este es el usuario
+para que puedas crear tablas o esquemas en la base de datos. 
+
+```{.sql}
+set role several_db_rw;
+```
+
+Entonces, ¿cómo interactuamos con la base de datos de la EGobiernoyTP?
+
+
+Listar los esquemas que hay en la base:
+
+```{.sql}
+\dn
+```
+
+Listar las tablas en un esquema: 
+```{.sql}
+\dt <schema>.*
+```
+
+Ver la tabla 
+
+```{.sql}
+table <schema>.<nombre_tabla> limit 10;
+```
+
+Otra manera de ver la tabla:
+
+```{.sql}
+select * from <schema>.<nombre_tabla> limit 10;
+```
+
+Hacer conteo de renglones:
+```{.sql}
+select count(*) from <schema>.<nombre_tabla> limit 10;
+```
+
+### Cómo creamos una nueva tabla (ejemplo sencillo):
+
+
+Primero debemos de crear la tabla, (_si quieres practicar haciendo esta tabla coloca al final de `estudiantes` tu nombre para que la tabla sea otra, sería algo como `create table raw.estudiantes_elena`_):
+ 
+```{.sql}
+create table raw.estudiantes (
+  id varchar,
+  nombre varchar,
+  edad varchar,
+  curso varchar
+);
+
+```
+
+Después debemos de poblar la tabla:
+
+```{.sql}
+insert into raw.estudiantes (id, nombre, edad, curso)
+values (1, 'Ana', 22, 'Matemáticas'),
+       (2, 'Luis', 25, 'Física'),
+       (3, 'Juan', 23, 'Química');
+```
+
+Para ver la tabla que creaste dentro del esquema:
+
+```{.sql}
+\dt raw.*
+```
+
+Para ver la tabla:
+
+```{.sql}
+select * from raw.estudiantes limit 10;
+```
+
+¿Cuántos renglones tiene? Usa `count`.
+
+## Crear bases de datos a partir de csv 
+
+Lo ideal es crear archivos `.sql` donde se especifica el nombre de las columnas de la tabla, y luego poblar la tabla
+desde la línea de comandos con un archivo `.sh` para que todos vean los comandos que utilizaste. 
+
+- Revisar carpeta de `pipelines`
+
+
+### Archivos .sql
+
+Para correr archivos dentro de postgres se usa el siguiente comando:
+
+```{.sql}
+\i ruta/al/archivo.sql 
+```
+
+El comando `\i archivo.sql` se utiliza para ejecutar un script SQL desde un archivo. Este comando le dice a psql que lea y ejecute las instrucciones SQL contenidas en el archivo especificado.
+
+- `\i`: Este es un comando específico de la consola psql y significa "incluir" o "cargar" un archivo SQL.
+- `archivo.sql`: Es el nombre del archivo que contiene las instrucciones SQL que deseas ejecutar. El archivo puede contener cualquier comando SQL válido, como creación de tablas, inserción de datos, consultas, etc.
+- `ruta/al/archivo.sql`: Es la ruta al archivo SQL que deseas ejecutar. Si el archivo está en el mismo directorio donde ejecutas psql, puedes poner simplemente el nombre del archivo.
+
+Este comando es útil cuando tienes un conjunto de instrucciones SQL en un archivo y deseas ejecutarlas todas de una vez en lugar de escribirlas manualmente en la consola de psql. 
+
+
+También puedes correr archivos para que se carguen afuera de postgres, es decir en la línea de comandos:
+
+```
+psql -U <usuario> -h <host> -p 5432 -d <base_datos>  -f <archivo>.sql
+```
+
+Ó si tienes variables de ambiente, simplemente puedes
+
+```
+psql -f <archivo>.sql
+```
+

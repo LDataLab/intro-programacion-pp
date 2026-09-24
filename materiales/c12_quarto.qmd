@@ -1,0 +1,51 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Quarto
+
+[Página oficial](https://quarto.org/)
+
+Nota: _Para esta sesión se asume que estarás modificando los archivos en algún editor de texto y que el *preview* del documento se reproduce en el buscador de tu preferencia con el puente de ssh y tu puerto asignado._
+
+Quarto es un sistema (open-source) de publicación científica y técnica. Existen muchas versiones y variedades los documentos que crea quarto. Pueden ser desde pdfs, words, html (versión de notebook), así como documentos más completos como libros en línea (epubs), libros reproducibles, artículos, manuscritos, páginas web, blogs, etc. 
+
+Quarto se corre de la siguiente manera: cuando reproduces (render) un archivo `.qmd` se ejecutan los bloques de código con Jupyter y la combinación resultante de código, markdown y `output` se convierte en un markdown simple. Luego, ese markdown es procesado por Pandoc (que es un convertidor universal de documentos) que crea el formato final (ver siguiente imagen)
+
+[<img src="https://quarto.org/docs/get-started/hello/images/qmd-how-it-works.png" width="500"/>](https://quarto.org/docs/get-started/hello/text-editor.html)
+
+La función principal para ver documentos en quarto (en bastión) es:
+
+```{.sh}
+quarto preview archivo.qmd --port <número de puerto personal>
+```
+
+La función principal para compilar los archivos son:
+```{.sh}
+quarto render archivo.qmd 
+```
+
+Para los archivos en quarto existen tres elementos:
+1. Configuración del documento en yaml
+2. Texto con markdown 
+3. Código en Python
+
+## Yaml
+
+Observa que en la primera parte del archivo de quarto hay una sintaxis, esto es un bloque que código en yaml. Toma en cuenta que los archivos `.yml`o `.yaml` son archivos de configuración que utilizan YAML que es un formato legible para nosotros (humanos) y es ampliamente utilizado para definir configuraciones, descripciones de servicios y estructuras de datos de manera clara y organizada.
+
+- YAML representa datos en una estructura anidada, usando indentación (espacios) para definir niveles y jerarquías, similar a la estructura de un diccionario o un objeto.
+- La indentación es clave en YAML, y no se permite el uso de tabulaciones.
+- Y los comentarios en yaml se hacen con #.
+- Se utiliza a lo largo de muchos programas por lo que debes de tener cuidado con su indentación y con sus `:` y `-` al momento de definir la relación entre elementos.
+
+En el caso de archivos en quarto, este lenguaje se utiliza para definir configuraciones del documento que quieras generar, que pueden estar en el inicio del archivo o en otro archivo llamado `_quarto.yml` que se utiliza cuando tienes especificaciones del documento más largos y que facilitan la configuración. 
+
+

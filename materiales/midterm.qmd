@@ -1,0 +1,111 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+---
+title: "Midterm evaluation"
+author: Elena Villalobos
+
+toc: true
+
+format: 
+  html:
+    code-fold: true
+
+---
+
+# Evaluación
+
+## Instrucciones
+
+Evaluar las prácticas de programación para ciencia de datos aprendidas hasta el momento, desde la gestión del repositorio hasta la carga y exploración de datos en una base de datos.
+
+## Reglas:
+
+- No está permitido comunicarse o compartir información con compañeros. 
+- No se permite el uso de LLM ni ninguna de sus variaciones.
+- No se puede utilizar ningún buscador. 
+- Se pueden consultar únicamente notas personales o materiales de clase.
+- Yo estaré observando sus pantallas y procesos durante la sesión para evaluar su flujo de trabajo y buenas prácticas.
+
+## Pasos: 
+
+### 1. Espacio de trabajo 
+
+1. Trabaja en tu propia rama del repositorio de la clase.
+2. Asegúrate de tener tu espacio de trabajo limpio.
+3. Obtén las actualizaciones más recientes desde la rama `develop`
+
+### 2. Base de datos
+
+#### 1. Descarga el siguiente archivo CSV 
+
+- Cada quien deberá trabajar con un mes distinto del año 2014:
+
+```
+https://ecobici.cdmx.gob.mx/wp-content/uploads/2022/08/2014-<mes>.csv
+```
+
+#### 2. Cargar el csv a la base de datos `several_db`, en el esquema `raw`. 
+
+- La tabla debe llamarse
+
+```
+raw.bici_2014_<mes>
+```
+
+#### 3. Crea los siguientes archivos dentro del repositorio:
+
+- `t01_create_bici_2014_<mes>.sql`.
+    - Este archivo debe crear la tabla en postgres con las columnas correspondientes del `.csv` que descargaste
+- `t02_charge_bici_2014_<mes>.sh`
+    - Este script debe de
+        1. Descargar el archivo csv.
+        2. Crear la tabla (usando el script anterior).
+        3. Cargas los datos a la tabla.
+        4. Borrar el archivo CSV al finalizar
+
+#### 4. Una vez cargada la base:
+
+- Crea un archivo llamado `t03_exploracion_bici_2014_<mes>.sql`
+    - En este archivo deben estar las consultas que respondan a las siguientes preguntas:
+        1. ¿Cuántas bicis diferentes hay? 
+        2. ¿Cuál es la edad mínima y máxima de los usuarios?
+        3. ¿Cuántos usuarios hay por genero?
+        4. ¿Cuántas cicloestaciones distintas hay?
+        5. ¿Cuántos viajes diferentes hay?
+
+Cada consulta debe de ir comentada (con `--`) indicando el número de la pregunta y una breve descripción del resultado esperado.
+
+Ejemplo:
+
+```
+-- 1. Número total de bicicletas diferentes
+SELECT COUNT(DISTINCT bici_id) FROM raw.bici_2014_01;
+```
+
+**Importante:** Los tres archivos deben de ir dentro de la carpeta infra. 
+
+### 3. Colaboración 
+
+1. Sube los cambios al repositorio de gitlab
+2. Realiza un merge request a la rama `midterm`
+
+## Criterios de evaluación
+
+- La tabla está correctamente creada y poblada en la base de datos.
+- Los tres archivos (`t01_`, `t02_`, `t03_`) se encuentran dentro del issue correspondiente y que realicen lo que se pidió. 
+- Se observa un uso adecuado de Git y de la estructura del repositorio.
+- Claridad, orden y limpieza en el flujo de trabajo observado durante la sesión.
+
+
+
+¡Éxito!
+

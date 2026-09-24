@@ -1,0 +1,156 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Interacción con servidores
+
+## Terminal Multiplexer (TMUX)
+
+Recordemos que al conectarnos a bastión (ssh) estamos conectándonos a una computadora en la nube por lo que una interrupción en la conexión a internet detendrá la ejecución de los scripts que estés ejecutando. Por lo que se puede utilizar `tmux` que permite ejecutar sesiones de la terminal en el servidor remoto usando tu computadora vía ssh. De esta manera si te desconectas, la sesión remota sigue ejecutándose.
+
+Crear una sesión de tmux
+```{.sh}
+tmux
+```
+
+Divide la ventana en dos páneles horizontales
+```{.sh}
+Ctrl b "
+```
+
+Divide la ventana en dos páneles verticales
+```{.sh}
+Ctrl b %
+```
+
+Zoom al panel
+```{.sh}
+Ctrl z
+```
+
+Crear nueva sesión con nombre
+```{.sh}
+tmux new -s <nombre_sesion>
+```
+
+_Attach_ (a) a una sesión _target_ (-t #)
+```{.sh}
+tmux a -t <nombre_sesion>
+```
+
+Renombrar la ventana
+```{.sh}
+Ctrl b ,
+```
+
+Regresa una sesión anterior
+```{.sh}
+tmux a
+```
+
+Lista las sesiones existentes
+```{.sh}
+tmux ls
+```
+
+Para editar la configuración de tmux, crea el archivo `.tmux.conf` en la raíz de tu usuario
+
+```{.sh}
+set -g default-terminal "screen-256color" # Utiliza los colores de la terminal
+set -g mouse on     # Utilizar el mouse para copiar y pegar y movel el tamaño de los páneles
+set status-style bg=white   # Para usar otro color
+set-option -g history-limit 3000  # Para ver más líneas en el historial de tmux
+```
+
+## Editores de texto
+
+Son programas diseñados para crear, editar, modificar y gestionar archivos de texto sin formato, es decir, aquellos que no tienen formato especial (como negrita, cursiva, etc.) y son utilizados principalmente en la codificación, escritura de scripts, archivos de configuración, y más.
+
+Existen editores de texto en la terminal que funcionan directamente en la línea de comandos y sin necesidad de una interfaz gráfica. Estos son rápidos y ligeros, son ideales para servidores remotos y se pueden controlar completamente con el teclado, lo que mejora la eficiencia. Ejemplos son: vim, nano, emacs.
+
+También existen editores de texto gráficos, que tienen una interfaz gráfica y proporcionan características visuales para ayudar en la edición de texto. El único beneficio es que tienen una interfaz un poco más amigable e intuitiva pero requiere instalaciones y tener una interfaz gráfica o mantener abiertas conexiones para los servidores remotos. Algunos ejemplos son VS Code, Subline text, atom. 
+
+Para la clase les enseñaré un poco de cómo utilizar vim. 
+
+### Vim
+
+Vim (abreviatura de **Vi Improved**) es un editor de texto avanzado y altamente configurable que se ejecuta en la línea de comandos. Se utiliza para editar texto, escribir código, y realizar muchas otras tareas relacionadas con la edición de archivos. 
+
+Es conocido por su eficiencia y rapidez, ya que permite a los usuarios hacer casi todo sin salir de la terminal.
+
+Para abrir Vim, simplemente escribe `vim` seguido del nombre del archivo que deseas editar. Si el archivo no existe, Vim lo creará automáticamente:
+
+```{.sh}
+vim archivo.txt
+```
+
+Al abrir Vim, notarás que se inicia en el modo **Normal**, uno de los modos más importantes en Vim. Vamos a ver los modos principales:
+
+#### Modos principales en Vim
+
+- **Modo Normal**: Es el modo por defecto al iniciar Vim. Se usa para navegar y ejecutar comandos.
+	-  Para entrar en este modo desde cualquier otro, presiona `Esc`.
+- **Modo Insertar**: Se usa para escribir o editar texto.
+	- Para entrar en este modo, presiona `i` en el modo Normal.
+- **Modo Visual**: Se usa para seleccionar texto.
+	- Para entrar en este modo, presiona `v` en el modo Normal.
+- **Modo Comando**: Se usa para ejecutar comandos (como guardar o salir).
+	- Para entrar en este modo, presiona `:` en el modo Normal.
+
+#### Comandos básicos en Vim
+
+##### a. Navegación en modo Normal  {.unnumbered}
+- **Mover el cursor**:
+	- `h`: Mover el cursor a la izquierda.
+	- `j`: Mover el cursor hacia abajo.
+	- `k`: Mover el cursor hacia arriba.
+	- `l`: Mover el cursor a la derecha.
+- **Navegación rápida**:
+	- `w`: Moverse al inicio de la siguiente palabra.
+	- `b`: Moverse al inicio de la palabra anterior.
+	- `0`: Moverse al inicio de la línea actual.
+	- `$`: Moverse al final de la línea actual.
+ 	- `gg`: Ir al inicio del archivo.
+    - `G`: Ir al final del archivo.
+
+##### b. Editar texto en modo Insertar {.unnumbered}
+Para entrar al modo Insertar, primero asegúrate de estar en modo Normal (`Esc`), y luego presiona:
+- `i`: Insertar texto antes del cursor.
+- `I`: Insertar texto al inicio de la línea.
+- `a`: Insertar texto después del cursor.
+- `A`: Insertar texto al finar de la línea.
+- `o`: Insertar una nueva línea debajo del cursor.
+- `O`: Insertar una nueva línea encima del cursor.
+
+##### c. Guardar y salir de Vim en modo Comando
+Desde el modo Normal, presiona `:` para entrar en el modo Comando:
+- `:w`: Guardar el archivo.
+- `:q`: Salir de Vim.
+- `:wq`: Guardar y salir.
+- `:q!`: Salir sin guardar.
+
+##### d. Borrar, deshacer y rehacer cambios {.unnumbered}
+- `x`: Borrar el carácter bajo el cursor.
+- `dd`: Borrar la línea completa.
+- `dw`: Borrar hasta el final de la palabra.
+- `u`: Deshacer el último cambio.
+- `Ctrl + r`: Rehacer el último cambio deshecho.
+
+##### e. Buscar y reemplazar {.unnumbered}
+- `/palabra`: Buscar "palabra" en el archivo.
+- `n`: Ir a la siguiente coincidencia de búsqueda.
+- `:%s/viejo/nuevo/g`: Reemplazar todas las ocurrencias de "viejo" por "nuevo" en el archivo.
+
+### Concepto de la eficiencia en Vim
+
+Vim se basa en la idea de **minimizar el movimiento de las manos** desde el teclado para editar de manera rápida y eficiente. Aprender a usar los comandos básicos y los modos de Vim te permite editar archivos más rápidamente que con otros editores.
+
+Vim puede parecer complicado al principio (una curva de aprendizaje pronuciada), pero con un poco de práctica, su enfoque en la edición rápida lo convierte en una herramienta poderosa para cualquier desarrollador o usuario avanzado.
+

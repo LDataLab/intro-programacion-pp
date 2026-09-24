@@ -1,0 +1,40 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Markdown
+
+## ¿Qué?
+Markdown es un lenguaje de marcado ligero creado por John Gruber y Aaron Swartz en 2004, 
+que permite añadir formato a documentos de texto plano de manera sencilla y legible, 
+usando símbolos como * o # para encabezados, negritas o listas. 
+
+Su principal ventaja es la legibilidad del código y la facilidad para convertir texto plano a 
+formatos como HTML, lo que lo hace muy popular para la escritura en la web. 
+
+## ¿Cómo funciona?
+
+- Sintaxis de texto plano: Se escribe en un editor de texto normal, usando un conjunto de símbolos para indicar el formato. 
+- Legibilidad: El texto Markdown es fácil de leer y escribir, incluso sin convertirlo a otros formatos. 
+- Conversión a otros formatos: Se puede convertir a XHTML o HTML mediante un script, sin que las etiquetas de formato (`<p>`, `<strong>`, etc.) sean visibles. 
+
+
+## Ejemplos de sintaxis Markdown: 
+
+- Encabezados: # Título (H1), ## Subtítulo (H2).
+- Negritas: **texto en negrita**.
+- Cursiva: *texto en cursiva*.
+- Listas:
+	- Numeradas: 1. Elemento 1, 2. Elemento 2.
+	- Con viñetas: * Elemento A, - Elemento B, + Elemento C.
+- Vínculos: Texto del enlace.
+- Bloques de código: ```código ```
+
+Hola.txt

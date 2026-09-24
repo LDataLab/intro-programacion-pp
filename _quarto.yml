@@ -1,11 +1,29 @@
 project:
   type: website
 
+
 website:
   navbar:
     background: "#f5ddce"
+    title: "Inicio"          # ← click aquí regresa al inicio
     href: "index.html"      # ← esto lo hace link
-
+  sidebar:
+    style: "docked"        # o "floating"
+    background: "#fdf4f0"  # color opcional
+    contents:
+      - section: "**Documentos**"
+        contents:
+          - text: "Temario"
+            href: materiales/m00_temario.html
+          - text: "Instalación Python"
+            href: materiales/m00_instalacion_python.html
+      - section: "**Tareas**"
+        contents:
+          - text: "1. Set up"
+            href: tareas/tarea_01_q.html
+          - text: "2. Install uv"
+            href: tareas/tarea_02.html
+ 
 
 html:
   theme: minty
@@ -18,6 +36,7 @@ format:
     code-block-border-left: "#ecbb9a"
     code-overflow: wrap
     footer: "[← Regresar al inicio](../index.html)"  # ← esto
+
 
 lang: es-MX
 

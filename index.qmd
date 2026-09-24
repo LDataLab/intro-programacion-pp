@@ -18,7 +18,7 @@ author:
 bibliography: references.bib
 ---
 
-## Slides
+## Materiales
 
 ::: {.callout-tip collapse="false"}
 ### 01: Introducción a programación

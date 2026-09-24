@@ -1,3 +1,14 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
 # Instalación de Python
 
 Para trabajar con Python de manera local necesitamos instalarlo directamente en nuestra computadora.

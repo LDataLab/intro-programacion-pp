@@ -1,0 +1,249 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Git/GitHub/Gitlab
+
+En el mundo del desarrollo de software y la ciencia de datos, es **fundamental poder colaborar en proyectos**
+y gestionar versiones de código de manera eficiente. Para esto, utilizamos Git, 
+un **sistema de control de versiones distribuido**. 
+
+Git nos permite registrar cambios en el código a lo largo del tiempo, revertir esos cambios cuando sea necesario, y colaborar con otros desarrolladores sin conflictos.
+
+## ¿Qué es git?
+
+[<img src="https://git-scm.com/images/logo@2x.png" width="140"/>](https://git-scm.com/)
+
+Git es una herramienta que rastrea los cambios en archivos y proyectos a lo largo del tiempo. Nos permite:
+
+- Guardar "instantáneas" (commits) del estado actual de nuestro proyecto.
+- Deshacer errores volviendo a versiones anteriores.
+- Lleva un registro de quién hizo qué cambios y cuándo los hizo.
+- Facilitar la colaboración en equipo mediante ramas que permiten trabajar en paralelo.
+
+Git en sí mismo **es una herramienta local**. Sin embargo, cuando necesitamos colaborar o compartir nuestro código, 
+es donde entran en juego plataformas como GitHub y GitLab.
+
+### Gitlab vs GitHub
+
+Aunque GitHub y GitLab ofrecen servicios muy similares, existen algunas diferencias importantes que vale la pena destacar.
+
+- GitHub: Es una plataforma popular que aloja repositorios de Git en la nube, permitiendo a los desarrolladores 
+colaborar en proyectos de código abierto y privado. Es ampliamente utilizado en la comunidad de desarrollo de 
+software y permite la integración con muchas herramientas y servicios de terceros.
+
+[<img src="https://cdn.prod.website-files.com/5f5a53e153805db840dae2db/64e79ca5aff2fb7295bfddf9_github-que-es.jpg" width="140"/>](https://github.com/)
+
+- GitLab: Es otra plataforma que también aloja repositorios de Git, pero su diferencia clave es que ofrece una solución completa de [DevOps]https://www.netapp.com/es/devops-solutions/what-is-devops/). GitLab no solo gestiona el
+código, sino que también incluye herramientas para la integración continua y un sistema de gestión de tareas.
+GitLab puede ser alojado en servidores propios, lo que ofrece más control y seguridad para empresas que lo requieren.
+
+[<img src="https://about.gitlab.com/images/press/logo/print/jpg/gitlab-logo-150.jpg" width="140"/>](gitlab.com)
+
+Ambas plataformas permiten la colaboración, pero GitHub es más conocido por proyectos de código abierto y GitLab es preferido por equipos que buscan una solución más integral para todo el ciclo de vida del desarrollo de software.
+
+## Configuración inicial de trabajo con repositorios
+
+Lo primero es clonar el repositorio con el que vayas a trabajar. 
+
+2. Clona el repositorio
+```{.sh}
+git clone <URL>
+```
+
+Cosas a considerar:
+
+- Recuerda que cada autor tiene su propia copia de todos los documentos y su historia
+- Una cosa es el trabajo que hagas en tu repositorio local (para efectos de la clase bastión) y otra lo que hagas en gitlab (la página del repositorio o el repositorio remoto), por lo que, recuerda **siempre actualizar tu local para que coincida con lo que tienes en línea**. 
+
+### Lingo
+
+- Clonar: Crea una copia del repositorio
+- Commit/comitear: Le avisa a git que tienes cambios permanentes
+- Push: publica los commits en repositorios remotos
+- Pull: Obtiene los cambios en repositorios remotos y los acopla a tu repositorio local (merge)
+- Fetch: Descarga confirmaciones, archivos y referencias de un repositorio remoto a tu repositorio local.
+- Branches: Versiones alternativas de los documentos, que evita molestar a otros mientras desarrollas tu propio código.
+- Merge: Combinas los cambios de una rama a otra
+
+###  Comandos: 
+
+- Checa el status del repositorio. Este comando no hace nunca daño, aplícalo antes de de hacer algún cambio. 
+```{.sh}
+git status
+```
+
+- Agregar un archivo
+```{.sh}
+git add <file_name>
+```
+
+- Comprometerte con un cambio
+```{.sh}
+git commit -m  "<tu comentario que explique el cambio>"
+```
+
+- Publica los cambios y commits en el repositorio remoto. 
+```{.sh}
+git push
+```
+
+- Para bajar los cambios de una rama y mergearlos con tu rama
+```{.sh}
+git pull origin "<rama>"
+```
+
+- Para bajar información del repositorio remoto sin fusionar cambios a tu rama de trabajo actual
+```{.sh}
+git fetch
+```
+
+- Para ver en qué rama estás
+```{.sh}
+git branch
+```
+
+- Para cambiar de rama
+```{.sh}
+git switch <nombre_rama>
+```
+
+- Para eliminar una rama
+```{.sh}
+git branch -d <nombre_rama>
+```
+
+- Para ver la historia de un cambio
+```{.sh}
+git log
+```
+
+- Para ver la historia en gráfico
+```{.sh}
+git log --graph
+```
+
+- Para ver las diferencias de código entre commits de archivos
+```{.sh}
+git diff <file_name>
+```
+
+- Para ver las diferencias de código en archivos
+```{.sh}
+git diff --stagged
+```
+
+- Para restaurar un archivo que le estamos haciendo cambios
+```{.sh}
+git restore <file_name>
+```
+
+## Práctica
+
+### Parte a: flujo básico
+
+- Comandos *safe* y que siempre puedes hacer:
+
+```
+git status
+git branch
+```
+
+- Comandos para agregar cambios: 
+
+```
+nano prueba.txt
+git add prueba.txt
+git commit -m "Agrego mi draft de archivo"
+git push 
+```
+
+- Observa como el archivo aparece en el repositorio
+
+### Parte b: conflictos y resolución
+
+- Bajar los cambios a mi computadora local (asumiendo usuario diferente)
+- Hacer cambios sobre ese archivo y volver a subirlos (ok).
+- Sí dos personas editan el mismo archivo se genera un conflicto
+- Se deben de seleccionar los cambios con los que queremos quedarnos
+    - `<<<<<<< HEAD` y `>>>>>>> branch`
+
+### Parte c: branches y trabajo paralelo
+
+- Generar una branch vinculada a un issue
+- El issue se genera en Gitlab
+- La branch se puede generar desde el repositorio en git o en Gitlab
+- Generar un archivo diferente por cada usuario
+- Mergear los cambios a main
+- ¿Qué hace este comando? `git log --oneline --graph --all`
+
+<div align="center">
+<img src="../imgs/error_same_file_git.png" width="500">
+</div>
+
+
+
+## Archivos de trabajo con git:
+
+- ¿Qué hace el archivo `.gitkeep`? Git por default ignora las carpetas vacías, al agregar un archivo `.gitkeep`
+ dentro del folder te permite agregar la carpeta y así mantener una estructura del repositorio. 
+- ¿Qué hace el archivo `.gitignore`? Especifica los archivos que intencionalmente no quieres que git los
+ rastrea, es decir, los _ignora_
+- Revisa el repositorio en gitlab ve a `Code>Repository graph` y observa el funcionamiento de ese gráfico,
+ ¿qué nos está diciendo?
+- **Merge request**: Es una propuesta a incorporar los cambios desde una rama a otra, lo estaremos haciendo a través de gitlab, cuando querramos mergear los cambios a develop, y cuando querramos incorporar los cambios desde develop a nuestras ramas de trabajo, entonces se realizará con `git pull origin develop`.
+
+## Git pull: Fast-Forward y Merge Commit
+
+
+- **Fast-forward:** se refiere a cuando tu rama puede avanzar directamente hasta el nuevo commit del remoto.
+
+Si el repositorio remoto avanzó el línea recta **sin que tú hiceras commits locales**, tu rama se mueve hacia adelante. 
+
+```
+Tú (local):   A --- B
+Remoto:       A --- B --- C --- D
+```
+
+Cuando hacer `git pull`, tu rama puede "avanzar" de `B` a `D` sin problemas. 
+
+
+- **Merge commit:** sucede cuanto tu rama diverge de la del remoto. Es decir, tú y otra persona (o tu mismo en otro servidor) hicieron commits diferentes en paralelo. Otra 
+manera de verlo es que hay dos ramas distintas que hay que unir, independientemente de qué archivos tocaron.
+
+```
+Tú (local):   A --- B --- C_local
+Remoto:       A --- B --- D_remote
+```
+
+Aquí, no se puede simplemente "avanzar", porque hay dos caminos diferentes en C y D. 
+
+- Git necesita unir ambas historias con un nuevo commit  que incorpora ambos cambios, y usualmente git abre un editor de texto (Vim) para que escribas el mensaje de ese merge. 
+
+
+```
+A --- B --- C_local
+           \ 
+            --- M (merge commit)
+           /
+          D_remote
+
+```
+
+
+
+
+
+
+
+
+
+
+

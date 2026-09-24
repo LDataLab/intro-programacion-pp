@@ -1,0 +1,234 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Ambientes Virtuales para Python
+
+Un ambiente virtual es una herramienta que ayuda a **mantener separadas las dependencias** requeridas por diferentes proyectos que utilizan Python sin interferir con otros proyectos. Estos básicamente resuelven conflictos de versiones de paquetes entre diferentes proyectos.
+
+Son importantes porque **mantienen los proyectos aislados** y **facilitan la replicabilidad**.
+
+Existen herramientas populares para crear ambientes virtuales:
+- `venv` que viene ya incluido en python desde la versión 3.3
+- `virtualenv` que es una herramienta externa que crea ambientes virtuales
+- `pyenv` instala diferentes versiones de Python así como ambientes virtuales dentro de diferentes versiones de python. 
+- `poetry` esta es una herramienta moderna para gestionar dependencias y empaquetar proyectos en Python y es lo que estaremos usando a lo largo de la clase para manejar dependencias de python. 
+
+#### ¿Por qué necesitamos un ambiente virtual?
+
+Imagine un escenario en el que está trabajando en dos proyectos Python y uno de ellos usa Pandas 1.9 y el otro usa Pandas 1.10. En tales situaciones, el ambiente virtual puede ser realmente útil para mantener las dependencias de ambos proyectos. En particular, los ambientes virtuales son soluciones simples que:
+
+1. Resuelven problemas de dependencia al permitirle usar diferentes versiones de un paquete para diferentes proyectos. Por ejemplo, podría usar el Paquete A v2.7 para el Proyecto X y el Paquete A v1.3 para el Proyecto Y.
+2. Permiten que cada proyecto sea independiente y reproducible capturando todas las dependencias de los paquetes en un archivo de requisitos.
+3. Facilitan el ordenamiento el directorio global site-packages/ al eliminar la necesidad de instalar paquetes en todo el sistema, que es posible que solo necesite para un proyecto.
+
+## VENV
+
+Este ya viene incluido en python y para crear uno, te vas a tu repositorio de trabajo y colocas esto:
+
+```
+python -m venv .venv
+```
+
+Esto creará un ambiente virtual y tu lo tienes que activar y desactivar cada vez que entres a la carpeta
+
+```
+# activar
+source .venv/bin/activate
+# desactivar
+deactivate
+```
+
+Si estás en windows el código para activar el ambiente virtual desde PowerShell es:
+
+```
+.\.venv\Scripts\Activate.ps1
+```
+
+
+## Pip
+
+`pip` es el gestor oficial de paquetes de Python. Sirve para instalar, actualizar y desinstalar librerías desde el repositorio oficial PyPI (Python Package Index).
+
+```
+pip install pandas
+```
+
+**Primero debes de activar el entorno y luego usas pip para instalar todo desde ese entorno**
+
+### Comandos útiles de pip
+
+| Acción                         | Comando                               |
+|-------------------------------|----------------------------------------|
+| Ver versión de pip            | `pip --version`                        |
+|                               | `python -m pip --version`              |
+| Instalar paquete              | `pip install nombre_paquete`           |
+| Actualizar paquete            | `pip install --upgrade nombre_paquete` |
+| Desinstalar paquete           | `pip uninstall nombre_paquete`         |
+| Ver paquetes instalados       | `pip list`                             |
+| Guardar versiones (freeze)    | `pip freeze > requirements.txt`        |
+| Instalar desde requirements   | `pip install -r requirements.txt`      |
+
+
+
+# Módulos
+
+## PYTHONPATH
+
+Para correr scripts en Python tienes que decirle a Python donde se encuentran los módulos o 
+paquetes que intentas importar en tu código. La variable `PYTHONPATH` le indica a Python en qué directorios debe buscar los módulos adicionales que no están en los directorios estándar. 
+
+Por ejemplo, cuando en tu `.envrc` tienes el comando: 
+
+```
+export PYTHONPATH=$PWD
+```
+
+significa que Python buscará módulos en el directorio actual (`echo $PWD`), y por eso no necesitas cargar esa ruta manualmente cada vez que trabajas.
+
+Sin embargo, si no estás utilizando variables de entorno (como las definidas en el `.envrc`), deberás indicar explícitamente a Python dónde localizar tus archivos.
+
+
+Básicamente, el `PYTHONPATH` es una **variable de entorno** (también llamada variable de ambiente) que el sistema operativo pone a disposición de Python.
+
+
+Ambos términos —variable de entorno y variable de ambiente— se refieren al mismo concepto:
+
+> un valor o parámetro que un proceso (como Python) puede leer del entorno del sistema para conocer configuraciones, rutas o credenciales.
+
+
+### Recordemos, ¿qué son las variables de entorno?
+
+Las variables de entorno son valores definidos en el sistema operativo que las aplicaciones pueden leer para configurar su comportamiento. Por ejemplo, `PATH`, `HOME`, `PYTHONPATH`, o `PGDATABASE`.
+
+Se pueden establecer de diferentes formas:
+
+- A nivel del sistema o usuario, de manera permanente, en archivos como `~/.bashrc` o `~/.zshrc`.
+- De manera temporal, solo durante una sesión de terminal, con el comando export.
+- Dentro de un proyecto o repositorio, usando un archivo como `.envrc` (que `direnv` carga automáticamente).
+
+Estas variables permanecen disponibles para todos los programas y scripts ejecutados en esa sesión, hasta que se cierre la terminal o se cambie de entorno.
+
+buscar módulos y paquetes. En caso de que Python no encuentre los módulos, te marca un error como 
+el siguiente: `ModuleNotFoundError`.
+
+### ¿Por qué es importante definir el `PYTHONPATH`?
+
+En proyectos con estructuras más complejas, el código fuente suele estar dentro de un directorio src que contiene los módulos y paquetes del proyecto.
+Como Python solo busca en ciertos directorios por defecto, debes decirle explícitamente dónde buscar tus módulos personalizados.
+
+Por ejemplo, si tienes esta estructura:
+
+```{.sh}
+.
+├── src
+│   ├── analysis
+│   │   ├── exploration.py
+│   │   └── grafico_ele.py
+│   ├── api
+│   │   ├── Dockerfile
+│   │   ├── main.py
+│   │   └── model.py
+│   └── utils
+│       └── general.py
+
+```
+
+debes mandas a traer tus modulos así cuando corras Python. 
+
+```
+from src.analysis.exploration import descriptivos
+```
+
+Si intentas ejecutar funciones del archivo `exploration.py` sin especificar el `PYTHONPATH` entonces no encontrará la dirección del módulo y te saldrá un error del estilo:
+
+```
+ModuleNotFoundError: No module named 'src'
+```
+
+Además, la determinación de el `PYTHONPATH` permitirá ejecutar módulos desde diferentes puntos
+en tu repositorio.
+
+### Programación orientada a procesos vs orientada a objetos
+
+- Ve al notebook de `notebooks/c07_python.ipynb` de este repositorio.
+- Ver los archivos dentro de `src/analysis/app_ecobici_procedimiento.py` y `src/analysis/app_ecobici_clases.py`
+
+
+Para ver notebooks:
+
+## Puentes SSH
+
+Un **puente SSH** (SSH tunneling) es una técnica que te permite redirigir la transferencia de
+información entre dos dispositivos hacia un túnel seguro, usando el protocolo SSH, recordemos que
+esta transferencia de información sucede porque estamos conectados a través del internet. Esto es
+útil cuando necesitas acceder a servicios que están disponibles solo en un servidor remoto o en una 
+red privada, como bases de datos, interfaces web o aplicaciones.
+
+Imagina que tienes una aplicación web corriendo en un servidor remoto en el puerto 8888, pero no
+puedes acceder a esa aplicación directamente desde tu navegador local. Con un puente SSH, puedes
+redirigir la transferencia de información hacia tu máquina local desde ese servidor remoto, como si 
+estuvieras accediendo localmente.
+
+```{.sh}
+ssh -NL localhost:8888:localhost:8888 usuario@bastion.egobiernoytp.io
+```
+
+Esto redirige todo el tráfico de tu puerto local 8888 al puerto 8888 del servidor remoto. Luego,
+puedes acceder a la aplicación en tu navegador abriendo `http://localhost:8888`, y estarás
+visualizando la aplicación en el servidor remoto de manera segura.
+
+
+### Actividades terminal
+
+```{.sh}
+jupyter lab --port 8888
+```
+
+Suspención de ejecución de programa, donde te devuelve el control de la terminal
+
+```{.sh}
+ctrl+z
+```
+
+Programas ejecutándose en la sesión de la terminal y su estatus
+```{.sh}
+jobs
+```
+
+Para volver a activar el programa se usa `fg` que significa foreground. 
+```{.sh}
+fg
+```
+
+Para cancelar un programa o proceso corriendose
+```{.sh}
+ctrl+c
+```
+
+Si quieres ejecutar el servidor y no bloquear la terminal agrega al final, ahora pon `jobs`
+
+```{.sh}
+python -m http.server 8888 &
+```
+
+Si quieres reanudar un proceso pero que siga en background utiliza
+```{.sh}
+bg
+```
+
+Si tienes varios procesos corriendo en el background puedes recuperarlos usando el número que se muestra en **jobs** y luego usando **fg** seguido del símbolo de porcentaje y el número en jobs.
+```{.sh}
+fg %2
+```
+
+
+
+

@@ -1,0 +1,91 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Instalación Poetry
+
+OJO: ESTO LO HARÁS SOLO LA PRIMERA VEZ QUE INSTALES POETRY
+
+1. Ve a la raíz de tu usuario en bastión:
+
+
+```{.sh}
+cd
+```
+
+2. Descarga el programa: 
+```{.sh}
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+3. Copia en tu `.bashrc` el **comando que te indica poetry** una vez instalado que se ve algo como en la siguiete imagen, lee el mensaje:
+
+
+Observa que sólo agregarás en el archivo `.bashrc` hasta el final esta línea, como se lee en las instrucciones. 
+```{.sh}
+# OJO: esto no lo corras como está, busca en tu terminal una vez instalado poetry
+export PATH="/home/<tu_usuario>/.local/bin:$PATH
+```
+
+Actualiza tu `.bashrc`
+```{.sh}
+source .bashrc
+```
+
+4. Prueba que ya se instaló:
+```{.sh}
+poetry --version
+```
+
+Para que poetry pueda funcionar de manera automática al entrar al repositorio, tenemos que configurar esta una función que lea información de poetry. Para eso utilizaremos variables de ambiente, que recordemos se encuentran en nuestro archivo `.envrc` dentro de nuestro repositorio. Primero, tenemos que crear un archivo de configuración que tenga la función de `layout_poetry`.
+
+5. Crea el archivo `.direnvrc` que también debe de estar en la raíz de tu usuario en bastión `~$`:
+```{.sh}
+cd
+nano .direnvrc
+```
+
+6. Pega dentro del archivo la siguiente función:
+```{.sh}
+layout_poetry() {
+ if [[ ! -f pyproject.toml ]]; then
+ log_error 'No pyproject.toml found. Use `poetry new` or `poetry init` to create one first.'
+ exit 2
+ fi
+
+ local VENV=$(dirname $(poetry run which python))
+ export VIRTUAL_ENV=$(echo "$VENV" | rev | cut -d'/' -f2- | rev)
+ export POETRY_ACTIVE=1
+ PATH_add "$VENV"
+}
+```
+
+7. Ahora vete a tu repositorio y carga la función layout_poetry dentro de tu variables de ambiente, es decir, abre el archivo de `.envrc` y coloca la siguiente línea:
+
+```{.sh}
+layout_poetry
+```
+
+Haz lo que te indica el output.
+
+
+8. Para instalar los paquetes dentro un proyecto se utiliza el archivo `pyproject.toml` y `poetry.lock`. Por lo que si ya existen ambos archivos solo tienes que instalar los paquetes con la siguiente línea, pero ojo que debe de ser **dentro de tu repositorio de trabajo**:
+
+```{.sh}
+cd <repo>
+poetry install
+```
+
+Para agregar paqueterías, aunque ahorita todavía no es necesario que ustedes instalen paquetes. 
+```{.sh}
+poetry add <paquete>
+```
+
+

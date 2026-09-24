@@ -1,0 +1,64 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Programación para _Pipelines_
+
+## CI/CD
+
+CI/CD (Integración Continua y Despliegue Continuo) es una práctica de desarrollo de software que automatiza la integración de cambios en el código y el despliegue de la aplicación. Esto incluye pruebas automáticas y la actualización continua del entorno de prueba o incluso producción.
+
+### CI/CD en GitLab
+
+GitLab proporciona herramientas integradas para CI/CD, lo que significa que no necesitas usar servicios externos; todo el proceso se gestiona directamente dentro de la plataforma. Flujo:
+
+1. **Commit y Push**: Cuando se realiza un cambio en el código y se sube al repositorio de GitLab, el sistema CI/CD se activa automáticamente.
+2. **Pruebas Automáticas**: Se puede hacer uso de contenedores de Docker para ejecutar entornos o aplicaciones ya establecidas, y solo correr parte de tu código.
+3. **Despliegue**: Si las pruebas son exitosas, el código se despliega automáticamente en un entorno de producción o en un servidor de pruebas.
+
+#### El archivo culpable de que esto funcione es .gitlab-ci.yml
+
+El archivo .gitlab-ci.yml es el que define cómo y cuándo se ejecutan las tareas de CI/CD:
+
+- Tareas a Ejecutar: Puedes especificar pruebas, compilación, generación de reportes y más.
+- Condiciones de Ejecución: Configura en qué ramas o bajo qué circunstancias deben ejecutarse los trabajos.
+- Imagen de Docker: Indica el entorno necesario para ejecutar tu código.
+
+Ejemplo de clase:
+
+```{.yml}
+image: registry.gitlab.com/quarto-forge/docker/polyglot  # utilizamos docker que ya tiene quarto
+
+pages: # Define que el trabajo se ejecutará en GitLab Pages
+  script: # Comandos que ejecutarás para generar el contenido
+    - quarto render index.qmd --output-dir public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - changes:
+        - "_quarto.yml"
+        - "index.qmd"
+        - "references.bib"
+
+```
+
+- **GitLab Pages** es un servicio que permite desplegar contenido estático como sitios web o informes directamente desde tu repositorio.
+- La carpeta `public` es importante porque GitLab Pages solo puede servir contenido que esté en este directorio.
+- Los artifacts son los archivos generados que se guardarán al final de la ejecución del trabajo.
+- `paths`: Aquí especificas que todo el contenido en la carpeta public debe guardarse como artifact, para que GitLab Pages pueda usarlo para desplegar el sitio.
+- `rules`: La opción only: - develop especifica que este trabajo solo se ejecutará cuando haya cambios en la rama develop.
+Esto significa que el sitio solo se actualizará cuando se hagan actualizaciones en esa rama específica.
+
+
+Para ver el resultado de este código tienes que ir a `Deploy/Pages/Deployments`:
+
+
+
