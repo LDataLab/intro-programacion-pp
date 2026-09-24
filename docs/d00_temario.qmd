@@ -1,5 +1,5 @@
 ---
-title: "Tarea 2: Exploración de datos"
+title: "Temario detallado"
 format:
   html:
     toc: true

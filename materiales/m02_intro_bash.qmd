@@ -110,76 +110,276 @@ mkdir
 
 
 
-
 #### SSH
 
-Recordemos que la sesión pasada vimos SSH, el protocolo de red para autenticación segura entre sistemas. Se utiliza para conectarnos con servidores remotos desde nuestra computadora. 
+Hasta ahora hemos trabajado principalmente dentro de nuestra propia computadora:
 
-1. **Clave privada (private key)**: Esta se mantiene en tu computadora local y NUNCA DEBES COMPARTIRLA. 
-2. **Clave pública (public key, .pub)**: Esta es la que tienes que compartir con los servidores con los que te quieres conectar.
-
-Existen dos tipos de algoritmos critográficos:
-
-1. RSA: Rivest-Shamir-Adleman (`id_rsa`/`id_rsa.pub`)
-2. Ed25519: Edwards-curve Digital Signature Algorithm (`id_ed25519`/`id_ed25519.pub`)
-
-La manera en la que se generan de manera general es: 
-
+```text
+┌─────────────────────────────┐
+│       Mi computadora        │
+│                             │
+│  archivos                   │
+│  Git                        │
+│  Python                     │
+│  Bash                       │
+└─────────────────────────────┘
 ```
+
+Sin embargo, muchas de las herramientas que utilizaremos se encuentran en otras
+computadoras o servicios disponibles a través de una red.
+
+Cuando dos computadoras quieren comunicarse necesitan acordar **cómo hacerlo**.
+A ese conjunto de reglas lo llamamos un **protocolo**.
+
+Algunos ejemplos son:
+
+* **HTTP/HTTPS**: utilizados para acceder a páginas web y APIs.
+* **SSH**: utilizado para establecer conexiones seguras entre computadoras.
+* **Git**: sistema de control de versiones que puede comunicarse con repositorios
+  remotos utilizando distintos protocolos, entre ellos HTTPS y SSH.
+
+### ¿Qué es SSH?
+
+**SSH (Secure Shell)** es un protocolo que permite establecer una conexión
+**cifrada y autenticada** entre dos computadoras a través de una red.
+
+El caso más común es conectarnos desde nuestra computadora a una computadora
+remota:
+
+```text
+Mi computadora                    Servidor remoto
+      │                                  │
+      │──────────── SSH ────────────────▶│
+      │                                  │
+      │                           usuario@servidor
+```
+
+La sintaxis general es:
+
+```{.sh}
+ssh <usuario>@<host>
+```
+
+Por ejemplo:
+
+```{.sh}
+ssh elena@servidor.ejemplo.com
+```
+
+En este caso:
+
+* **usuario**: identifica nuestra cuenta dentro de la computadora remota.
+* **host**: identifica a la computadora o servicio al que queremos conectarnos.
+* **IP address**: es la dirección numérica que identifica a una computadora dentro
+  de una red.
+
+Por ejemplo, un host como:
+
+```text
+servidor.ejemplo.com
+```
+
+puede apuntar internamente a una dirección IP como:
+
+```text
+192.0.2.10
+```
+
+Podemos pensar en el **host** como un nombre fácil de recordar que apunta hacia
+una dirección dentro de la red.
+
+### Autenticación con llaves SSH
+
+Una forma común de autenticarnos mediante SSH es utilizando un **par de llaves
+criptográficas**:
+
+```text
+Mi computadora                         Servicio remoto
+
+llave privada                              llave pública
+     🔑                                         🔓
+      │                                         │
+      └────────── autenticación SSH ───────────▶│
+```
+
+El par está compuesto por:
+
+1. **Llave privada (`private key`)**
+
+   Se guarda únicamente en nuestra computadora.
+
+   **Nunca debe compartirse.**
+
+2. **Llave pública (`public key`)**
+
+   Puede compartirse con los servicios o servidores en los que queremos
+   autenticarnos.
+
+Por ejemplo, al generar una llave utilizando el algoritmo **Ed25519**, normalmente
+se crean estos dos archivos:
+
+```text
+~/.ssh/id_ed25519
+~/.ssh/id_ed25519.pub
+```
+
+donde:
+
+```text
+id_ed25519        ← llave privada
+id_ed25519.pub    ← llave pública
+```
+
+> **Importante:** nunca compartas, subas a GitHub o incluyas en una tarea el
+> contenido de `id_ed25519`. Solamente la llave terminada en `.pub` puede
+> compartirse.
+
+### Crear una llave SSH
+
+Podemos crear un nuevo par de llaves con:
+
+```{.sh}
 ssh-keygen -t ed25519 -C "tu_correo@dominio.com"
 ```
 
-o
+`ssh-keygen` nos preguntará dónde guardar la llave. Si aceptamos la ubicación
+predeterminada, normalmente se guardará dentro de:
 
-```
-ssh-keygen -t rsa -b 4096 -C "tu_correo@dominio.com"
-```
-
-El algoritimo ed25519 es más moderno y recomendado. Cada vez que quieras conectarte a un servidor, puedes crear una nueva llave o utilizar la que ya tienes, **OJO: Solo comparte tu llave pública en servidores seguros.**
-
-SSH hace la conexión segura esto es solo sintaxis: 
-
-```
-ssh -i <la llave privada para autenticarse> <tu_usuario>@<host o IP del servidor al que te conectas>
+```text
+~/.ssh/
 ```
 
-- Host: Nombre con el que identificamos una computadora en la red, usualmente son nombres fáciles de recodar. 
-- IP (Internet Protocol address): es como la dirección única de una computadora en la red
-	- La IP sería como la coordenada exacta, y el host el apodo que internamente apunta a una IP. 
-- Keep-alive (el cliente enviará un mensaje cada 60 segundos para que no se cierre la conexión por inactividad)
-
-Si tu llave es ed25519:
-
-```
-ssh -i .ssh/id_ed25519 <tu_usuario>@bastion.egobiernoytp.io -o ServerAliveInterval=60
-
-```
-
-Si es rsa:
-
-```
-ssh -i ~/.ssh/id_rsa <tu_usuario>@bastion.egobiernoytp.io -o ServerAliveInterval=60
-```
-
-
-### Conexión a Github utilizando SSH
-
-Cuando trabajamos con repositorios en GitHub/GitLab/Codeberg/etc., podemos conectarnos de dos formas:
-
-1. HTTPS: funciona con usuario y contraseña o token cada vez que interactúas (pull/push).
-2. SSH: funciona con un par de llaves (pública y privada) y solo tienes que configurarla al inicio.
-
-Nosotros como ya sabemos utilizar ssh, haremos la conexión de bastión a Gitlab de la siguiente manera: 
-
-- Copiar tu llave pública en Github:
-	- Da click en tu foto de perfil, luego: `Preferences → SSH Keys → Add new key`
-	- Pega la llave en donde dice key y quita la Expiration date. 
-
-Podrás clonar fácilmente el repositorio.
+Podemos revisar los archivos que existen en ese directorio con:
 
 ```{.sh}
-git clone <URL>
+ls -la ~/.ssh
 ```
+
+Actualmente **Ed25519** es una opción adecuada para generar nuevas llaves SSH.
+
+También es posible encontrar llaves RSA creadas previamente, por ejemplo:
+
+```text
+id_rsa
+id_rsa.pub
+```
+
+### En sesiones posteriores nos comunicaremos con GitHub a través de SSH
+
+Para comunicarnos con GitHub podemos utilizar distintos mecanismos. Dos de los
+más comunes son **HTTPS** y **SSH**.
+
+Un repositorio utilizando HTTPS puede verse así:
+
+```text
+https://github.com/organizacion/proyecto.git
+```
+
+Mientras que utilizando SSH puede verse así:
+
+```text
+git@github.com:organizacion/proyecto.git
+```
+
+Cuando utilizamos SSH, GitHub reconoce nuestra computadora mediante la **llave
+pública** que asociamos previamente a nuestra cuenta.
+
+La llave privada permanece en nuestra computadora:
+
+```text
+Mi computadora                         GitHub
+
+id_ed25519                             id_ed25519.pub
+   │                                         │
+   │──────── autenticación SSH ─────────────▶│
+   │                                         │
+   │              Git push / pull            │
+   └────────────────────────────────────────▶│
+```
+
+Por esta razón no necesitamos enviar nuestra llave privada a GitHub.
+
+### Configurar SSH con GitHub
+
+Primero debemos copiar el contenido de nuestra **llave pública**.
+
+Podemos verlo con:
+
+```{.sh}
+cat ~/.ssh/id_ed25519.pub
+```
+
+Copiaremos ese contenido y lo agregaremos a nuestra cuenta de GitHub en la
+sección de **SSH keys**.
+
+Una vez registrada la llave pública, podemos verificar la conexión con:
+
+```{.sh}
+ssh -T git@github.com
+```
+
+Aquí `git` no es nuestro nombre de usuario de GitHub.
+
+GitHub utiliza el usuario SSH `git` y determina qué cuenta está intentando
+autenticarse a partir de la **llave SSH** presentada por nuestra computadora.
+
+Si la autenticación funciona correctamente, GitHub responderá indicando qué
+cuenta fue reconocida.
+
+### Clonar un repositorio utilizando SSH
+
+Una vez configurada nuestra llave, podemos copiar la dirección SSH de un
+repositorio:
+
+```text
+git@github.com:organizacion/proyecto.git
+```
+
+y clonarlo con:
+
+```{.sh}
+git clone git@github.com:organizacion/proyecto.git
+```
+
+A partir de ese momento, operaciones como:
+
+```{.sh}
+git pull
+```
+
+y:
+
+```{.sh}
+git push
+```
+
+podrán autenticarse utilizando nuestra llave SSH.
+
+La idea importante es:
+
+```text
+LOCAL                                   REMOTO
+
+Mi computadora                         GitHub
+──────────────                         ──────
+
+archivos                               repositorio
+Git                 ─── SSH ───▶       remoto
+llave privada                          llave pública
+```
+
+Por ahora utilizaremos SSH principalmente para comunicarnos con **GitHub**.
+
+Más adelante veremos que el mismo protocolo puede utilizarse para conectarnos
+directamente a otras computadoras, por ejemplo:
+
+```{.sh}
+ssh usuario@servidor
+```
+
+Esto nos permitirá trabajar con servidores remotos utilizando prácticamente la
+misma terminal y los mismos comandos que estamos aprendiendo ahora.
+
 
 
 ### Más comandos útiles

@@ -1,5 +1,5 @@
 ---
-title: "Tarea 2: Exploración de datos"
+title: "Instalación de Python"
 format:
   html:
     toc: true
@@ -9,7 +9,6 @@ format:
 date: today
 ---
 
-# Instalación de Python
 
 Para trabajar con Python de manera local necesitamos instalarlo directamente en nuestra computadora.
 

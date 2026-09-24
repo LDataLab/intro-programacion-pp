@@ -20,9 +20,11 @@ website:
       - section: "**Documentos**"
         contents:
           - text: "Temario detallado"
-            href: materiales/m00_temario.html
+            href: docs/d00_temario.html
+          - text: "CSVKIT"
+            href: docs/d01_csvkit.html
           - text: "Instalación Python"
-            href: materiales/m00_instalacion_python.html
+            href: docs/d03_instalacion_python.html
 
 
 html:
