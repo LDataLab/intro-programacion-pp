@@ -15,7 +15,7 @@ website:
         contents:
           - text: "1. Set up"
             href: tareas/tarea_01_q.html
-          - text: "2. Install uv"
+          - text: "2. Conexión ssh-github"
             href: tareas/tarea_02.html
       - section: "**Documentos**"
         contents:

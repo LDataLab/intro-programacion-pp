@@ -21,25 +21,21 @@ bibliography: references.bib
 ## Materiales
 
 ::: {.callout-tip collapse="false"}
-### 01: Introducción a programación
-- [Material 01](materiales/m01_intro.html) 
+### 01: Introducción
+
+- Introducción a programación para ciencia de datos en políticas públicas
+    - [Material 01](materiales/m01_intro.html) 
 
 :::
 
 ::: {.callout-tip collapse="false"}
 ### 02: Bash, CLI e infraestructura
 
-Introduccción a Bash y CLI
+- Introduccción a Bash y CLI
+    - [Material 02](materiales/m01_intro_bash.html) 
 
-- [Material 02](materiales/c02_intro_bash.html) 
-
-Instalación de protocolo SSH
-
-- [Material 03](materiales/m01_ssh.html) 
-
-Análisis de datos básico en CLI
-
-- [Material 04](materiales/m05_dataanalisis_cli.html) 
+- Análisis de datos básico en CLI:
+    - [Material 03](materiales/m03_data_cli.html) 
 
 :::
 
@@ -58,7 +54,7 @@ Análisis de datos básico en CLI
 
 | Clase | Tema                                      | Observaciones | Fecha            |
 |------:|-------------------------------------------|---------------|------------------|
-| 01    | Introducción a la programación            | T1            | [2026-09-17 Thu] |
+| 01    | Introducción                              | T1            | [2026-09-17 Thu] |
 | 02    | Bash y CLI; Infraestructura               | T2            | [2026-09-24 Thu] |
 | 03    | Git/Github                                | T3            | [2026-10-01 Thu] |
 | 04    | Ambientes virtuales Python                |               | [2026-10-08 Thu] |
