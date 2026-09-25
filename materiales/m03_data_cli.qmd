@@ -1,5 +1,5 @@
 ---
-title: "Tarea 2: Exploración de datos"
+title: "Análisis de datos en CLI"
 format:
   html:
     toc: true
@@ -9,209 +9,850 @@ format:
 date: today
 ---
 
-# Análisis de datos en CLI
+Una de las primeras cosas que probablemente suceda cuando trabajemos en un proyecto de datos es que **alguien nos comparta un archivo**.
 
-## Comandos básicos
+Antes de abrir Python, R, Excel o cualquier otra herramienta, podemos utilizar la terminal para responder rápidamente algunas preguntas:
 
-Bajemos una base de datos con `curl` que permite transfereir data desde algún servidor. 
+* ¿el archivo existe?
+* ¿cuánto pesa?
+* ¿cuántas filas tiene?
+* ¿qué columnas contiene?
+* ¿cómo se ven los primeros registros?
+* ¿cómo termina?
+* ¿aparece cierto valor?
+* ¿hay valores repetidos?
+* ¿qué categorías aparecen con mayor frecuencia?
+
+La línea de comandos nos permite hacer una **primera exploración de los datos** sin cargar todavía toda la información en memoria.
+
+## Descargar datos
+
+Vamos a descargar una base de datos utilizando `curl`.
+
+`curl` es una herramienta que permite transferir información desde o hacia un servidor.
+
+Muévete primero al directorio en el que quieras guardar los datos:
 
 ```{.sh}
-curl https://raw.githubusercontent.com/ElenaVillano/eda_geda_conagua/refs/heads/master/data_consumo_agua.csv > datos_agua.csv
+cd practica_bash/datos
 ```
 
-Encabezado
+Descarga el archivo:
 
 ```{.sh}
-head <archivo.csv>
+curl -L https://raw.githubusercontent.com/ElenaVillano/eda_geda_conagua/refs/heads/master/data_consumo_agua.csv -o datos_agua.csv
 ```
 
+Aquí:
 
-Crear archivos direccionando el resultado con `>` 
+```text
+-L    sigue redirecciones si existen
+-o    indica el nombre del archivo que queremos guardar
+```
+
+Comprueba que el archivo existe:
+
 ```{.sh}
-head -n 100 <archivo.csv> > <archivo_2.csv>
+ls -lh
 ```
 
-Actualizar archivos _redireccionando hacia_ con `>>` 
+Antes de hacer cualquier análisis, observa:
+
+* ¿cuánto pesa el archivo?
+* ¿qué extensión tiene?
+* ¿dónde quedó almacenado?
+
+También podemos preguntar al sistema qué tipo de archivo parece ser:
+
 ```{.sh}
-tail -n 100 <archivo.csv> >> <archivo_2.csv>
+file datos_agua.csv
 ```
 
-Contar número de filas (líneas), `wc` es de Word Count, la bandera `-l` es para contar líneas
+# Inspeccionar un archivo
+
+## Primeras líneas
+
 ```{.sh}
-wc -l <archivo.csv>
+head datos_agua.csv
 ```
 
-Contar lo último del archivo
+Por default, `head` muestra las primeras diez líneas.
+
+Podemos decidir cuántas queremos:
+
 ```{.sh}
-tail  -l <archivo.csv>
+head -n 5 datos_agua.csv
 ```
 
-Seleccionar algunas columnas el `-d` define el tipo de delimitador de campos, en este caso es `','`, y `-f2,3` selecciona las columnas 2 y 3. 
+Observa el archivo.
+
+* ¿Cuál parece ser el encabezado?
+* ¿Cuántas columnas identificas?
+* ¿Qué crees que representa cada columna?
+* ¿Qué tipo de información parece contener?
+
+## Últimas líneas
+
 ```{.sh}
-cut -d',' -f2,3 <archivo.csv> 
+tail datos_agua.csv
 ```
 
-Utiliza el pipe `|` que se utiliza para combinar comandos de bash. 
+También podemos especificar cuántas:
+
 ```{.sh}
-cut -d',' -f2,3 <archivo.csv> | head 
+tail -n 5 datos_agua.csv
 ```
 
-Revisar que los renglones sean únicos, la bandera de `-d` muestra los que son duplicados, y si agregas `-c` te hace el conteo de estos. 
+Compara:
+
 ```{.sh}
-uniq -d <archivo.csv>
+head -n 3 datos_agua.csv
 ```
 
-Ordenamiento de acuerdo a columnas, `-t','` es el delimitador de campos y `-k2` es para columna 2 y la `n`es para ordenar numéricamente, y el `-r` es para ordenar de mayor a menor.
+con:
+
 ```{.sh}
-sort -t',' -k2n -r <archivo.csv>
+tail -n 3 datos_agua.csv
 ```
 
+¿Qué cambia?
 
-## Comandos avanzados 
+## Explorar archivos grandes
 
-### Grep
+Para un archivo pequeño podemos utilizar `cat`:
 
-La herramienta de grep te permite buscar patrones de texto dentro de archivos, su nombre es por _global regular expression print_. Está diseñado para utilizar expresiones regulares pero también se puede hacer para búsquedas simples. 
-
-Estructura básica del comando:
 ```{.sh}
-grep "<patrón>" <archivo.csv>
+cat datos_agua.csv
 ```
 
-Usa la opción `-i` para ignorar mayúsculas o minúsculas
+Sin embargo, si el archivo tiene miles o millones de filas, imprimirlo completo no es una buena idea.
+
+Una opción mucho más útil es:
+
 ```{.sh}
-grep -i "<patrón>" <archivo.csv>
+less datos_agua.csv
 ```
 
-Para saber la línea del archivo en que aparece el patrón `-n`
+Dentro de `less` podemos:
+
+```text
+↑ ↓        navegar
+/          buscar
+q          salir
+```
+
+# Contar observaciones
+
+`wc` significa *word count*.
+
+Con la opción `-l` podemos contar líneas:
+
 ```{.sh}
-grep -n "<patrón>" <archivo.csv>
+wc -l datos_agua.csv
 ```
 
-Contar las veces en que aparece un patrón 
+Recuerda que un archivo CSV normalmente contiene una línea adicional correspondiente al encabezado.
+
+Por lo tanto, si obtenemos:
+
+```text
+1001 datos_agua.csv
+```
+
+probablemente tengamos:
+
+```text
+1000 observaciones + 1 encabezado
+```
+
+Podemos combinar herramientas:
+
 ```{.sh}
-grep -c "<patrón>" <archivo.csv>
+tail -n +2 datos_agua.csv | wc -l
 ```
 
-Mostrar las veces en que aparece NO un patrón 
+`tail -n +2` significa: comienza a mostrar el archivo desde la segunda línea.
+
+De esta manera excluimos el encabezado antes de contar.
+
+# Redirección
+
+Los comandos normalmente imprimen sus resultados en la terminal.
+
+Sin embargo, podemos guardar esa salida dentro de un archivo.
+
+## `>` Crear o reemplazar un archivo
+
 ```{.sh}
-grep -v "<patrón>" <archivo.csv>
+head -n 100 datos_agua.csv > muestra.csv
 ```
 
-Busca palabras completas 
+Ahora revisa:
+
 ```{.sh}
-grep -w "<patrón>" <archivo.csv>
+ls -lh
 ```
 
-Con la función seq generamos una secuencia hasta 50
+y:
+
+```{.sh}
+wc -l muestra.csv
+```
+
+¿Qué contiene `muestra.csv`?
+
+> `>` reemplaza el contenido del archivo si ya existe.
+
+## `>>` Agregar información
+
+Podemos agregar nuevas líneas al final:
+
+```{.sh}
+tail -n 10 datos_agua.csv >> muestra.csv
+```
+
+Ahora vuelve a contar:
+
+```{.sh}
+wc -l muestra.csv
+```
+
+¿Qué ocurrió?
+
+La diferencia es:
+
+```text
+>     reemplaza o crea
+>>    agrega al final
+```
+
+# Seleccionar columnas
+
+`cut` permite seleccionar partes de cada línea.
+
+En un CSV podemos indicar cuál es el delimitador:
+
+```{.sh}
+cut -d',' -f2,3 datos_agua.csv
+```
+
+Aquí:
+
+```text
+-d','    utiliza , como delimitador
+-f2,3    selecciona los campos 2 y 3
+```
+
+Como la salida puede ser muy larga, podemos combinarlo con `head`:
+
+```{.sh}
+cut -d',' -f2,3 datos_agua.csv | head
+```
+
+> `cut` funciona bien para archivos sencillos. Un CSV puede contener casos más complejos, por ejemplo texto entre comillas que contiene comas. Más adelante utilizaremos herramientas que entienden formalmente la estructura de un CSV.
+
+# Pipes
+
+El símbolo:
+
+```text
+|
+```
+
+se conoce como **pipe**.
+
+Permite utilizar la salida de un comando como entrada del siguiente.
+
+Por ejemplo:
+
+```{.sh}
+cut -d',' -f2,3 datos_agua.csv | head
+```
+
+Podemos leerlo de izquierda a derecha:
+
+```text
+selecciona columnas 2 y 3
+            |
+            v
+muestra solamente las primeras líneas
+```
+
+Los pipes son una de las ideas centrales de Unix: construir tareas más complejas combinando herramientas pequeñas.
+
+Por ejemplo:
+
+```{.sh}
+cat datos_agua.csv | head
+```
+
+aunque en este caso podemos escribir simplemente:
+
+```{.sh}
+head datos_agua.csv
+```
+
+No siempre necesitamos un pipe, pero pronto veremos casos donde son especialmente útiles.
+
+# Ordenar información
+
+`sort` ordena líneas de texto:
+
+```{.sh}
+sort datos_agua.csv
+```
+
+Podemos ordenar utilizando una columna específica:
+
+```{.sh}
+sort -t',' -k2 datos_agua.csv
+```
+
+donde:
+
+```text
+-t','    define el delimitador
+-k2      utiliza la segunda columna como llave
+```
+
+Si la columna contiene números podemos intentar un ordenamiento numérico:
+
+```{.sh}
+sort -t',' -k2,2n datos_agua.csv
+```
+
+Para ordenar de mayor a menor:
+
+```{.sh}
+sort -t',' -k2,2nr datos_agua.csv
+```
+
+Como no queremos imprimir todo:
+
+```{.sh}
+sort -t',' -k2,2nr datos_agua.csv | head
+```
+
+# Valores únicos y frecuencias
+
+`uniq` permite identificar líneas consecutivas que se repiten.
+
+Por ejemplo:
+
+```{.sh}
+printf "A\nA\nB\nB\nB\nC\n" | uniq
+```
+
+produce:
+
+```text
+A
+B
+C
+```
+
+Para contar:
+
+```{.sh}
+printf "A\nA\nB\nB\nB\nC\n" | uniq -c
+```
+
+Sin embargo, `uniq` sólo compara líneas que están **una junto a la otra**.
+
+Por eso es común ordenar primero:
+
+```{.sh}
+sort <archivo> | uniq
+```
+
+y para contar frecuencias:
+
+```{.sh}
+sort <archivo> | uniq -c
+```
+
+Podemos hacer esto con una columna de nuestra base.
+
+Por ejemplo, selecciona una columna:
+
+```{.sh}
+cut -d',' -f2 datos_agua.csv | head
+```
+
+Después elimina el encabezado, ordena y cuenta:
+
+```{.sh}
+tail -n +2 datos_agua.csv | cut -d',' -f2 | sort | uniq -c
+```
+
+Ahora ordena las frecuencias de mayor a menor:
+
+```{.sh}
+tail -n +2 datos_agua.csv | cut -d',' -f2 | sort | uniq -c | sort -nr
+```
+
+Y finalmente quédate solamente con las primeras diez:
+
+```{.sh}
+tail -n +2 datos_agua.csv | cut -d',' -f2 | sort | uniq -c | sort -nr | head
+```
+
+Acabamos de construir un pequeño análisis combinando varias herramientas:
+
+```text
+archivo
+  |
+  v
+quitar encabezado
+  |
+  v
+seleccionar columna
+  |
+  v
+ordenar
+  |
+  v
+contar categorías
+  |
+  v
+ordenar frecuencias
+  |
+  v
+mostrar las primeras 10
+```
+
+# Práctica: primera exploración de datos
+
+Sin utilizar Python, intenta responder las siguientes preguntas sobre `datos_agua.csv`.
+
+## Parte 1. Conocer el archivo
+
+1. ¿En qué directorio está almacenado?
+2. ¿Cuánto pesa?
+3. ¿Cuántas líneas tiene?
+4. ¿Cuántas observaciones tiene si quitamos el encabezado?
+5. ¿Cuáles son las primeras cinco filas?
+6. ¿Cuáles son las últimas cinco filas?
+
+Intenta utilizar:
+
+```text
+pwd
+ls
+ls -lh
+wc
+head
+tail
+```
+
+## Parte 2. Entender la estructura
+
+Observa el encabezado:
+
+```{.sh}
+head -n 1 datos_agua.csv
+```
+
+Responde:
+
+1. ¿Cuántas variables parece tener?
+2. ¿Qué variables parecen numéricas?
+3. ¿Qué variables parecen categóricas?
+4. ¿Hay alguna variable que parezca una fecha o identificador?
+
+No importa todavía si no sabemos exactamente qué significa cada campo. La idea es aprender a hacer una **primera inspección**.
+
+## Parte 3. Explorar columnas
+
+Selecciona solamente una columna:
+
+```{.sh}
+cut -d',' -f2 datos_agua.csv | head
+```
+
+Después prueba con otra:
+
+```{.sh}
+cut -d',' -f3 datos_agua.csv | head
+```
+
+Finalmente selecciona dos al mismo tiempo:
+
+```{.sh}
+cut -d',' -f2,3 datos_agua.csv | head
+```
+
+¿Qué cambia?
+
+## Parte 4. Construir un pipeline
+
+Intenta explicar, de izquierda a derecha, qué hace:
+
+```{.sh}
+tail -n +2 datos_agua.csv | cut -d',' -f2 | sort | uniq -c | sort -nr | head
+```
+
+Después modifica el comando para explorar otra columna.
+
+# Buscar información con `grep`
+
+`grep` permite buscar patrones de texto dentro de archivos.
+
+Su nombre proviene de *global regular expression print*.
+
+Aunque `grep` está diseñado para trabajar con expresiones regulares, también podemos utilizarlo para búsquedas sencillas.
+
+La estructura básica es:
+
+```{.sh}
+grep "<patrón>" <archivo>
+```
+
+Por ejemplo, primero observa algunos valores que realmente aparezcan dentro de:
+
+```{.sh}
+head -n 20 datos_agua.csv
+```
+
+Escoge uno y búscalo:
+
+```{.sh}
+grep "<valor>" datos_agua.csv
+```
+
+## Ignorar mayúsculas y minúsculas
+
+```{.sh}
+grep -i "<patrón>" datos_agua.csv
+```
+
+## Mostrar el número de línea
+
+```{.sh}
+grep -n "<patrón>" datos_agua.csv
+```
+
+## Contar líneas que coinciden
+
+```{.sh}
+grep -c "<patrón>" datos_agua.csv
+```
+
+## Mostrar líneas que NO coinciden
+
+```{.sh}
+grep -v "<patrón>" datos_agua.csv
+```
+
+## Buscar palabras completas
+
+```{.sh}
+grep -w "<patrón>" datos_agua.csv
+```
+
+Algunas opciones frecuentes son:
+
+| Opción | Acción                                   |
+| ------ | ---------------------------------------- |
+| `-i`   | Ignora mayúsculas y minúsculas           |
+| `-n`   | Muestra el número de línea               |
+| `-c`   | Cuenta líneas con coincidencias          |
+| `-v`   | Muestra líneas que no coinciden          |
+| `-w`   | Busca palabras completas                 |
+| `-E`   | Utiliza expresiones regulares extendidas |
+
+# Generar datos desde Bash
+
+También podemos generar información directamente desde la terminal.
+
+`seq` genera secuencias numéricas:
+
+```{.sh}
+seq 10
+```
+
+Prueba:
+
 ```{.sh}
 seq 50 | grep 3
 ```
 
-Secuencia con saltos (intenta otros números)
+¿Qué números aparecen?
+
+Podemos definir inicio, salto y final:
+
 ```{.sh}
-seq 1 2 10 
+seq 1 2 10
 ```
 
-Banderas de grep:
-- `-i`: Ignora mayúsculas y minúsculas.
-- `-n`: Muestra el número de línea.
-- `-c`: Cuenta las coincidencias.
-- `-v`: Invierte la búsqueda (muestra las líneas que no coinciden).
-- `-w`: Busca solo palabras completas.
-- `-E`: Usa expresiones regulares extendidas (regex)
+Prueba modificar los números.
 
+Por ejemplo:
 
-### CSVKIT
-
-Es una herramienta para convertir y trabajar con archivos `.csv`, que es el archivo por default tabular más flexible con el que puedes trabajar desde la línea de comandos. Básicamente hace tu vida más fácil. 
-
-Para esta sección utilicemos el archivo por default de csvkit
 ```{.sh}
-curl -L -O https://raw.githubusercontent.com/wireservice/csvkit/master/examples/realdata/ne_1033_data.xlsx
+seq 0 5 100
 ```
 
-Para convertir archivos .xlsx a .csv
-```{.sh}
-in2csv archivo.xlsx > archivo.csv
+¿Qué secuencia genera?
+
+# Práctica: combina comandos
+
+Intenta resolver los siguientes ejercicios utilizando solamente Bash.
+
+1. Muestra las primeras 15 líneas de `datos_agua.csv`.
+
+2. Muestra las últimas 20 líneas.
+
+3. Cuenta cuántas observaciones contiene el archivo sin contar el encabezado.
+
+4. Guarda las primeras 50 líneas dentro de:
+
+```text
+datos_agua_50.csv
 ```
 
-Para que se dividan las columnas con pipes, _que se vea más bonita_ :P
+5. Comprueba cuántas líneas tiene el nuevo archivo.
+
+6. Selecciona dos columnas y muestra solamente las primeras diez filas.
+
+7. Selecciona una columna categórica y encuentra los valores que aparecen con mayor frecuencia.
+
+8. Busca un valor que hayas observado previamente en los datos.
+
+9. Cuenta cuántas líneas contienen ese valor.
+
+10. Repite la búsqueda ignorando mayúsculas y minúsculas. ¿Cambia el resultado?
+
+11. Utiliza al menos tres comandos conectados con `|` para contestar una pregunta sencilla sobre los datos.
+
+La idea no es memorizar cada comando. La pregunta importante es:
+
+> ¿Qué información quiero obtener y qué operaciones pequeñas puedo combinar para obtenerla?
+
+# Obtener ayuda
+
+No es necesario memorizar todas las opciones de todos los comandos.
+
+Una habilidad mucho más importante es saber consultar la documentación.
+
+Podemos utilizar:
+
 ```{.sh}
-csvlook <archivo.csv>
+man ls
 ```
 
-Para que se vea más amable a la vista.
+o:
+
 ```{.sh}
-csvlook <archivo.csv> | less -S
+man grep
 ```
 
-Imprime el nombre de las columnas
-```{.sh}
-csvcut -n <archivo.csv>
+Para salir de `man`:
+
+```text
+q
 ```
 
-Selecciona columnas, las cuáles se les puede hacer referencia con el nombre de la columna o el número.
+Muchos comandos también incluyen:
+
 ```{.sh}
-csvcut -c <columna_a>,<columna_b> <archivo.csv>
+ls --help
 ```
 
-Para ver un resumen de estadísticos 
+o:
+
 ```{.sh}
-csvstat <archivo.csv>
+grep --help
 ```
 
-Para hacer búsquedas sobre los archivos
+En macOS algunas herramientas tienen pequeñas diferencias respecto a GNU/Linux, por lo que algunas opciones pueden variar.
+
+# Más comandos útiles
+
+## Ver el contenido de un archivo
+
 ```{.sh}
-csvgrep -c <columna> -m <patron> <archivo.csv>
+cat <nombre_documento>
 ```
 
-Para ordenar
+Para archivos grandes normalmente preferiremos:
+
 ```{.sh}
-csvsort 
+less <nombre_documento>
 ```
 
-Práctica, ¿qué hace la siguiente línea?
+## Editar un archivo desde la terminal
+
+Podemos utilizar `nano`:
 
 ```{.sh}
-csvcut -c 6,7,9,15 datos_agua.csv | csvsort -c consumo_total -r | csvlook | head -n 20
+nano <nombre_documento>
 ```
 
-## Archivos de bash
+Dentro de `nano`, en la parte inferior aparecen varios comandos.
 
-- Es un archivo de texto que contiene una lista de comandos que normalmente correrías en la terminal.
+El símbolo:
 
-- En lugar de escribirlos uno por uno, los pones en un archivo .sh y luego lo ejecutas.
+```text
+^
+```
 
-- Se utiliza para automatizar tareas repetitivas: descargar datos, limpiar archivos, ejecutar programas, etc.
+representa la tecla `Ctrl`.
 
-- Es como escribir un “programa” pero con los mismos comandos que ya usas en la terminal.
+Por ejemplo:
 
-### shebang
+```text
+^O    guardar
+^X    salir
+```
 
-- Indica al sistema operativo qué interprete debe usar para ejecutar el archivo. Para correr bash:
+# Scripts de Bash
+
+Hasta ahora hemos escrito comandos uno por uno:
 
 ```{.sh}
-#!/bin/bash
+pwd
+ls -lh
+wc -l datos_agua.csv
+head datos_agua.csv
+```
 
-echo "Hola mundo, este es mi primer script en Bash"
+Pero muchas veces queremos repetir exactamente las mismas operaciones.
+
+Un **script de Bash** es simplemente un archivo de texto que contiene una secuencia de comandos que normalmente ejecutaríamos en la terminal.
+
+En lugar de escribirlos manualmente cada vez:
+
+```text
+comando 1
+comando 2
+comando 3
+```
+
+los guardamos dentro de un archivo:
+
+```text
+explorar_datos.sh
+```
+
+Esto nos permite automatizar tareas como:
+
+* descargar datos;
+* revisar archivos;
+* crear directorios;
+* ejecutar análisis;
+* mover resultados;
+* ejecutar programas.
+
+## Nuestro primer script
+
+Crea un archivo:
+
+```{.sh}
+nano explorar_datos.sh
+```
+
+Agrega:
+
+```{.sh}
+#!/usr/bin/env bash
+
+echo "Explorando datos"
 
 date
 
-ls -l
+echo "Directorio:"
+pwd
+
+echo "Archivos:"
+ls -lh
+
+echo "Número de líneas:"
+wc -l datos_agua.csv
+
+echo "Primeras cinco filas:"
+head -n 5 datos_agua.csv
 ```
 
-- ¿Cómo se ejecuta?
+Guarda el archivo.
 
-1. El archivo debe de tener extensión `.sh`, y se puede ejecutar de dos maneras:
+La primera línea:
 
-```
-sh hola.sh
+```{.sh}
+#!/usr/bin/env bash
 ```
 
+se conoce como **shebang**.
 
+Le indica al sistema qué intérprete debe utilizar para ejecutar el archivo.
+
+## Ejecutar el script
+
+Una forma sencilla es:
+
+```{.sh}
+bash explorar_datos.sh
 ```
-./hola.sh
+
+También podemos convertirlo en un archivo ejecutable:
+
+```{.sh}
+chmod +x explorar_datos.sh
 ```
+
+y ejecutarlo directamente:
+
+```{.sh}
+./explorar_datos.sh
+```
+
+El prefijo:
+
+```text
+./
+```
+
+indica que queremos ejecutar un archivo que se encuentra en el directorio actual.
+
+## Práctica
+
+Modifica `explorar_datos.sh` para que también:
+
+1. muestre las últimas cinco observaciones;
+2. cuente observaciones sin considerar el encabezado;
+3. muestre únicamente dos columnas;
+4. genere un archivo llamado `muestra.csv` con las primeras 100 líneas.
+
+Después ejecuta nuevamente:
+
+```{.sh}
+bash explorar_datos.sh
+```
+
+Con esto estamos comenzando a pasar de:
+
+```text
+comandos manuales
+```
+
+a:
+
+```text
+procesos reproducibles
+```
+
+::: {.callout-note collapse="false"}
+
+## CSVKit
+
+Existen herramientas específicamente diseñadas para trabajar con archivos CSV desde la línea de comandos.
+
+Una de ellas es **CSVKit**, que facilita tareas como seleccionar columnas, buscar información, obtener estadísticas y convertir archivos.
+
+Por ahora utilizaremos herramientas estándar de Bash para entender cómo funcionan los pipes y la composición de comandos. Más adelante podremos utilizar herramientas especializadas cuando el formato de los datos lo requiera.
+
+
+:::
+
 
 

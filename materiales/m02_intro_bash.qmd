@@ -9,267 +9,498 @@ format:
 date: today
 ---
 
-# Bash
+## Bash
 
-GNU Bash o simplemente Bash (Bourne-again shell) es una **interfaz de línea de
-comandos** o intérprete de órdenes que generalmente se ejecuta en una ventana de 
-texto donde el usuario escribe órdenes en modo texto. Bash también puede leer y 
-ejecutar órdenes desde un archivo, llamado `script`. 
+GNU Bash o simplemente **Bash** (Bourne-again shell) es un **intérprete de comandos** o *shell* que nos permite interactuar con el sistema operativo utilizando texto.
 
-Éste intérprete de comandos es parte de los sistemas operativos basados en **Unix**, como Linux y macOS.
-Es la interfaz que nos permite **interactuar directamente con el sistema operativo** 
-a través de la línea de comandos, en lugar de una interfaz gráfica (GUI). 
+En lugar de hacer clic en ventanas, carpetas y menús, podemos escribir instrucciones directamente:
 
-#### Sistemas basados en GUI: 
+```{.sh}
+echo "Hola mundo"
+```
 
-- Windows usa principalmente interfaces gráficas (GUI), aunque tiene su línea de 
-comandos (Command Prompt) y **PowerShell**.
-- Linux/macOS: Estos sistemas están **diseñados** alrededor de una filosofía donde 
-el acceso a través de **la línea de comandos es central**. Las interfaces gráficas
-son opcionales, mientras que el manejo mediante la terminal es más directo y 
-eficiente para muchas tareas.
+Bash también puede leer y ejecutar una secuencia de comandos almacenados dentro de un archivo, al que llamamos **script**.
 
-Interactuar desde la línea de comandos es algo que todo desarrollar o científico de 
-datos debería aprender e implementar en sus tareas diarias, pues nos permite tener 
-un mayor control nuestros sistemas y ser más productivos. 
+Bash forma parte de muchos sistemas basados en **Unix**, como Linux. macOS también está basado en Unix y, aunque actualmente utiliza `zsh` como shell predeterminado, gran parte de los comandos que aprenderemos funcionan de la misma manera.
 
-#### Archivos y directorios
+En Windows utilizaremos **WSL (Windows Subsystem for Linux)**, que nos permite trabajar dentro de un ambiente Linux desde nuestra computadora.
 
-La computadora guarda la información de una manera ordenada. El sistema encargado de
-esto es el **file system**, el cual es básicamente un árbol de información que 
-guarda los datos en una abstracción que llamamos archivos y ordena **los archivos en
-carpetas y directorios**, los cuales pueden contener otros directorios.
+Durante el curso tendremos entonces ambientes similares:
 
-- TODO en los sistemas operativos Unix (Linux, MacOs), es un **archivo**. Muchos
-de los comandos de CLI o shell tienen que ver con la manipulación del file system. 
+```text
+Windows                     macOS
+   │                           │
+   ▼                           ▼
+ WSL                       Terminal
+   │                           │
+   ▼                           ▼
+Linux / Ubuntu               Unix
+   │                           │
+   └───────────┬───────────────┘
+               │
+          bash / zsh
+```
 
+## ¿Por qué utilizar la línea de comandos?
+
+Las interfaces gráficas son muy útiles, pero no siempre son la manera más eficiente de trabajar con datos, código o servidores.
+
+La línea de comandos nos permite:
+
+* navegar por nuestro sistema de archivos;
+* crear, copiar, mover y eliminar archivos;
+* inspeccionar datos rápidamente;
+* combinar pequeñas herramientas;
+* automatizar tareas repetitivas;
+* ejecutar programas;
+* trabajar con Git;
+* conectarnos con otras computadoras;
+* trabajar posteriormente con servidores e infraestructura remota.
+
+Interactuar desde la línea de comandos es una habilidad importante para cualquier persona que trabaje con programación o ciencia de datos.
+
+Durante esta primera parte del curso, nuestra propia computadora será tanto nuestro espacio de **almacenamiento** como de **procesamiento**:
+
+```text
+┌─────────────────────────────┐
+│       Mi computadora        │
+│                             │
+│  almacenamiento             │
+│  - archivos                 │
+│  - datos                    │
+│  - código                   │
+│                             │
+│  procesamiento              │
+│  - Bash                     │
+│  - Python                   │
+│  - otros programas          │
+└─────────────────────────────┘
+```
+
+Más adelante veremos qué sucede cuando nuestra computadora deja de ser suficiente.
+
+## Sistema de archivos
+
+La computadora necesita una manera de organizar la información. El sistema encargado de hacerlo es el **file system** o sistema de archivos.
+
+Podemos imaginarlo como un árbol:
+
+```text
+/
+├── home
+│   └── usuario
+│       ├── documentos
+│       ├── datos
+│       └── proyectos
+├── tmp
+└── usr
+```
+
+La información se almacena principalmente utilizando dos abstracciones:
+
+* **archivos**: contienen información;
+* **directorios**: organizan archivos y otros directorios.
+
+En los sistemas Unix muchos recursos del sistema se representan utilizando archivos, por lo que una gran parte de los comandos que utilizaremos tiene que ver con navegar, leer o modificar el sistema de archivos.
+
+## Rutas
+
+Una **ruta** (*path*) nos dice dónde se encuentra un archivo o directorio.
+
+Por ejemplo:
+
+```text
+/home/elena/proyectos/datos.csv
+```
+
+Existen dos tipos importantes de rutas.
+
+### Ruta absoluta
+
+Describe la ubicación completa desde la raíz del sistema:
+
+```text
+/home/elena/proyectos/datos.csv
+```
+
+### Ruta relativa
+
+Describe la ubicación con respecto al directorio en el que nos encontramos:
+
+```text
+datos/datos.csv
+```
+
+También encontraremos algunos símbolos frecuentemente:
+
+```text
+.     directorio actual
+..    directorio padre
+~     directorio home del usuario
+```
 
 ## Comandos principales
 
-- Encuentra la Terminal en macOS y WSL en Windows, y coloca 
+Encuentra **Terminal** en macOS o abre **WSL** en Windows.
+
+Comencemos con:
 
 ```{.sh}
-echo "Hola Mundo"
+echo "Hola mundo"
 ```
 
-- ¿Quién soy?
+`echo` imprime texto en la terminal.
+
+#### ¿Quién soy?
 
 ```{.sh}
 whoami
 ```
 
-- ¿Cuál es tu directorio actual? Ver en qué directorio nos encontramos situados (Print working directory)
+Nos muestra el usuario con el que estamos trabajando.
+
+#### ¿Dónde estoy?
 
 ```{.sh}
 pwd
 ```
 
-- Cambia de directorio
+`pwd` significa *print working directory* y muestra el directorio en el que nos encontramos actualmente.
 
-```{.sh}
-cd <directorio>
-```
-
-
-- Regresa a donde estabas antes
-
-```{.sh}
-cd ..
-```
-
-- Día de hoy 
-
-```{.sh}
-date
-```
-
-- Lista todos los archivos en el directorio actual pero no los ocultos
+#### ¿Qué archivos existen?
 
 ```{.sh}
 ls
 ```
 
-- Move or rename directory
+Lista los archivos y directorios visibles.
+
+Podemos agregar **opciones** o **banderas** al comando:
 
 ```{.sh}
-mv
-```
-
-- Copiar archivos
-
-```{.sh}
-cp
-```
-
-
-- Create directory
-
-```{.sh}
-mkdir
-```
-
-# Análisis de datos en CLI
-
-## Comandos básicos
-
-Bajemos una base de datos con `curl` que permite transfereir data desde algún servidor. 
-
-```{.sh}
-curl https://raw.githubusercontent.com/ElenaVillano/eda_geda_conagua/refs/heads/master/data_consumo_agua.csv > datos_agua.csv
-```
-
-Encabezado
-
-```{.sh}
-head <archivo.csv>
-```
-
-
-Crear archivos direccionando el resultado con `>` 
-```{.sh}
-head -n 100 <archivo.csv> > <archivo_2.csv>
-```
-
-Actualizar archivos _redireccionando hacia_ con `>>` 
-```{.sh}
-tail -n 100 <archivo.csv> >> <archivo_2.csv>
-```
-
-Contar número de filas (líneas), `wc` es de Word Count, la bandera `-l` es para contar líneas
-```{.sh}
-wc -l <archivo.csv>
-```
-
-Contar lo último del archivo
-```{.sh}
-tail  -l <archivo.csv>
-```
-
-Seleccionar algunas columnas el `-d` define el tipo de delimitador de campos, en este caso es `','`, y `-f2,3` selecciona las columnas 2 y 3. 
-```{.sh}
-cut -d',' -f2,3 <archivo.csv> 
-```
-
-Utiliza el pipe `|` que se utiliza para combinar comandos de bash. 
-```{.sh}
-cut -d',' -f2,3 <archivo.csv> | head 
-```
-
-Revisar que los renglones sean únicos, la bandera de `-d` muestra los que son duplicados, y si agregas `-c` te hace el conteo de estos. 
-```{.sh}
-uniq -d <archivo.csv>
-```
-
-Ordenamiento de acuerdo a columnas, `-t','` es el delimitador de campos y `-k2` es para columna 2 y la `n`es para ordenar numéricamente, y el `-r` es para ordenar de mayor a menor.
-```{.sh}
-sort -t',' -k2n -r <archivo.csv>
-```
-
-
-## Comandos avanzados 
-
-### Grep
-
-La herramienta de grep te permite buscar patrones de texto dentro de archivos, su nombre es por _global regular expression print_. Está diseñado para utilizar expresiones regulares pero también se puede hacer para búsquedas simples. 
-
-Estructura básica del comando:
-```{.sh}
-grep "<patrón>" <archivo.csv>
-```
-
-Usa la opción `-i` para ignorar mayúsculas o minúsculas
-```{.sh}
-grep -i "<patrón>" <archivo.csv>
-```
-
-Para saber la línea del archivo en que aparece el patrón `-n`
-```{.sh}
-grep -n "<patrón>" <archivo.csv>
-```
-
-Contar las veces en que aparece un patrón 
-```{.sh}
-grep -c "<patrón>" <archivo.csv>
-```
-
-Mostrar las veces en que aparece NO un patrón 
-```{.sh}
-grep -v "<patrón>" <archivo.csv>
-```
-
-Busca palabras completas 
-```{.sh}
-grep -w "<patrón>" <archivo.csv>
-```
-
-Con la función seq generamos una secuencia hasta 50
-```{.sh}
-seq 50 | grep 3
-```
-
-Secuencia con saltos (intenta otros números)
-```{.sh}
-seq 1 2 10 
-```
-
-Banderas de grep:
-- `-i`: Ignora mayúsculas y minúsculas.
-- `-n`: Muestra el número de línea.
-- `-c`: Cuenta las coincidencias.
-- `-v`: Invierte la búsqueda (muestra las líneas que no coinciden).
-- `-w`: Busca solo palabras completas.
-- `-E`: Usa expresiones regulares extendidas (regex)
-
-
-
-::: {.callout-note collapse="false"}
-
-**CSVKIT** Es una herramienta para convertir y trabajar con archivos `.csv`, que es el archivo por default tabular más flexible con el que puedes trabajar desde la línea de comandos. Básicamente hace tu vida más fácil. 
-
-
-:::
-
-## Archivos de bash
-
-- Es un archivo de texto que contiene una lista de comandos que normalmente correrías en la terminal.
-
-- En lugar de escribirlos uno por uno, los pones en un archivo .sh y luego lo ejecutas.
-
-- Se utiliza para automatizar tareas repetitivas: descargar datos, limpiar archivos, ejecutar programas, etc.
-
-- Es como escribir un “programa” pero con los mismos comandos que ya usas en la terminal.
-
-### shebang
-
-- Indica al sistema operativo qué interprete debe usar para ejecutar el archivo. Para correr bash:
-
-```{.sh}
-#!/bin/bash
-
-echo "Hola mundo, este es mi primer script en Bash"
-
-date
-
 ls -l
 ```
 
-- ¿Cómo se ejecuta?
+para mostrar más información.
 
-1. El archivo debe de tener extensión `.sh`, y se puede ejecutar de dos maneras:
-
-```
-sh hola.sh
+```{.sh}
+ls -a
 ```
 
+para incluir archivos ocultos.
 
+Podemos combinar opciones:
+
+```{.sh}
+ls -la
 ```
-./hola.sh
+
+También podemos mostrar el tamaño de los archivos en un formato más fácil de leer:
+
+```{.sh}
+ls -lh
 ```
 
+o combinar las opciones:
+
+```{.sh}
+ls -lha
+```
+
+Una característica común de las herramientas de línea de comandos es que un mismo comando puede modificar su comportamiento utilizando diferentes opciones.
+
+### Cambiar de directorio
+
+```{.sh}
+cd <directorio>
+```
+
+Por ejemplo:
+
+```{.sh}
+cd Documents
+```
+
+Para subir al directorio padre:
+
+```{.sh}
+cd ..
+```
+
+Para ir directamente a nuestro directorio `home`:
+
+```{.sh}
+cd ~
+```
+
+o simplemente:
+
+```{.sh}
+cd
+```
+
+Para regresar al directorio en el que estábamos anteriormente:
+
+```{.sh}
+cd -
+```
+
+### Crear directorios
+
+```{.sh}
+mkdir <nombre_directorio>
+```
+
+Por ejemplo:
+
+```{.sh}
+mkdir clase_bash
+```
+
+Podemos entrar al directorio recién creado:
+
+```{.sh}
+cd clase_bash
+```
+
+### Crear un archivo vacío
+
+```{.sh}
+touch <nombre_archivo>
+```
+
+Por ejemplo:
+
+```{.sh}
+touch notas.txt
+```
+
+Comprueba que se creó:
+
+```{.sh}
+ls -l
+```
+
+### Copiar archivos
+
+```{.sh}
+cp <origen> <destino>
+```
+
+Por ejemplo:
+
+```{.sh}
+cp notas.txt notas_copia.txt
+```
+
+### Mover o renombrar archivos
+
+El comando `mv` sirve tanto para mover como para renombrar.
+
+```{.sh}
+mv <origen> <destino>
+```
+
+Por ejemplo:
+
+```{.sh}
+mv notas_copia.txt notas_clase.txt
+```
+
+### Eliminar archivos
+
+```{.sh}
+rm <archivo>
+```
+
+Por ejemplo:
+
+```{.sh}
+rm notas_clase.txt
+```
+
+> A diferencia de una interfaz gráfica, `rm` normalmente no envía el archivo a una papelera. Antes de ejecutar el comando, verifica qué archivo estás eliminando.
+
+Para eliminar un directorio vacío:
+
+```{.sh}
+rmdir <directorio>
+```
+
+### Ver la fecha
+
+```{.sh}
+date
+```
+
+### Ver la estructura de directorios
+
+Si `tree` está instalado:
+
+```{.sh}
+tree
+```
+
+Podemos limitar el número de niveles:
+
+```{.sh}
+tree -L 2
+```
+
+## Práctica: navegación y archivos
+
+Crea un espacio para trabajar durante la clase.
+
+```{.sh}
+mkdir practica_bash
+cd practica_bash
+```
+
+Comprueba dónde estás:
+
+```{.sh}
+pwd
+```
+
+Ahora crea tres directorios:
+
+```{.sh}
+mkdir datos
+mkdir resultados
+mkdir scripts
+```
+
+Revisa la estructura:
+
+```{.sh}
+ls
+```
+
+o:
+
+```{.sh}
+tree
+```
+
+Entra a `datos`:
+
+```{.sh}
+cd datos
+```
+
+Crea dos archivos:
+
+```{.sh}
+touch datos_originales.csv
+touch notas.txt
+```
+
+Comprueba que existen:
+
+```{.sh}
+ls -lh
+```
+
+Ahora:
+
+1. copia `notas.txt`;
+2. cambia el nombre de la copia;
+3. vuelve al directorio `practica_bash`;
+4. entra a `resultados`;
+5. regresa al directorio anterior utilizando `cd -`.
+
+Al terminar intenta responder:
+
+* ¿En qué directorio estás?
+* ¿Cuál es tu directorio padre?
+* ¿Cómo regresarías directamente a tu `home`?
+* ¿Qué diferencia observas entre `ls`, `ls -l` y `ls -la`?
+
+# Navegación en la terminal
+
+Además de los comandos, existen algunos atajos que hacen mucho más cómodo trabajar desde la terminal.
+
+La tecla `Tab` intenta completar automáticamente nombres de archivos, directorios y algunos comandos.
+
+Prueba escribir:
+
+```text
+cd Doc
+```
+
+y antes de presionar `Enter`, utiliza `Tab`.
+
+#### Inicio de la línea
+
+```text
+Ctrl + A
+```
+
+#### Final de la línea
+
+```text
+Ctrl + E
+```
+
+#### Buscar comandos anteriores
+
+```text
+Ctrl + R
+```
+
+Comienza a escribir una parte de un comando que hayas utilizado anteriormente.
+
+#### Eliminar desde el cursor hasta el final
+
+```text
+Ctrl + K
+```
+
+#### Interrumpir un proceso
+
+```text
+Ctrl + C
+```
+
+Este será uno de los atajos más útiles cuando un comando esté ejecutándose y queramos detenerlo.
+
+#### Suspender un proceso
+
+```text
+Ctrl + Z
+```
+
+Suspende temporalmente el proceso actual.
+
+#### Limpiar la pantalla
+
+```text
+Ctrl + L
+```
+
+También podemos utilizar:
+
+```{.sh}
+clear
+```
+
+#### Revisar comandos anteriores
+
+```{.sh}
+history
+```
+
+Prueba combinarlo con:
+
+```{.sh}
+history | tail
+```
+
+¿Qué observas?
 
 
 
-#### SSH
+### SSH
 
 Hasta ahora hemos trabajado principalmente dentro de nuestra propia computadora:
 
@@ -278,8 +509,6 @@ Hasta ahora hemos trabajado principalmente dentro de nuestra propia computadora:
 │       Mi computadora        │
 │                             │
 │  archivos                   │
-│  Git                        │
-│  Python                     │
 │  Bash                       │
 └─────────────────────────────┘
 ```
@@ -541,74 +770,4 @@ misma terminal y los mismos comandos que estamos aprendiendo ahora.
 
 
 
-### Más comandos útiles
 
-- Iniciar el editor nano 
-
-```{.sh}
-nano <nombre_documento>
-```
-
-- Ver el contenido del archivo
-
-```{.sh}
-cat <nombre_documento>
-```
-
-- Borrar archivo
-
-```{.sh}
-rm <nombre_documento>
-```
-
-- Borrar directorio
-
-```{.sh}
-rmdir <nombre_documento>
-```
-
-## Navegación en la Terminal
-
-- La tecla tab completa la palabra por ti.
-
-- Inicio de la línea
-
-```{.sh}
-ctrl + a
-```
-
-- Fin de la línea
-```{.sh}
-ctrl + e
-```
-
-- Busca hacia atrás
-```{.sh}
-ctrl + r
-```
-
-- Elimina el resto de la línea
-```{.sh}
-ctrl + k
-```
-
-- Manda a background el programa que estás ejecutando
-```{.sh}
-ctrl + z
-```
-
-- Intenta cancelar
-```{.sh}
-ctrl + c
-```
-
-- Limpia la pantalla
-```{.sh}
-ctrl + l
-```
-
-- ¿Qué hace?
-
-```{.sh}
-history
-```
