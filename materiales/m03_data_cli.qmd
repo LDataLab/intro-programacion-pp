@@ -9,6 +9,7 @@ format:
 date: today
 ---
 
+
 Una de las primeras cosas que probablemente suceda cuando trabajemos en un proyecto de datos es que **alguien nos comparta un archivo**.
 
 Antes de abrir Python, R, Excel o cualquier otra herramienta, podemos utilizar la terminal para responder rápidamente algunas preguntas:
