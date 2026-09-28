@@ -1,5 +1,5 @@
 ---
-title: "Tarea 2: Llaves SSH y github accout"
+title: "Tarea 2: Llaves SSH y Github accout"
 format:
   html:
     toc: true
@@ -9,101 +9,324 @@ format:
 date: today
 ---
 
-### Configurar SSH con GitHub
 
-Primero debemos copiar el contenido de nuestra **llave pública**.
+En esta tarea configurarás la comunicación entre tu computadora y **GitHub utilizando SSH**.  
 
-Podemos verlo con:
+> Todos los comandos de esta tarea deben ejecutarse desde WSL o desde la terminal de macOS.
+
+## 1. Verifica que SSH esté instalado
+
+
+```{.sh}
+ssh -V
+```
+
+## 2. Revisa si ya tienes una llave SSH
+
+Las llaves SSH normalmente se almacenan dentro del directorio:
+
+```text
+~/.ssh/
+```
+
+Revisa su contenido:
+
+```{.sh}
+ls -la ~/.ssh
+```
+
+Busca particularmente archivos como:
+
+```text
+id_ed25519
+id_ed25519.pub
+```
+
+o:
+
+```text
+id_rsa
+id_rsa.pub
+```
+
+::: {.callout-warning collapse="false"}
+**Recuerda**: Nunca compartas, envíes o subas a un repositorio tu llave privada.
+
+```text
+id_ed25519        llave PRIVADA
+id_ed25519.pub    llave PÚBLICA
+```
+
+:::
+
+Si ya tienes una llave `id_ed25519` y `id_ed25519.pub`, **no necesitas generar otra** para esta 
+tarea, puedes continuar directamente a la sección 4. 
+
+## 3. Genera una llave SSH
+
+Si no tienes una llave SSH, crea una utilizando el algoritmo **Ed25519**:
+
+```{.sh}
+ssh-keygen -t ed25519 -C "tu_correo@dominio.com"
+```
+
+Utiliza de preferencia el correo asociado a tu cuenta de GitHub.
+
+Por ejemplo:
+
+```{.sh}
+ssh-keygen -t ed25519 -C "nombre@ejemplo.com"
+```
+
+El programa preguntará:
+
+```text
+Enter file in which to save the key (...)
+```
+
+Presiona `Enter` para aceptar la ubicación predeterminada.
+
+Después te preguntará si deseas agregar una contraseña o *passphrase*, mi recomendación es que
+**no le pongas contraseña** y simplemente le des `enter`:
+
+```text
+Enter passphrase (empty for no passphrase):
+```
+
+Cuando termine el proceso, revisa nuevamente:
+
+```{.sh}
+ls -la ~/.ssh
+```
+
+Deberías encontrar:
+
+```text
+id_ed25519
+id_ed25519.pub
+```
+
+## 4. Agrega tu llave pública a GitHub
+
+- Puedes ver el contenido de tu **llave pública** con:
 
 ```{.sh}
 cat ~/.ssh/id_ed25519.pub
 ```
 
-Copiaremos ese contenido y lo agregaremos a nuestra cuenta de GitHub en la
-sección de **SSH keys**.
+- La salida tendrá una estructura similar a:
 
-Una vez registrada la llave pública, podemos verificar la conexión con:
+```text
+ssh-ed25519 AAAAC3... tu_correo@dominio.com
+```
+
+- Todo lo que aparece en esa línea corresponde a tu llave pública.
+
+- Selecciona y copia la línea completa.
+
+Después, en GitHub:
+
+1. inicia sesión en tu cuenta;
+2. haz clic en tu foto de perfil;
+3. entra a **Settings**;
+4. en el menú lateral, entra a **SSH and GPG keys**;
+5. selecciona **New SSH key**;
+6. en **Title**, escribe un nombre que te permita reconocer tu computadora, por ejemplo:
+
+```text
+Laptop personal
+```
+
+7. en **Key type**, selecciona **Authentication Key**;
+8. en **Key**, pega el contenido completo de `id_ed25519.pub`;
+9. selecciona **Add SSH key**.
+
+GitHub puede pedirte confirmar nuevamente tu contraseña.
+
+## 5. Verifica la conexión con GitHub
+
+Regresa a tu terminal y ejecuta:
 
 ```{.sh}
 ssh -T git@github.com
 ```
 
-Aquí `git` no es nuestro nombre de usuario de GitHub.
-
-GitHub utiliza el usuario SSH `git` y determina qué cuenta está intentando
-autenticarse a partir de la **llave SSH** presentada por nuestra computadora.
-
-Si la autenticación funciona correctamente, GitHub responderá indicando qué
-cuenta fue reconocida.
-
-### Clonar un repositorio utilizando SSH
-
-Una vez configurada nuestra llave, podemos copiar la dirección SSH de un
-repositorio:
+La primera vez que te conectes es posible que aparezca un mensaje similar a:
 
 ```text
-git@github.com:organizacion/proyecto.git
+The authenticity of host 'github.com (...)' can't be established.
+Are you sure you want to continue connecting (yes/no)?
 ```
 
-y clonarlo con:
+Escribe:
 
-```{.sh}
-git clone git@github.com:organizacion/proyecto.git
+```text
+yes
 ```
 
-A partir de ese momento, operaciones como:
+Si la configuración funciona correctamente, deberías obtener un mensaje similar a:
+
+```text
+Hi TU_USUARIO! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+Lo importante es que aparezca **tu nombre de usuario de GitHub**. GitHub utiliza el usuario SSH `git` para esta conexión y reconoce tu cuenta a partir de la llave SSH presentada por tu computadora.
+
+> Que GitHub indique que no proporciona *shell access* es normal. En este caso estamos utilizando SSH para autenticarnos con GitHub, no para abrir una terminal dentro de sus servidores.
+
+## 6. Clona el repositorio utilizando SSH
+
+Entra al repositorio de la clase.
+
+1. selecciona el botón **Code**;
+2. selecciona la opción **SSH**;
+3. copia la dirección.
+
+La dirección tendrá una estructura similar a:
+
+```text
+git@github.com:organizacion/repositorio.git
+```
+
+Desde la terminal, primero muévete al directorio en el que quieras guardar el repositorio y ejecuta:
 
 ```{.sh}
-git pull
+git clone git@github.com:organizacion/repositorio.git
+```
+
+Sustituye la dirección anterior por la dirección SSH del repositorio de la clase.
+
+Comprueba que el directorio fue creado:
+
+```{.sh}
+ls
+```
+
+Entra al repositorio:
+
+```{.sh}
+cd <nombre_del_repositorio>
+```
+
+y comprueba:
+
+```{.sh}
+git status
+```
+
+También puedes verificar cuál es el repositorio remoto asociado:
+
+```{.sh}
+git remote -v
+```
+
+La dirección debería comenzar con:
+
+```text
+git@github.com:
+```
+
+Esto indica que el repositorio está configurado para comunicarse con GitHub mediante SSH.
+
+## 7. Configura tu identidad en Git
+
+Git necesita saber qué nombre y correo debe asociar con los commits que realices.
+
+Primero configura tu nombre:
+
+```{.sh}
+git config --global user.name "Tu Nombre"
+```
+
+Después configura tu correo:
+
+```{.sh}
+git config --global user.email "tu_correo@dominio.com"
+```
+
+Utiliza el correo de tu cuenta de GitHub.
+
+
+### Verifica la configuración
+
+Ejecuta:
+
+```{.sh}
+git config --global user.name
 ```
 
 y:
 
 ```{.sh}
-git push
+git config --global user.email
 ```
 
-podrán autenticarse utilizando nuestra llave SSH.
-
-La idea importante es:
-
-```text
-LOCAL                                   REMOTO
-
-Mi computadora                         GitHub
-──────────────                         ──────
-
-archivos                               repositorio
-Git                 ─── SSH ───▶       remoto
-llave privada                          llave pública
-```
-
-Por ahora utilizaremos SSH principalmente para comunicarnos con **GitHub**.
-
-Más adelante veremos que el mismo protocolo puede utilizarse para conectarnos
-directamente a otras computadoras, por ejemplo:
+También puedes revisar toda la configuración global de Git con:
 
 ```{.sh}
-ssh usuario@servidor
+git config --global --list
 ```
 
-Esto nos permitirá trabajar con servidores remotos utilizando prácticamente la
-misma terminal y los mismos comandos que estamos aprendiendo ahora.
+## 8. Revisa que todo funcione
 
+Al terminar deberías poder ejecutar correctamente:
 
+```{.sh}
+ssh -T git@github.com
+```
 
+```{.sh}
+git status
+```
 
-# Llaves ssh
+```{.sh}
+git remote -v
+```
 
-Secure Shell Protocol (SSH) es un protocolo de red para autenticación segura entre sistemas. Se utiliza para conectarnos con servidores remotos desde nuestra computadora. SSH, utiliza una combinación criptográfica entre llaves para autenticar y cifrar los datos que se transmiten entre el cliente y el servidor, las llaves son:
+```{.sh}
+git config --global user.name
+```
 
-1. **Clave privada (private key)**: Esta se mantiene en tu computadora local y NUNCA DEBES COMPARTIRLA. 
-2. **Clave pública (public key, .pub)**: Esta es la que tienes que compartir con los servidores con los que te quieres conectar, _Ojo: esta es la que me compartirás en el formulario_. 
+```{.sh}
+git config --global user.email
+```
 
-El proceso de autenticación funciona de la siguiente manera: cuando intentas conectarte a un servidor, éste usa tu clave pública para crear un desafío que solo puede ser resuelto con tu clave privada. Si el servidor confirma que las claves coinciden, te permite el acceso.
+## Entrega
 
-Para poder comunicarte con la infraestructura de la EGobiernoyTP requieres generar unas llaves con SSH en tu computadora. Dependiendo del sistema operativo con el que cuentes se indican los pasos a seguir para generar este par de llaves privada y pública.
+Entrega **un solo archivo PDF** con capturas de pantalla de tu terminal en las que pueda verificarse lo siguiente:
 
-`ssh-keygen -t ed25519 -C "<comentario que identifique llave"`
+1. que existe tu par de llaves SSH:
 
+```{.sh}
+ls -la ~/.ssh
+```
+
+2. que la conexión con GitHub funciona:
+
+```{.sh}
+ssh -T git@github.com
+```
+
+3. que clonaste correctamente el repositorio:
+
+```{.sh}
+git status
+```
+
+4. que el repositorio utiliza SSH:
+
+```{.sh}
+git remote -v
+```
+
+5. que configuraste correctamente tu nombre y correo:
+
+```{.sh}
+git config --global user.name
+git config --global user.email
+```
+
+> **No incluyas en las capturas el contenido de tu llave privada.**
+
+En las capturas quiero verificar que la configuración fue realizada correctamente desde tu propia computadora.
 
