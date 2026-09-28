@@ -6,7 +6,8 @@
 
 - Otoño 2026.
 
-- Página de la clase: https://ldatalab.github.io/intro-programacion-pp/
+- Página de la clase: [ldatalab.github.io/intro-programacion-pp](https://ldatalab.github.io/intro-programacion-pp/)
+
 
 ## Generalidades de la clase: 
 
