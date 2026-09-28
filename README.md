@@ -6,6 +6,8 @@
 
 - Otoño 2026.
 
+- Página de la clase: https://ldatalab.github.io/intro-programacion-pp/
+
 ## Generalidades de la clase: 
 
 - Se impartirá de manera presencial en Mixcoac.
