@@ -228,46 +228,7 @@ git@github.com:
 
 Esto indica que el repositorio está configurado para comunicarse con GitHub mediante SSH.
 
-## 7. Configura tu identidad en Git
-
-Git necesita saber qué nombre y correo debe asociar con los commits que realices.
-
-Primero configura tu nombre:
-
-```{.sh}
-git config --global user.name "Tu Nombre"
-```
-
-Después configura tu correo:
-
-```{.sh}
-git config --global user.email "tu_correo@dominio.com"
-```
-
-Utiliza el correo de tu cuenta de GitHub.
-
-
-### Verifica la configuración
-
-Ejecuta:
-
-```{.sh}
-git config --global user.name
-```
-
-y:
-
-```{.sh}
-git config --global user.email
-```
-
-También puedes revisar toda la configuración global de Git con:
-
-```{.sh}
-git config --global --list
-```
-
-## 8. Revisa que todo funcione
+## 7. Revisa que todo funcione
 
 Al terminar deberías poder ejecutar correctamente:
 
@@ -319,7 +280,7 @@ git status
 git remote -v
 ```
 
-5. que configuraste correctamente tu nombre y correo:
+5. que tienes configurado correctamente tu nombre y correo:
 
 ```{.sh}
 git config --global user.name
