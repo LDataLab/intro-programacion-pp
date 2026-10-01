@@ -39,9 +39,19 @@ bibliography: references.bib
 
 :::
 
+::: {.callout-tip collapse="false"}
+### 03. Git/GitHub
+
+- Desde lo básico hasta flujos de trabajo adecuados 
+    - [Material 04](materiales/m04_git_github.html) 
+
+:::
+
 ::: {.callout-caution collapse="true"}
-### 01: Introducción a programación
-- [Material 01](materiales/m01_intro.html) 
+### 04. Ambientes virtuales Python
+
+- Estructura para un buen funcionamiento de Python
+    - [Material 05](materiales/m05_python.html) 
 
 :::
 

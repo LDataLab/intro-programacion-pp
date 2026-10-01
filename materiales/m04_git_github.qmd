@@ -10,31 +10,19 @@ format:
 date: today
 ---
 
+# Control de versiones
+
 En el mundo del desarrollo de software, ciencia de datos, e IA es **fundamental poder colaborar en proyectos**
 y gestionar versiones de código de manera eficiente. Para esto, utilizamos Git, 
 un **sistema de control de versiones**. 
 
 Git nos permite registrar cambios en el código a lo largo del tiempo, revertir esos cambios cuando sea necesario, y colaborar con otros desarrolladores sin conflictos.
 
-
 En este material aprenderás a utilizar **Git** para registrar cambios en un proyecto y **GitHub** para colaborar con otras personas.
-
-Al terminar deberías poder:
-
-- identificar la diferencia entre Git y GitHub;
-- clonar y actualizar un repositorio;
-- registrar cambios con `add` y `commit`;
-- trabajar en una rama sin modificar directamente `main`;
-- subir una rama a GitHub;
-- abrir y revisar un **Pull Request**;
-- mantener tu rama actualizada;
-- reconocer y resolver un conflicto;
-- diagnosticar algunos de los errores más comunes al trabajar de manera colaborativa.
-
 
 ## 1. Git y GitHub no son lo mismo
 
-### Git
+### [<img src="https://git-scm.com/images/logo@2x.png" width="140"/>](https://git-scm.com/)
 
 **Git** es un sistema de control de versiones distribuido.
 
@@ -51,9 +39,9 @@ Con Git podemos:
 
 Git funciona **localmente**. No necesitas estar conectada o conectado a internet para hacer un `commit`.
 
-### GitHub
+### [<img src="https://cdn.prod.website-files.com/5f5a53e153805db840dae2db/64e79ca5aff2fb7295bfddf9_github-que-es.jpg" width="140"/>](https://github.com/)
 
-**GitHub** es una plataforma para alojar repositorios Git en un servidor remoto y colaborar alrededor de ellos.
+**GitHub**, por otro lado, es una plataforma para alojar repositorios Git en un servidor remoto y colaborar alrededor de ellos.
 
 GitHub agrega herramientas como:
 
@@ -67,7 +55,7 @@ GitHub agrega herramientas como:
 
 Una forma sencilla de pensarlo es:
 
-```text
+```python
 Tu computadora                 GitHub
 -----------------              -----------------
 repositorio local   <------>   repositorio remoto
@@ -76,11 +64,11 @@ repositorio local   <------>   repositorio remoto
 
 ---
 
-## 2. Tres espacios que conviene distinguir
+## 2. Tres espacios a distinguir
 
 Cuando trabajamos con Git es útil imaginar tres estados de nuestros archivos:
 
-```text
+```python
 Working directory
       |
       | git add
@@ -124,7 +112,6 @@ Es la versión del repositorio almacenada en GitHub.
 git push
 ```
 
----
 
 ## 3. Antes de empezar: identifica dónde estás
 
@@ -166,7 +153,7 @@ git log --oneline --graph --all
 ```
 
 ::: {.callout-tip}
-## Una regla útil
+## Una regla útil: NO entres en pánico
 
 Si no sabes qué está pasando, **no empieces a probar comandos al azar**.
 
@@ -176,10 +163,9 @@ Primero corre:
 git status
 ```
 
-Después interpreta el mensaje.
+Después **LEE** e interpreta el mensaje.
 :::
 
----
 
 ## 4. Clonar un repositorio
 
@@ -219,13 +205,12 @@ Puedes comprobarlo con:
 git remote -v
 ```
 
----
 
 ## 5. El flujo básico de Git
 
 Si estás trabajando individualmente en una rama, el ciclo más común es:
 
-```text
+```python
 editar
   ↓
 git status
@@ -265,14 +250,9 @@ Puedes agregar varios archivos:
 git add archivo1.py archivo2.py
 ```
 
-Para agregar todos los cambios del directorio actual:
-
-```bash
-git add .
-```
 
 ::: {.callout-note}
-Para aprender Git suele ser mejor comenzar agregando archivos de manera explícita. Así puedes ver con claridad qué va a entrar en cada commit.
+Para aprender Git suele ser mejor comenzar agregando archivos de manera explícita. Así puedes ver con claridad qué va a entrar en cada commit. En lugar de correr `git add .`
 :::
 
 ### Registrar un commit
@@ -300,13 +280,12 @@ ya quedó
 último
 ```
 
-### Subir los commits
+### Subir los commits al repositorio en línea
 
 ```bash
 git push
 ```
 
----
 
 # Trabajo colaborativo
 
@@ -336,19 +315,12 @@ main
           feature/datos
 ```
 
----
 
 ## 7. Un workflow sencillo para GitHub
 
 Para este curso utilizaremos un flujo basado en ramas cortas y Pull Requests.
 
-### Paso 1. Regresa a `main`
-
-```bash
-git switch main
-```
-
-### Paso 2. Asegúrate de no tener cambios pendientes
+### Paso 1. Asegúrate de no tener cambios pendientes
 
 ```bash
 git status
@@ -360,13 +332,13 @@ Idealmente debes ver algo equivalente a:
 nothing to commit, working tree clean
 ```
 
-### Paso 3. Actualiza `main`
+### Paso 2. Actualiza `main`
 
 ```bash
 git pull origin main
 ```
 
-### Paso 4. Crea una rama nueva
+### Paso 3. Crea una rama nueva
 
 ```bash
 git switch -c <nombre-rama>
@@ -375,7 +347,7 @@ git switch -c <nombre-rama>
 Por ejemplo:
 
 ```bash
-git switch -c limpieza-nombres
+git switch -c script_exploratorio
 ```
 
 Algunos equipos utilizan convenciones como:
@@ -386,9 +358,13 @@ fix/error-fechas
 docs/actualiza-readme
 ```
 
-No es indispensable utilizar estos prefijos, pero el nombre de la rama sí debe ayudar a reconocer qué trabajo contiene.
+::: {.callout-important}
+## Elije un nombre de rama adecuado
+No es indispensable utilizar estos prefijos, pero **el nombre de la rama sí debe ayudar a reconocer qué trabajo contiene**
+:::
 
-### Paso 5. Haz cambios
+
+### Paso 4. Haz cambios
 
 Edita los archivos necesarios.
 
