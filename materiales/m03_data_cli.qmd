@@ -32,7 +32,9 @@ Vamos a descargar una base de datos utilizando `curl`.
 
 `curl` es una herramienta que permite transferir información desde o hacia un servidor.
 
-Muévete primero al directorio en el que quieras guardar los datos:
+Muévete primero al repositorio de la clase a la carpeta de datos:
+
+- ¿Qué ves?
 
 ```{.sh}
 cd practica_bash/datos
@@ -250,7 +252,8 @@ Como la salida puede ser muy larga, podemos combinarlo con `head`:
 cut -d',' -f2,3 datos_agua.csv | head
 ```
 
-> `cut` funciona bien para archivos sencillos. Un CSV puede contener casos más complejos, por ejemplo texto entre comillas que contiene comas. Más adelante utilizaremos herramientas que entienden formalmente la estructura de un CSV.
+> `cut` funciona bien para archivos sencillos. Un CSV puede contener casos más complejos, por ejemplo texto entre comillas que contiene comas. Para ver una herramienta que entiende más formalmente la estructura de CSV está CSVKIT, su manual de uso se encuentra en Documentos
+
 
 # Pipes
 
@@ -422,79 +425,6 @@ ordenar frecuencias
 mostrar las primeras 10
 ```
 
-# Práctica: primera exploración de datos
-
-Sin utilizar Python, intenta responder las siguientes preguntas sobre `datos_agua.csv`.
-
-## Parte 1. Conocer el archivo
-
-1. ¿En qué directorio está almacenado?
-2. ¿Cuánto pesa?
-3. ¿Cuántas líneas tiene?
-4. ¿Cuántas observaciones tiene si quitamos el encabezado?
-5. ¿Cuáles son las primeras cinco filas?
-6. ¿Cuáles son las últimas cinco filas?
-
-Intenta utilizar:
-
-```text
-pwd
-ls
-ls -lh
-wc
-head
-tail
-```
-
-## Parte 2. Entender la estructura
-
-Observa el encabezado:
-
-```{.sh}
-head -n 1 datos_agua.csv
-```
-
-Responde:
-
-1. ¿Cuántas variables parece tener?
-2. ¿Qué variables parecen numéricas?
-3. ¿Qué variables parecen categóricas?
-4. ¿Hay alguna variable que parezca una fecha o identificador?
-
-No importa todavía si no sabemos exactamente qué significa cada campo. La idea es aprender a hacer una **primera inspección**.
-
-## Parte 3. Explorar columnas
-
-Selecciona solamente una columna:
-
-```{.sh}
-cut -d',' -f2 datos_agua.csv | head
-```
-
-Después prueba con otra:
-
-```{.sh}
-cut -d',' -f3 datos_agua.csv | head
-```
-
-Finalmente selecciona dos al mismo tiempo:
-
-```{.sh}
-cut -d',' -f2,3 datos_agua.csv | head
-```
-
-¿Qué cambia?
-
-## Parte 4. Construir un pipeline
-
-Intenta explicar, de izquierda a derecha, qué hace:
-
-```{.sh}
-tail -n +2 datos_agua.csv | cut -d',' -f2 | sort | uniq -c | sort -nr | head
-```
-
-Después modifica el comando para explorar otra columna.
-
 # Buscar información con `grep`
 
 `grep` permite buscar patrones de texto dentro de archivos.
@@ -509,13 +439,7 @@ La estructura básica es:
 grep "<patrón>" <archivo>
 ```
 
-Por ejemplo, primero observa algunos valores que realmente aparezcan dentro de:
-
-```{.sh}
-head -n 20 datos_agua.csv
-```
-
-Escoge uno y búscalo:
+Escoge un patrón y búscalo:
 
 ```{.sh}
 grep "<valor>" datos_agua.csv
@@ -596,40 +520,6 @@ seq 0 5 100
 
 ¿Qué secuencia genera?
 
-# Práctica: combina comandos
-
-Intenta resolver los siguientes ejercicios utilizando solamente Bash.
-
-1. Muestra las primeras 15 líneas de `datos_agua.csv`.
-
-2. Muestra las últimas 20 líneas.
-
-3. Cuenta cuántas observaciones contiene el archivo sin contar el encabezado.
-
-4. Guarda las primeras 50 líneas dentro de:
-
-```text
-datos_agua_50.csv
-```
-
-5. Comprueba cuántas líneas tiene el nuevo archivo.
-
-6. Selecciona dos columnas y muestra solamente las primeras diez filas.
-
-7. Selecciona una columna categórica y encuentra los valores que aparecen con mayor frecuencia.
-
-8. Busca un valor que hayas observado previamente en los datos.
-
-9. Cuenta cuántas líneas contienen ese valor.
-
-10. Repite la búsqueda ignorando mayúsculas y minúsculas. ¿Cambia el resultado?
-
-11. Utiliza al menos tres comandos conectados con `|` para contestar una pregunta sencilla sobre los datos.
-
-La idea no es memorizar cada comando. La pregunta importante es:
-
-> ¿Qué información quiero obtener y qué operaciones pequeñas puedo combinar para obtenerla?
-
 # Obtener ayuda
 
 No es necesario memorizar todas las opciones de todos los comandos.
@@ -669,18 +559,6 @@ grep --help
 En macOS algunas herramientas tienen pequeñas diferencias respecto a GNU/Linux, por lo que algunas opciones pueden variar.
 
 # Más comandos útiles
-
-## Ver el contenido de un archivo
-
-```{.sh}
-cat <nombre_documento>
-```
-
-Para archivos grandes normalmente preferiremos:
-
-```{.sh}
-less <nombre_documento>
-```
 
 ## Editar un archivo desde la terminal
 
@@ -817,7 +695,7 @@ indica que queremos ejecutar un archivo que se encuentra en el directorio actual
 
 ## Práctica
 
-Modifica `explorar_datos.sh` para que también:
+Modifica `b01_explorar_datos_<nombre>.sh` para que corra correctamente y luego:
 
 1. muestre las últimas cinco observaciones;
 2. cuente observaciones sin considerar el encabezado;
