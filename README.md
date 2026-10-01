@@ -80,5 +80,3 @@
 - Downey, A. B., hink python: How to think like a computer scientist , 2a. edición, O’Reilly Media, 2015.
 - Wickham, H., and Grolemund, G. and Çetinkaya-Rundel, M. , R for Data Science: Import, Tidy, Transform, Visualize, and Model Data, 2a. Edición, O'Reilly Media, 2023.
 - Introducción a la programación (2020) Adolfo De Unánue.
-
-que onda con esto
