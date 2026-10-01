@@ -1,0 +1,1734 @@
+---
+title: "Git y GitHub"
+subtitle: "Control de versiones suficiente para trabajo individual o colaborativo"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+En el mundo del desarrollo de software, ciencia de datos, e IA es **fundamental poder colaborar en proyectos**
+y gestionar versiones de código de manera eficiente. Para esto, utilizamos Git, 
+un **sistema de control de versiones**. 
+
+Git nos permite registrar cambios en el código a lo largo del tiempo, revertir esos cambios cuando sea necesario, y colaborar con otros desarrolladores sin conflictos.
+
+
+En este material aprenderás a utilizar **Git** para registrar cambios en un proyecto y **GitHub** para colaborar con otras personas.
+
+Al terminar deberías poder:
+
+- identificar la diferencia entre Git y GitHub;
+- clonar y actualizar un repositorio;
+- registrar cambios con `add` y `commit`;
+- trabajar en una rama sin modificar directamente `main`;
+- subir una rama a GitHub;
+- abrir y revisar un **Pull Request**;
+- mantener tu rama actualizada;
+- reconocer y resolver un conflicto;
+- diagnosticar algunos de los errores más comunes al trabajar de manera colaborativa.
+
+
+## 1. Git y GitHub no son lo mismo
+
+### Git
+
+**Git** es un sistema de control de versiones distribuido.
+
+Permite registrar cómo cambia un proyecto a lo largo del tiempo. Cada persona que clona un repositorio tiene una copia local del proyecto y de su historial.
+
+Con Git podemos:
+
+- guardar versiones del proyecto mediante *commits*;
+- saber quién hizo un cambio y cuándo;
+- comparar versiones;
+- recuperar versiones anteriores;
+- trabajar en ramas diferentes;
+- combinar el trabajo de varias personas.
+
+Git funciona **localmente**. No necesitas estar conectada o conectado a internet para hacer un `commit`.
+
+### GitHub
+
+**GitHub** es una plataforma para alojar repositorios Git en un servidor remoto y colaborar alrededor de ellos.
+
+GitHub agrega herramientas como:
+
+- repositorios remotos;
+- *issues*;
+- Pull Requests;
+- revisión de código;
+- permisos;
+- automatizaciones;
+- documentación y páginas web.
+
+Una forma sencilla de pensarlo es:
+
+```text
+Tu computadora                 GitHub
+-----------------              -----------------
+repositorio local   <------>   repositorio remoto
+        Git                        Git + plataforma
+```
+
+---
+
+## 2. Tres espacios que conviene distinguir
+
+Cuando trabajamos con Git es útil imaginar tres estados de nuestros archivos:
+
+```text
+Working directory
+      |
+      | git add
+      v
+Staging area
+      |
+      | git commit
+      v
+Repositorio local
+      |
+      | git push
+      v
+Repositorio remoto (GitHub)
+```
+
+### Working directory
+
+Son los archivos que estás modificando en tu computadora.
+
+### Staging area
+
+Es la selección de cambios que quieres incluir en el siguiente commit.
+
+```bash
+git add <archivo>
+```
+
+### Repositorio local
+
+Contiene los commits que ya registraste en tu computadora.
+
+```bash
+git commit -m "Descripción del cambio"
+```
+
+### Repositorio remoto
+
+Es la versión del repositorio almacenada en GitHub.
+
+```bash
+git push
+```
+
+---
+
+## 3. Antes de empezar: identifica dónde estás
+
+Uno de los comandos más importantes de Git es:
+
+```bash
+git status
+```
+
+Úsalo con frecuencia.
+
+`git status` puede decirte:
+
+- en qué rama estás;
+- si tienes archivos modificados;
+- si tienes archivos nuevos;
+- si tienes cambios preparados para un commit;
+- si tu rama está adelantada o atrasada respecto a GitHub;
+- si existe un conflicto pendiente.
+
+También puedes consultar las ramas con:
+
+```bash
+git branch
+```
+
+La rama actual aparece marcada con `*`.
+
+Para observar los repositorios remotos configurados:
+
+```bash
+git remote -v
+```
+
+Y para ver una versión compacta del historial:
+
+```bash
+git log --oneline --graph --all
+```
+
+::: {.callout-tip}
+## Una regla útil
+
+Si no sabes qué está pasando, **no empieces a probar comandos al azar**.
+
+Primero corre:
+
+```bash
+git status
+```
+
+Después interpreta el mensaje.
+:::
+
+---
+
+## 4. Clonar un repositorio
+
+Para crear una copia local de un repositorio existente:
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+```
+
+Por ejemplo, usando SSH:
+
+```bash
+git clone git@github.com:usuario/repositorio.git
+```
+
+Después entra al repositorio:
+
+```bash
+cd repositorio
+```
+
+Y revisa:
+
+```bash
+git status
+```
+
+El comando `clone` normalmente configura automáticamente un remoto llamado:
+
+```text
+origin
+```
+
+Puedes comprobarlo con:
+
+```bash
+git remote -v
+```
+
+---
+
+## 5. El flujo básico de Git
+
+Si estás trabajando individualmente en una rama, el ciclo más común es:
+
+```text
+editar
+  ↓
+git status
+  ↓
+git diff
+  ↓
+git add
+  ↓
+git status
+  ↓
+git commit
+  ↓
+git push
+```
+
+### Revisar qué cambió
+
+```bash
+git diff
+```
+
+Para revisar un archivo específico:
+
+```bash
+git diff <archivo>
+```
+
+### Preparar cambios
+
+```bash
+git add <archivo>
+```
+
+Puedes agregar varios archivos:
+
+```bash
+git add archivo1.py archivo2.py
+```
+
+Para agregar todos los cambios del directorio actual:
+
+```bash
+git add .
+```
+
+::: {.callout-note}
+Para aprender Git suele ser mejor comenzar agregando archivos de manera explícita. Así puedes ver con claridad qué va a entrar en cada commit.
+:::
+
+### Registrar un commit
+
+```bash
+git commit -m "Agrega limpieza de nombres"
+```
+
+Un buen mensaje describe **qué hace el cambio**.
+
+Por ejemplo:
+
+```text
+Agrega validación de fechas
+Corrige ruta de lectura de datos
+Documenta instalación del proyecto
+```
+
+Evita mensajes como:
+
+```text
+cambios
+cosas
+ya quedó
+último
+```
+
+### Subir los commits
+
+```bash
+git push
+```
+
+---
+
+# Trabajo colaborativo
+
+## 6. ¿Por qué utilizar ramas?
+
+La rama `main` representa la versión principal del proyecto.
+
+En trabajo colaborativo conviene **no desarrollar directamente sobre `main`**.
+
+En lugar de eso:
+
+1. actualizamos `main`;
+2. creamos una rama;
+3. hacemos nuestro trabajo;
+4. subimos la rama;
+5. abrimos un Pull Request;
+6. revisamos e integramos los cambios.
+
+Esto permite que varias personas trabajen en paralelo sin modificar directamente la versión principal.
+
+```text
+main
+  |
+  A----B------------------E
+        \                /
+         C------D--------
+          feature/datos
+```
+
+---
+
+## 7. Un workflow sencillo para GitHub
+
+Para este curso utilizaremos un flujo basado en ramas cortas y Pull Requests.
+
+### Paso 1. Regresa a `main`
+
+```bash
+git switch main
+```
+
+### Paso 2. Asegúrate de no tener cambios pendientes
+
+```bash
+git status
+```
+
+Idealmente debes ver algo equivalente a:
+
+```text
+nothing to commit, working tree clean
+```
+
+### Paso 3. Actualiza `main`
+
+```bash
+git pull origin main
+```
+
+### Paso 4. Crea una rama nueva
+
+```bash
+git switch -c <nombre-rama>
+```
+
+Por ejemplo:
+
+```bash
+git switch -c limpieza-nombres
+```
+
+Algunos equipos utilizan convenciones como:
+
+```text
+feature/nueva-variable
+fix/error-fechas
+docs/actualiza-readme
+```
+
+No es indispensable utilizar estos prefijos, pero el nombre de la rama sí debe ayudar a reconocer qué trabajo contiene.
+
+### Paso 5. Haz cambios
+
+Edita los archivos necesarios.
+
+Después revisa:
+
+```bash
+git status
+git diff
+```
+
+### Paso 6. Registra tus cambios
+
+```bash
+git add <archivo>
+git commit -m "Describe claramente el cambio"
+```
+
+Puedes hacer varios commits durante el desarrollo.
+
+### Paso 7. Sube la rama a GitHub
+
+La primera vez:
+
+```bash
+git push -u origin <nombre-rama>
+```
+
+Por ejemplo:
+
+```bash
+git push -u origin limpieza-nombres
+```
+
+Después normalmente basta con:
+
+```bash
+git push
+```
+
+La opción `-u` vincula tu rama local con la rama remota correspondiente.
+
+### Paso 8. Abre un Pull Request en GitHub
+
+En GitHub:
+
+1. abre el repositorio;
+2. ve a **Pull requests**;
+3. selecciona **New pull request**;
+4. verifica que la rama base sea `main`;
+5. selecciona tu rama como rama de comparación;
+6. escribe un título claro;
+7. explica brevemente qué hiciste;
+8. crea el Pull Request.
+
+Un Pull Request es una **propuesta para integrar cambios** de una rama a otra.
+
+No significa que los cambios ya hayan entrado a `main`.
+
+### Paso 9. Revisa los cambios antes del merge
+
+Dentro del Pull Request revisa:
+
+- archivos modificados;
+- diferencias introducidas;
+- comentarios de otras personas;
+- conflictos;
+- verificaciones automáticas, si existen.
+
+### Paso 10. Haz merge
+
+Cuando los cambios estén listos, integra el Pull Request desde GitHub.
+
+Después puedes eliminar la rama remota.
+
+### Paso 11. Actualiza tu copia local
+
+Regresa a `main`:
+
+```bash
+git switch main
+```
+
+Actualiza:
+
+```bash
+git pull origin main
+```
+
+Y elimina tu rama local si ya no la necesitas:
+
+```bash
+git branch -d <nombre-rama>
+```
+
+---
+
+## 8. El workflow completo
+
+```text
+                 GitHub
+                   main
+                    |
+                    v
+              git pull origin main
+                    |
+                    v
+Local           main actualizado
+                    |
+                    | git switch -c mi-rama
+                    v
+                 mi-rama
+                    |
+                    | editar
+                    | git add
+                    | git commit
+                    v
+              commits locales
+                    |
+                    | git push -u origin mi-rama
+                    v
+              rama en GitHub
+                    |
+                    v
+              Pull Request
+                    |
+             revisión / cambios
+                    |
+                    v
+                  merge
+                    |
+                    v
+              GitHub: main
+                    |
+                    | git switch main
+                    | git pull origin main
+                    v
+              Local: main
+```
+
+---
+
+# ¿Qué pasa cuando dos personas trabajan al mismo tiempo?
+
+## 9. Dos personas pueden modificar el mismo archivo
+
+Que dos personas cambien el mismo archivo **no significa automáticamente que habrá un conflicto**.
+
+Por ejemplo:
+
+```text
+Persona A modifica línea 10.
+Persona B modifica línea 80.
+```
+
+Git normalmente puede combinar ambos cambios.
+
+El problema aparece cuando Git no puede decidir con seguridad cuál debe ser el contenido final.
+
+Un caso común es:
+
+```text
+Persona A modifica línea 10.
+Persona B modifica la misma línea 10.
+```
+
+Entonces puede aparecer un **merge conflict**.
+
+También puede ocurrir, por ejemplo, cuando:
+
+- una persona modifica un archivo y otra lo elimina;
+- dos ramas hacen cambios incompatibles sobre el mismo fragmento;
+- una rama lleva mucho tiempo sin actualizarse y ha divergido considerablemente de `main`.
+
+---
+
+## 10. Antes de hablar de conflictos: una historia divergente
+
+Supongamos que ambas personas parten del mismo estado:
+
+```text
+A --- B
+```
+
+Persona 1 hace:
+
+```text
+A --- B --- C
+```
+
+Mientras Persona 2 hace:
+
+```text
+A --- B --- D
+```
+
+Ahora existen dos líneas de desarrollo:
+
+```text
+          C
+         /
+A --- B
+         \
+          D
+```
+
+Esto por sí mismo **no es un error**.
+
+Git intentará combinar ambas historias cuando corresponda.
+
+Si los cambios son compatibles, puede hacerlo automáticamente.
+
+Si no puede decidir cómo combinarlos, pide intervención humana.
+
+---
+
+## 11. Cómo prevenir muchos conflictos
+
+No existe una forma de evitar todos los conflictos, pero sí podemos reducirlos.
+
+### Antes de crear una rama
+
+Actualiza `main`:
+
+```bash
+git switch main
+git pull origin main
+git switch -c mi-rama
+```
+
+### Haz ramas pequeñas
+
+Una rama que existe durante poco tiempo tiene menos oportunidades de separarse demasiado de `main`.
+
+### Haz commits pequeños y claros
+
+Es más sencillo revisar y entender cambios acotados.
+
+### Coordinen cambios grandes
+
+Si dos personas necesitan reescribir al mismo tiempo el mismo archivo o la misma función, conviene acordar cómo dividir el trabajo.
+
+### No uses GitHub como Dropbox
+
+Evita que varias personas trabajen directamente sobre `main` y luego simplemente intenten hacer `push`.
+
+Las ramas y los Pull Requests existen precisamente para organizar este trabajo.
+
+---
+
+# Mantener una rama actualizada
+
+## 12. `fetch`, `pull` y `push`
+
+Estos comandos se parecen, pero hacen cosas distintas.
+
+### `git fetch`
+
+```bash
+git fetch
+```
+
+Consulta el repositorio remoto y descarga información sobre sus nuevos commits y ramas.
+
+**No modifica automáticamente tus archivos de trabajo.**
+
+Es útil para observar qué cambió en GitHub antes de integrar esos cambios.
+
+### `git pull`
+
+```bash
+git pull
+```
+
+Obtiene cambios del remoto e intenta incorporarlos a la rama actual.
+
+De manera conceptual:
+
+```text
+git pull ≈ git fetch + integración
+```
+
+### `git push`
+
+```bash
+git push
+```
+
+Envía al repositorio remoto los commits que ya existen en tu repositorio local.
+
+---
+
+## 13. Mi rama está atrasada respecto a `main`
+
+Mientras trabajabas, otra persona pudo haber integrado cambios a `main`.
+
+Entonces puedes tener:
+
+```text
+main:        A --- B --- C --- D
+                  \
+tu-rama:           E --- F
+```
+
+Antes de integrar tu trabajo conviene traer los cambios recientes de `main`.
+
+Una forma sencilla para este curso es:
+
+```bash
+git switch main
+git pull origin main
+git switch <tu-rama>
+git merge main
+```
+
+Si no existen conflictos, Git integrará los cambios.
+
+Después:
+
+```bash
+git push
+```
+
+Tu Pull Request quedará actualizado.
+
+::: {.callout-note}
+Git también permite actualizar una rama mediante `rebase`. Es una herramienta útil, pero modifica la forma en que se representa el historial. Para este curso utilizaremos `merge` para mantener el flujo inicial más explícito.
+:::
+
+GitHub también puede mostrar un botón **Update branch** en algunos Pull Requests cuando la rama está atrasada respecto a `main`.
+
+---
+
+# Conflictos
+
+## 14. ¿Qué es un merge conflict?
+
+Un conflicto aparece cuando Git encuentra cambios incompatibles y **no puede decidir cuál debe conservar**.
+
+Por ejemplo, partimos de:
+
+```text
+El resultado se guarda en CSV.
+```
+
+Persona A cambia la línea a:
+
+```text
+El resultado se guarda en Parquet.
+```
+
+Persona B cambia la misma línea a:
+
+```text
+El resultado se guarda en PostgreSQL.
+```
+
+Git no sabe cuál es la versión correcta.
+
+Eso requiere una decisión humana.
+
+---
+
+## 15. ¿Cómo sé que tengo un conflicto?
+
+Git puede mostrar algo parecido a:
+
+```text
+CONFLICT (content): Merge conflict in README.md
+Automatic merge failed; fix conflicts and then commit the result.
+```
+
+Lo primero que debes hacer es:
+
+```bash
+git status
+```
+
+Podrías ver:
+
+```text
+both modified: README.md
+```
+
+---
+
+## 16. ¿Cómo se ve un archivo con conflicto?
+
+Git agrega marcadores al archivo:
+
+```text
+<<<<<<< HEAD
+El resultado se guarda en Parquet.
+=======
+El resultado se guarda en PostgreSQL.
+>>>>>>> main
+```
+
+Estos marcadores tienen significado:
+
+```text
+<<<<<<< HEAD
+```
+
+inicio de una versión;
+
+```text
+=======
+```
+
+separación entre versiones;
+
+```text
+>>>>>>> main
+```
+
+fin de la otra versión.
+
+::: {.callout-warning}
+Estos símbolos no son la solución del conflicto. Son marcas temporales para mostrarte qué contenido está compitiendo.
+:::
+
+---
+
+## 17. Resolver un conflicto
+
+### Paso 1. Identifica los archivos
+
+```bash
+git status
+```
+
+### Paso 2. Abre el archivo
+
+Busca:
+
+```text
+<<<<<<<
+=======
+>>>>>>>
+```
+
+### Paso 3. Decide el contenido final
+
+Puedes:
+
+- conservar la primera versión;
+- conservar la segunda;
+- conservar partes de ambas;
+- escribir una tercera versión.
+
+Por ejemplo, podrías decidir que el resultado final sea:
+
+```text
+Los resultados tabulares se guardan en Parquet y los resultados consolidados se cargan a PostgreSQL.
+```
+
+### Paso 4. Elimina los marcadores
+
+El archivo final **no debe contener**:
+
+```text
+<<<<<<<
+=======
+>>>>>>>
+```
+
+### Paso 5. Marca el conflicto como resuelto
+
+```bash
+git add README.md
+```
+
+### Paso 6. Revisa
+
+```bash
+git status
+```
+
+### Paso 7. Termina la integración
+
+```bash
+git commit
+```
+
+o, si Git solicita un mensaje explícito:
+
+```bash
+git commit -m "Resuelve conflicto con main"
+```
+
+### Paso 8. Sube la rama
+
+```bash
+git push
+```
+
+El Pull Request se actualizará.
+
+---
+
+## 18. Resolver conflictos desde GitHub
+
+Para conflictos sencillos de líneas, GitHub puede mostrar el botón:
+
+```text
+Resolve conflicts
+```
+
+Desde ahí puedes editar el archivo, elegir el contenido final y marcarlo como resuelto.
+
+Para conflictos más complejos es mejor trabajar en tu repositorio local, donde puedes:
+
+- revisar el proyecto completo;
+- ejecutar código;
+- correr pruebas;
+- utilizar tu editor;
+- observar `git status`.
+
+---
+
+# Errores comunes
+
+## 19. `git push` es rechazado
+
+Un mensaje común es:
+
+```text
+! [rejected] ... (non-fast-forward)
+```
+
+o algo parecido a:
+
+```text
+Updates were rejected because the remote contains work that you do not have locally.
+```
+
+### ¿Qué significa?
+
+GitHub tiene commits que tu copia local todavía no conoce o no ha integrado.
+
+### ¿Qué NO hacer?
+
+No uses inmediatamente:
+
+```bash
+git push --force
+```
+
+Forzar un `push` puede sobrescribir historia remota.
+
+### ¿Qué hacer?
+
+Primero:
+
+```bash
+git status
+git fetch
+```
+
+Después identifica en qué rama estás y actualízala de acuerdo con el workflow.
+
+Si estás actualizando `main`:
+
+```bash
+git switch main
+git pull origin main
+```
+
+Si trabajas en una rama colaborativa, revisa qué commits existen antes de decidir cómo integrarlos.
+
+---
+
+## 20. No puedo cambiar de rama porque tengo cambios
+
+Puedes intentar:
+
+```bash
+git switch main
+```
+
+y recibir un mensaje equivalente a:
+
+```text
+Your local changes would be overwritten by checkout.
+```
+
+Git está protegiendo tus cambios.
+
+Primero revisa:
+
+```bash
+git status
+```
+
+Después decide qué corresponde.
+
+### Los cambios sí deben conservarse
+
+Haz un commit:
+
+```bash
+git add <archivo>
+git commit -m "Guarda avance"
+```
+
+### Los cambios no sirven y quieres descartarlos
+
+Para un archivo rastreado:
+
+```bash
+git restore <archivo>
+```
+
+::: {.callout-warning}
+`git restore` puede eliminar cambios no registrados en un commit. Revisa `git diff` antes de usarlo.
+:::
+
+---
+
+## 21. Agregué un archivo por error al staging area
+
+Si ejecutaste:
+
+```bash
+git add archivo.csv
+```
+
+pero todavía **no has hecho commit**, puedes retirarlo del staging area con:
+
+```bash
+git restore --staged archivo.csv
+```
+
+El archivo no se borra. Simplemente deja de estar preparado para el próximo commit.
+
+---
+
+## 22. Modifiqué algo y quiero ver exactamente qué hice
+
+```bash
+git diff
+```
+
+Si el archivo ya está en el staging area:
+
+```bash
+git diff --staged
+```
+
+---
+
+## 23. Hice un commit pero `git push` no sabe a qué rama subirlo
+
+Puedes ver un mensaje que mencione que la rama no tiene `upstream`.
+
+La primera vez utiliza:
+
+```bash
+git push -u origin <nombre-rama>
+```
+
+Después normalmente podrás usar:
+
+```bash
+git push
+```
+
+---
+
+## 24. Hice cambios en `main` por accidente
+
+Primero:
+
+```bash
+git status
+```
+
+### Todavía no hiciste commit
+
+Puedes crear una nueva rama conservando tus cambios:
+
+```bash
+git switch -c mi-rama
+```
+
+Ahora tus modificaciones permanecen contigo, pero ya estás trabajando en una rama distinta de `main`.
+
+### Ya hiciste commit
+
+No borres cosas al azar.
+
+Puedes crear una rama desde el estado actual:
+
+```bash
+git switch -c mi-rama
+```
+
+Después habrá que decidir cómo debe quedar `main` dependiendo de si el commit ya fue enviado al remoto.
+
+En trabajo colaborativo, si el commit ya llegó a `main`, normalmente es preferible corregirlo con otro cambio en lugar de reescribir historia compartida.
+
+---
+
+## 25. `git pull` dice que las ramas han divergido
+
+Esto significa que existen commits locales y remotos diferentes.
+
+Conceptualmente:
+
+```text
+          C_local
+         /
+A --- B
+         \
+          D_remote
+```
+
+No significa que hayas perdido tu trabajo.
+
+Primero revisa:
+
+```bash
+git status
+git log --oneline --graph --all
+```
+
+Para el flujo inicial del curso, evita resolverlo mediante comandos destructivos o `--force`.
+
+La estrategia correcta depende de:
+
+- qué rama estás usando;
+- si los commits locales deben conservarse;
+- si la rama es compartida;
+- si existe un Pull Request.
+
+---
+
+## 26. Git abre Vim y no sé qué pasó
+
+A veces Git necesita que confirmes o edites un mensaje de commit, por ejemplo durante un merge.
+
+Si se abrió Vim:
+
+1. presiona `Esc`;
+2. escribe:
+
+```text
+:wq
+```
+
+3. presiona `Enter`.
+
+Esto guarda el mensaje y cierra Vim.
+
+Para salir sin guardar:
+
+```text
+:q!
+```
+
+---
+
+## 27. Tengo un archivo que Git no debería rastrear
+
+Utiliza `.gitignore`.
+
+Ejemplo:
+
+```gitignore
+.env
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+data/raw/
+```
+
+El archivo `.gitignore` indica qué archivos o patrones Git debe ignorar.
+
+::: {.callout-warning}
+`.gitignore` no elimina automáticamente archivos que Git **ya estaba rastreando**.
+:::
+
+Nunca deberías subir al repositorio:
+
+- contraseñas;
+- tokens;
+- llaves privadas;
+- archivos `.env` con credenciales.
+
+---
+
+## 28. ¿Y `.gitkeep`?
+
+Git no registra carpetas vacías; registra archivos.
+
+Por eso algunos proyectos agregan un archivo vacío llamado:
+
+```text
+.gitkeep
+```
+
+para conservar una carpeta dentro de la estructura del repositorio.
+
+`.gitkeep` es una convención, no una funcionalidad especial de Git.
+
+---
+
+# Issues y Pull Requests
+
+## 29. ¿Para qué sirve un issue?
+
+Un **issue** permite registrar una tarea, problema o propuesta.
+
+Puede incluir:
+
+- objetivo;
+- contexto;
+- criterios de terminación;
+- persona responsable;
+- etiquetas;
+- conversación.
+
+Por ejemplo:
+
+```text
+Issue #12
+Agregar validación de nombres de columnas
+```
+
+Después puedes crear una rama relacionada:
+
+```text
+issue-12-validacion-columnas
+```
+
+o:
+
+```text
+fix/12-validacion-columnas
+```
+
+No todos los cambios pequeños necesitan necesariamente un issue, pero en proyectos colaborativos ayudan a organizar el trabajo.
+
+---
+
+## 30. Relacionar un Pull Request con un issue
+
+En la descripción de un Pull Request puedes escribir, por ejemplo:
+
+```text
+Closes #12
+```
+
+Cuando el Pull Request se integra, GitHub puede cerrar automáticamente el issue relacionado.
+
+---
+
+# Comandos útiles
+
+## 31. Mapa rápido
+
+| Objetivo | Comando |
+|---|---|
+| Ver estado | `git status` |
+| Ver ramas | `git branch` |
+| Ver remotos | `git remote -v` |
+| Ver historial compacto | `git log --oneline --graph --all` |
+| Ver cambios | `git diff` |
+| Ver cambios preparados | `git diff --staged` |
+| Agregar archivo | `git add <archivo>` |
+| Registrar commit | `git commit -m "mensaje"` |
+| Descargar información remota | `git fetch` |
+| Actualizar rama | `git pull` |
+| Subir commits | `git push` |
+| Cambiar de rama | `git switch <rama>` |
+| Crear y cambiar a rama | `git switch -c <rama>` |
+| Integrar otra rama | `git merge <rama>` |
+| Descartar cambios locales de un archivo | `git restore <archivo>` |
+| Quitar archivo del staging | `git restore --staged <archivo>` |
+| Eliminar rama local integrada | `git branch -d <rama>` |
+
+---
+
+# Una práctica colaborativa
+
+## 32. Parte A. Flujo básico
+
+En parejas:
+
+1. clonen el mismo repositorio;
+2. cada persona cree una rama distinta;
+3. cada persona cree un archivo diferente;
+4. hagan al menos un commit;
+5. suban las ramas;
+6. creen un Pull Request;
+7. revisen el Pull Request de la otra persona;
+8. hagan merge.
+
+Al terminar:
+
+```bash
+git switch main
+git pull origin main
+```
+
+Ambas personas deberían tener los dos archivos.
+
+---
+
+## 33. Parte B. Dos personas modifican el mismo archivo sin conflicto
+
+Partan de un archivo:
+
+```text
+equipo.txt
+```
+
+con al menos 10 líneas.
+
+- Persona A modifica la línea 2.
+- Persona B modifica la línea 9.
+
+Cada persona trabaja en su propia rama.
+
+Después creen Pull Requests e integren ambos.
+
+### Pregunta
+
+¿Por qué Git pudo combinar los cambios automáticamente?
+
+---
+
+## 34. Parte C. Crear un conflicto intencionalmente
+
+Ahora ambas personas modificarán **la misma línea** de `equipo.txt`, cada una desde su propia rama.
+
+1. Persona A modifica la línea.
+2. Persona B modifica la misma línea de manera diferente.
+3. Ambas hacen commit y push.
+4. Integren primero uno de los Pull Requests.
+5. Observen qué ocurre con el segundo.
+6. Actualicen la segunda rama con `main`.
+7. Identifiquen los marcadores:
+
+```text
+<<<<<<<
+=======
+>>>>>>>
+```
+
+8. Acuerden cuál debe ser el contenido final.
+9. Resuelvan el conflicto.
+10. Hagan commit y push.
+11. Revisen nuevamente el Pull Request.
+
+### Discusión
+
+- ¿Por qué Git no podía resolver el cambio solo?
+- ¿Resolver un conflicto significa necesariamente elegir una de las dos versiones?
+- ¿Qué prácticas podrían haber reducido la probabilidad de conflicto?
+
+---
+
+## 35. Parte D. Diagnóstico
+
+Para cada escenario, antes de ejecutar un comando responde:
+
+**¿Qué observarías primero?**
+
+### Escenario 1
+
+```text
+git push
+! [rejected] ... non-fast-forward
+```
+
+### Escenario 2
+
+```text
+Your local changes would be overwritten by checkout.
+```
+
+### Escenario 3
+
+```text
+both modified: README.md
+```
+
+### Escenario 4
+
+Tu rama está en GitHub, pero tiene tres commits menos que `main`.
+
+### Escenario 5
+
+Ejecutaste accidentalmente:
+
+```bash
+git add datos.csv
+```
+
+pero todavía no has hecho commit.
+
+La respuesta debería comenzar casi siempre por observar el estado del repositorio:
+
+```bash
+git status
+```
+
+y, cuando sea necesario, el historial:
+
+```bash
+git log --oneline --graph --all
+```
+
+---
+
+# Buenas prácticas
+
+## 36. Antes de trabajar
+
+```bash
+git switch main
+git pull origin main
+git switch -c mi-rama
+```
+
+## 37. Mientras trabajas
+
+Haz cambios acotados.
+
+Revisa frecuentemente:
+
+```bash
+git status
+git diff
+```
+
+Haz commits con sentido:
+
+```bash
+git add <archivo>
+git commit -m "Describe el cambio"
+```
+
+## 38. Antes de abrir o actualizar un Pull Request
+
+Pregunta:
+
+- ¿estoy en la rama correcta?;
+- ¿subí todos mis commits?;
+- ¿mi rama está razonablemente actualizada?;
+- ¿incluí archivos que no deberían estar?;
+- ¿el código sigue funcionando?;
+- ¿el Pull Request contiene solamente los cambios relacionados con la tarea?
+
+## 39. Cuando algo sale mal
+
+Evita copiar y pegar comandos destructivos sin entenderlos.
+
+Especialmente ten cuidado con:
+
+```bash
+git push --force
+git reset --hard
+git clean -fd
+```
+
+Estos comandos tienen usos legítimos, pero pueden eliminar o reescribir trabajo.
+
+Primero observa:
+
+```bash
+git status
+git diff
+git log --oneline --graph --all
+```
+
+---
+
+# La idea central
+
+Git no es solamente una forma de “subir archivos”.
+
+Es una herramienta para registrar y combinar **historias de cambios**.
+
+En trabajo colaborativo, la pregunta importante no es:
+
+> ¿Cuál archivo es el más nuevo?
+
+sino:
+
+> ¿Qué cambios hizo cada persona y cómo deben integrarse?
+
+Si entiendes esa idea, los mensajes de Git dejan de parecer errores misteriosos y empiezan a convertirse en información sobre el estado de tu proyecto.
+
+---
+
+# Referencias
+
+- GitHub Docs. *GitHub flow*: <https://docs.github.com/en/get-started/using-github/github-flow>
+- GitHub Docs. *Pull requests*: <https://docs.github.com/en/pull-requests>
+- GitHub Docs. *Merge conflicts*: <https://docs.github.com/en/pull-requests/reference/merge-conflicts>
+- GitHub Docs. *Resolving a merge conflict using the command line*: <https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/resolving-a-merge-conflict-using-the-command-line>
+- GitHub Docs. *Keeping your pull request in sync with the base branch*: <https://docs.github.com/en/pull-requests/how-tos/create-pull-requests/keeping-your-pull-request-in-sync-with-the-base-branch>
+# Git/GitHub/Gitlab
+
+En el mundo del desarrollo de software y la ciencia de datos, es **fundamental poder colaborar en proyectos**
+y gestionar versiones de código de manera eficiente. Para esto, utilizamos Git, 
+un **sistema de control de versiones distribuido**. 
+
+Git nos permite registrar cambios en el código a lo largo del tiempo, revertir esos cambios cuando sea necesario, y colaborar con otros desarrolladores sin conflictos.
+
+## ¿Qué es git?
+
+[<img src="https://git-scm.com/images/logo@2x.png" width="140"/>](https://git-scm.com/)
+
+Git es una herramienta que rastrea los cambios en archivos y proyectos a lo largo del tiempo. Nos permite:
+
+- Guardar "instantáneas" (commits) del estado actual de nuestro proyecto.
+- Deshacer errores volviendo a versiones anteriores.
+- Lleva un registro de quién hizo qué cambios y cuándo los hizo.
+- Facilitar la colaboración en equipo mediante ramas que permiten trabajar en paralelo.
+
+Git en sí mismo **es una herramienta local**. Sin embargo, cuando necesitamos colaborar o compartir nuestro código, 
+es donde entran en juego plataformas como GitHub y GitLab.
+
+### Gitlab vs GitHub
+
+Aunque GitHub y GitLab ofrecen servicios muy similares, existen algunas diferencias importantes que vale la pena destacar.
+
+- GitHub: Es una plataforma popular que aloja repositorios de Git en la nube, permitiendo a los desarrolladores 
+colaborar en proyectos de código abierto y privado. Es ampliamente utilizado en la comunidad de desarrollo de 
+software y permite la integración con muchas herramientas y servicios de terceros.
+
+[<img src="https://cdn.prod.website-files.com/5f5a53e153805db840dae2db/64e79ca5aff2fb7295bfddf9_github-que-es.jpg" width="140"/>](https://github.com/)
+
+- GitLab: Es otra plataforma que también aloja repositorios de Git, pero su diferencia clave es que ofrece una solución completa de [DevOps]https://www.netapp.com/es/devops-solutions/what-is-devops/). GitLab no solo gestiona el
+código, sino que también incluye herramientas para la integración continua y un sistema de gestión de tareas.
+GitLab puede ser alojado en servidores propios, lo que ofrece más control y seguridad para empresas que lo requieren.
+
+[<img src="https://about.gitlab.com/images/press/logo/print/jpg/gitlab-logo-150.jpg" width="140"/>](gitlab.com)
+
+Ambas plataformas permiten la colaboración, pero GitHub es más conocido por proyectos de código abierto y GitLab es preferido por equipos que buscan una solución más integral para todo el ciclo de vida del desarrollo de software.
+
+## Configuración inicial de trabajo con repositorios
+
+Lo primero es clonar el repositorio con el que vayas a trabajar. 
+
+2. Clona el repositorio
+```{.sh}
+git clone <URL>
+```
+
+Cosas a considerar:
+
+- Recuerda que cada autor tiene su propia copia de todos los documentos y su historia
+- Una cosa es el trabajo que hagas en tu repositorio local (para efectos de la clase bastión) y otra lo que hagas en gitlab (la página del repositorio o el repositorio remoto), por lo que, recuerda **siempre actualizar tu local para que coincida con lo que tienes en línea**. 
+
+### Lingo
+
+- Clonar: Crea una copia del repositorio
+- Commit/comitear: Le avisa a git que tienes cambios permanentes
+- Push: publica los commits en repositorios remotos
+- Pull: Obtiene los cambios en repositorios remotos y los acopla a tu repositorio local (merge)
+- Fetch: Descarga confirmaciones, archivos y referencias de un repositorio remoto a tu repositorio local.
+- Branches: Versiones alternativas de los documentos, que evita molestar a otros mientras desarrollas tu propio código.
+- Merge: Combinas los cambios de una rama a otra
+
+###  Comandos: 
+
+- Checa el status del repositorio. Este comando no hace nunca daño, aplícalo antes de de hacer algún cambio. 
+```{.sh}
+git status
+```
+
+- Agregar un archivo
+```{.sh}
+git add <file_name>
+```
+
+- Comprometerte con un cambio
+```{.sh}
+git commit -m  "<tu comentario que explique el cambio>"
+```
+
+- Publica los cambios y commits en el repositorio remoto. 
+```{.sh}
+git push
+```
+
+- Para bajar los cambios de una rama y mergearlos con tu rama
+```{.sh}
+git pull origin "<rama>"
+```
+
+- Para bajar información del repositorio remoto sin fusionar cambios a tu rama de trabajo actual
+```{.sh}
+git fetch
+```
+
+- Para ver en qué rama estás
+```{.sh}
+git branch
+```
+
+- Para cambiar de rama
+```{.sh}
+git switch <nombre_rama>
+```
+
+- Para eliminar una rama
+```{.sh}
+git branch -d <nombre_rama>
+```
+
+- Para ver la historia de un cambio
+```{.sh}
+git log
+```
+
+- Para ver la historia en gráfico
+```{.sh}
+git log --graph
+```
+
+- Para ver las diferencias de código entre commits de archivos
+```{.sh}
+git diff <file_name>
+```
+
+- Para ver las diferencias de código en archivos
+```{.sh}
+git diff --stagged
+```
+
+- Para restaurar un archivo que le estamos haciendo cambios
+```{.sh}
+git restore <file_name>
+```
+
+## Práctica
+
+### Parte a: flujo básico
+
+- Comandos *safe* y que siempre puedes hacer:
+
+```
+git status
+git branch
+```
+
+- Comandos para agregar cambios: 
+
+```
+nano prueba.txt
+git add prueba.txt
+git commit -m "Agrego mi draft de archivo"
+git push 
+```
+
+- Observa como el archivo aparece en el repositorio
+
+### Parte b: conflictos y resolución
+
+- Bajar los cambios a mi computadora local (asumiendo usuario diferente)
+- Hacer cambios sobre ese archivo y volver a subirlos (ok).
+- Sí dos personas editan el mismo archivo se genera un conflicto
+- Se deben de seleccionar los cambios con los que queremos quedarnos
+    - `<<<<<<< HEAD` y `>>>>>>> branch`
+
+### Parte c: branches y trabajo paralelo
+
+- Generar una branch vinculada a un issue
+- El issue se genera en Gitlab
+- La branch se puede generar desde el repositorio en git o en Gitlab
+- Generar un archivo diferente por cada usuario
+- Mergear los cambios a main
+- ¿Qué hace este comando? `git log --oneline --graph --all`
+
+<div align="center">
+<img src="../imgs/error_same_file_git.png" width="500">
+</div>
+
+
+
+## Archivos de trabajo con git:
+
+- ¿Qué hace el archivo `.gitkeep`? Git por default ignora las carpetas vacías, al agregar un archivo `.gitkeep`
+ dentro del folder te permite agregar la carpeta y así mantener una estructura del repositorio. 
+- ¿Qué hace el archivo `.gitignore`? Especifica los archivos que intencionalmente no quieres que git los
+ rastrea, es decir, los _ignora_
+- Revisa el repositorio en gitlab ve a `Code>Repository graph` y observa el funcionamiento de ese gráfico,
+ ¿qué nos está diciendo?
+- **Merge request**: Es una propuesta a incorporar los cambios desde una rama a otra, lo estaremos haciendo a través de gitlab, cuando querramos mergear los cambios a develop, y cuando querramos incorporar los cambios desde develop a nuestras ramas de trabajo, entonces se realizará con `git pull origin develop`.
+
+## Git pull: Fast-Forward y Merge Commit
+
+
+- **Fast-forward:** se refiere a cuando tu rama puede avanzar directamente hasta el nuevo commit del remoto.
+
+Si el repositorio remoto avanzó el línea recta **sin que tú hiceras commits locales**, tu rama se mueve hacia adelante. 
+
+```
+Tú (local):   A --- B
+Remoto:       A --- B --- C --- D
+```
+
+Cuando hacer `git pull`, tu rama puede "avanzar" de `B` a `D` sin problemas. 
+
+
+- **Merge commit:** sucede cuanto tu rama diverge de la del remoto. Es decir, tú y otra persona (o tu mismo en otro servidor) hicieron commits diferentes en paralelo. Otra 
+manera de verlo es que hay dos ramas distintas que hay que unir, independientemente de qué archivos tocaron.
+
+```
+Tú (local):   A --- B --- C_local
+Remoto:       A --- B --- D_remote
+```
+
+Aquí, no se puede simplemente "avanzar", porque hay dos caminos diferentes en C y D. 
+
+- Git necesita unir ambas historias con un nuevo commit  que incorpora ambos cambios, y usualmente git abre un editor de texto (Vim) para que escribas el mensaje de ese merge. 
+
+
+```
+A --- B --- C_local
+           \ 
+            --- M (merge commit)
+           /
+          D_remote
+
+```
+
+
+
+
+
+
+
+
+
+
+
