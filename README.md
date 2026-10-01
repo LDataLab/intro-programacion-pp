@@ -75,7 +75,7 @@
 
 
 
-### Referencias 
+### Referencias revisar 
 - Jeroen Janssens (2021) Data Science at the Command Line.
 - Reginald Boman & Aingaran Balan Raman, Computational Thinking with Python: An Introductory Approach to Python Programming, Kendall Hunt Publishing, 2021.
 - Downey, A. B., hink python: How to think like a computer scientist , 2a. edición, O’Reilly Media, 2015.
