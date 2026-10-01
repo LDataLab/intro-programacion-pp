@@ -42,8 +42,12 @@ bibliography: references.bib
 ::: {.callout-tip collapse="false"}
 ### 03. Git/GitHub
 
-- Desde lo básico hasta flujos de trabajo adecuados 
+- Control de versiones básico para trabajo individual y colaborativo
     - [Material 04](materiales/m04_git_github.html) 
+
+- Control de versiones avanzado: colaboración y resolución de conflictos
+    - [Material 05](materiales/m05_git_avanzado.html) 
+
 
 :::
 
