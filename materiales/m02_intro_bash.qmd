@@ -405,9 +405,8 @@ Ahora:
 
 1. copia `notas.txt`;
 2. cambia el nombre de la copia;
-3. vuelve al directorio `practica_bash`;
-4. entra a `resultados`;
-5. regresa al directorio anterior utilizando `cd -`.
+3. y colócala en `resultados`;
+4. regresa al directorio anterior utilizando `cd -`.
 
 Al terminar intenta responder:
 
