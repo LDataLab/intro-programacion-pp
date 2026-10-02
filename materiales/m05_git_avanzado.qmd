@@ -57,18 +57,10 @@ Cosas a considerar:
 - Recuerda que cada autor tiene su propia copia de todos los documentos y su historia
 - Una cosa es el trabajo que hagas en tu repositorio local (para efectos de la clase bastión) y otra lo que hagas en gitlab (la página del repositorio o el repositorio remoto), por lo que, recuerda **siempre actualizar tu local para que coincida con lo que tienes en línea**. 
 
-### Lingo
 
-- Clonar: Crea una copia del repositorio
-- Commit/comitear: Le avisa a git que tienes cambios permanentes
-- Push: publica los commits en repositorios remotos
-- Pull: Obtiene los cambios en repositorios remotos y los acopla a tu repositorio local (merge)
-- Fetch: Descarga confirmaciones, archivos y referencias de un repositorio remoto a tu repositorio local.
-- Branches: Versiones alternativas de los documentos, que evita molestar a otros mientras desarrollas tu propio código.
-- Merge: Combinas los cambios de una rama a otra
+##  `.gitignore`.
 
-
-## Tengo un archivo que Git no debería rastrear
+> Tengo un archivo que Git no debería rastrear
 
 Utiliza `.gitignore`.
 
@@ -196,13 +188,9 @@ git pull origin main
 git switch -c mi-rama
 ```
 
-### Haz ramas pequeñas
+- **Haz ramas pequeñas**: Una rama que existe durante poco tiempo tiene menos oportunidades de separarse demasiado de `main`.
 
-Una rama que existe durante poco tiempo tiene menos oportunidades de separarse demasiado de `main`.
-
-### Haz commits pequeños y claros
-
-Es más sencillo revisar y entender cambios acotados.
+- **Haz commits pequeños y claros:** Es más sencillo revisar y entender cambios acotados.
 
 ### Coordinen cambios grandes
 
@@ -212,7 +200,7 @@ Si dos personas necesitan reescribir al mismo tiempo el mismo archivo o la misma
 
 Evita que varias personas trabajen directamente sobre `main` y luego simplemente intenten hacer `push`.
 
-Las ramas y los Pull Requests existen precisamente para organizar este trabajo.
+Las ramas y los pull requests existen precisamente para organizar este trabajo.
 
 
 # Mantener una rama actualizada
@@ -270,7 +258,7 @@ tu-rama:           E --- F
 
 Antes de integrar tu trabajo conviene traer los cambios recientes de `main`.
 
-Una forma sencilla para este curso es:
+Una forma sencilla es:
 
 ```bash
 git switch main
@@ -295,7 +283,6 @@ Git también permite actualizar una rama mediante `rebase`. Es una herramienta �
 
 GitHub también puede mostrar un botón **Update branch** en algunos Pull Requests cuando la rama está atrasada respecto a `main`.
 
----
 
 # Conflictos
 
@@ -320,11 +307,11 @@ Git no sabe cuál es la versión correcta.
 - Eso requiere una decisión humana.
 
 
-## 4. ¿Cómo sé que tengo un conflicto?
+### ¿Cómo sé que tengo un conflicto?
 
 Git puede mostrar algo parecido a:
 
-```text
+```python
 CONFLICT (content): Merge conflict in README.md
 Automatic merge failed; fix conflicts and then commit the result.
 ```
@@ -337,16 +324,16 @@ git status
 
 Podrías ver:
 
-```text
+```python
 both modified: README.md
 ```
 
 
-## 5. ¿Cómo se ve un archivo con conflicto?
+### ¿Cómo se ve un archivo con conflicto?
 
 Git agrega marcadores al archivo:
 
-```text
+```python
 <<<<<<< HEAD
 El resultado se guarda en Parquet.
 =======
@@ -356,19 +343,19 @@ El resultado se guarda en PostgreSQL.
 
 Estos marcadores tienen significado:
 
-```text
+```python
 <<<<<<< HEAD
 ```
 
 inicio de una versión;
 
-```text
+```python
 =======
 ```
 
 separación entre versiones;
 
-```text
+```python
 >>>>>>> main
 ```
 
@@ -391,7 +378,7 @@ git status
 
 Busca:
 
-```text
+```python
 <<<<<<<
 =======
 >>>>>>>
@@ -416,7 +403,7 @@ Los resultados tabulares se guardan en Parquet y los resultados consolidados se 
 
 El archivo final **no debe contener**:
 
-```text
+```python
 <<<<<<<
 =======
 >>>>>>>
@@ -476,7 +463,7 @@ Para conflictos más complejos es mejor trabajar en tu repositorio local, donde 
 
 # Errores comunes
 
-## 8. `git push` es rechazado
+## 1. `git push` es rechazado
 
 Un mensaje común es:
 
@@ -490,11 +477,11 @@ o algo parecido a:
 Updates were rejected because the remote contains work that you do not have locally.
 ```
 
-### ¿Qué significa?
+#### ¿Qué significa?
 
 GitHub tiene commits que tu copia local todavía no conoce o no ha integrado.
 
-### ¿Qué NO hacer?
+#### ¿Qué NO hacer?
 
 No uses inmediatamente:
 
@@ -504,7 +491,7 @@ git push --force
 
 Forzar un `push` puede sobrescribir historia remota.
 
-### ¿Qué hacer?
+#### ¿Qué hacer?
 
 Primero:
 
@@ -525,7 +512,7 @@ git pull origin main
 Si trabajas en una rama colaborativa, revisa qué commits existen antes de decidir cómo integrarlos.
 
 
-## 9. No puedo cambiar de rama porque tengo cambios
+## 2. No puedo cambiar de rama porque tengo cambios
 
 Puedes intentar:
 
@@ -571,7 +558,7 @@ git restore <archivo>
 :::
 
 
-## 10. Agregué un archivo por error al staging area
+## 3. Agregué un archivo por error al staging area
 
 Si ejecutaste:
 
@@ -588,7 +575,7 @@ git restore --staged archivo.csv
 El archivo no se borra. Simplemente deja de estar preparado para el próximo commit.
 
 
-## 11. Modifiqué algo y quiero ver exactamente qué hice
+## 4. Modifiqué algo y quiero ver exactamente qué hice
 
 ```bash
 git diff
@@ -601,7 +588,7 @@ git diff --staged
 ```
 
 
-## 12. Hice un commit pero `git push` no sabe a qué rama subirlo
+## 5. Hice un commit pero `git push` no sabe a qué rama subirlo
 
 Puedes ver un mensaje que mencione que la rama no tiene `upstream`.
 
@@ -618,7 +605,7 @@ git push
 ```
 
 
-## 13. Hice cambios en `main` por accidente
+## 6. Hice cambios en `main` por accidente
 
 Primero:
 
@@ -651,7 +638,7 @@ Después habrá que decidir cómo debe quedar `main` dependiendo de si el commit
 En trabajo colaborativo, si el commit ya llegó a `main`, normalmente es preferible corregirlo con otro cambio en lugar de reescribir historia compartida.
 
 
-## 14. `git pull` dice que las ramas han divergido
+## 7. `git pull` dice que las ramas han divergido
 
 Esto significa que existen commits locales y remotos diferentes.
 
@@ -684,7 +671,7 @@ La estrategia correcta depende de:
 - si existe un Pull Request.
 
 
-## 15. Git abre Vim y no sé qué pasó
+## 8. Git abre Vim y no sé qué pasó
 
 A veces Git necesita que confirmes o edites un mensaje de commit, por ejemplo durante un merge.
 
@@ -711,7 +698,7 @@ Para salir sin guardar:
 
 # Issues y Pull Requests
 
-## 16. ¿Para qué sirve un issue?
+## ¿Para qué sirve un issue?
 
 Un **issue** permite registrar una tarea, problema o propuesta.
 
@@ -746,7 +733,7 @@ fix/12-validacion-columnas
 No todos los cambios pequeños necesitan necesariamente un issue, pero en proyectos colaborativos ayudan a organizar el trabajo.
 
 
-## 17. Relacionar un Pull Request con un issue
+## Relacionar un Pull Request con un issue
 
 En la descripción de un Pull Request puedes escribir, por ejemplo:
 
