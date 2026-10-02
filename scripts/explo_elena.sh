@@ -2,6 +2,7 @@
 
 echo "Explorando datos"
 echo "hola"
+echo "adions"
 date
 
 echo "Directorio:"
