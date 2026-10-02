@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo "Explorando datos"
-
+echo "hola"
 date
 
 echo "Directorio:"
