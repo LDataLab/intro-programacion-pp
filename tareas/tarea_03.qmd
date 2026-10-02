@@ -1,3 +1,214 @@
+
+# Una práctica colaborativa
+
+## 32. Parte A. Flujo básico
+
+En parejas:
+
+1. clonen el mismo repositorio;
+2. cada persona cree una rama distinta;
+3. cada persona cree un archivo diferente;
+4. hagan al menos un commit;
+5. suban las ramas;
+6. creen un Pull Request;
+7. revisen el Pull Request de la otra persona;
+8. hagan merge.
+
+Al terminar:
+
+```bash
+git switch main
+git pull origin main
+```
+
+Ambas personas deberían tener los dos archivos.
+
+---
+
+## 33. Parte B. Dos personas modifican el mismo archivo sin conflicto
+
+Partan de un archivo:
+
+```text
+equipo.txt
+```
+
+con al menos 10 líneas.
+
+- Persona A modifica la línea 2.
+- Persona B modifica la línea 9.
+
+Cada persona trabaja en su propia rama.
+
+Después creen Pull Requests e integren ambos.
+
+### Pregunta
+
+¿Por qué Git pudo combinar los cambios automáticamente?
+
+---
+
+## 34. Parte C. Crear un conflicto intencionalmente
+
+Ahora ambas personas modificarán **la misma línea** de `equipo.txt`, cada una desde su propia rama.
+
+1. Persona A modifica la línea.
+2. Persona B modifica la misma línea de manera diferente.
+3. Ambas hacen commit y push.
+4. Integren primero uno de los Pull Requests.
+5. Observen qué ocurre con el segundo.
+6. Actualicen la segunda rama con `main`.
+7. Identifiquen los marcadores:
+
+```text
+<<<<<<<
+=======
+>>>>>>>
+```
+
+8. Acuerden cuál debe ser el contenido final.
+9. Resuelvan el conflicto.
+10. Hagan commit y push.
+11. Revisen nuevamente el Pull Request.
+
+### Discusión
+
+- ¿Por qué Git no podía resolver el cambio solo?
+- ¿Resolver un conflicto significa necesariamente elegir una de las dos versiones?
+- ¿Qué prácticas podrían haber reducido la probabilidad de conflicto?
+
+---
+
+## 35. Parte D. Diagnóstico
+
+Para cada escenario, antes de ejecutar un comando responde:
+
+**¿Qué observarías primero?**
+
+### Escenario 1
+
+```text
+git push
+! [rejected] ... non-fast-forward
+```
+
+### Escenario 2
+
+```text
+Your local changes would be overwritten by checkout.
+```
+
+### Escenario 3
+
+```text
+both modified: README.md
+```
+
+### Escenario 4
+
+Tu rama está en GitHub, pero tiene tres commits menos que `main`.
+
+### Escenario 5
+
+Ejecutaste accidentalmente:
+
+```bash
+git add datos.csv
+```
+
+pero todavía no has hecho commit.
+
+La respuesta debería comenzar casi siempre por observar el estado del repositorio:
+
+```bash
+git status
+```
+
+y, cuando sea necesario, el historial:
+
+```bash
+git log --oneline --graph --all
+```
+
+
+
+# Práctica: primera exploración de datos
+
+Solo utiliza *CLI* para responder las siguientes preguntas sobre `datos_agua.csv`.
+
+## Parte 1. Conocer el archivo
+
+1. ¿En qué directorio está almacenado?
+2. ¿Cuánto pesa?
+3. ¿Cuántas líneas tiene?
+4. ¿Cuántas observaciones tiene si quitamos el encabezado?
+5. ¿Cuáles son las primeras cinco filas?
+6. ¿Cuáles son las últimas cinco filas?
+
+## Parte 2. Entender la estructura
+
+Observa el encabezado:
+
+```{.sh}
+head -n 1 datos_agua.csv
+```
+
+Responde:
+
+1. ¿Cuántas variables parece tener?
+2. ¿Qué variables parecen numéricas?
+3. ¿Qué variables parecen categóricas?
+4. ¿Hay alguna variable que parezca una fecha o identificador?
+
+No importa todavía si no sabemos exactamente qué significa cada campo. La idea es aprender a hacer una **primera inspección**.
+
+## Parte 3. Construir un pipeline
+
+Intenta explicar, de izquierda a derecha, qué hace:
+
+```{.sh}
+tail -n +2 datos_agua.csv | cut -d',' -f2 | sort | uniq -c | sort -nr | head
+```
+
+Después modifica el comando para explorar otra columna.
+
+
+# Práctica: combina comandos
+
+Intenta resolver los siguientes ejercicios utilizando solamente Bash.
+
+1. Muestra las primeras 15 líneas de `datos_agua.csv`.
+
+2. Muestra las últimas 20 líneas.
+
+3. Cuenta cuántas observaciones contiene el archivo sin contar el encabezado.
+
+4. Guarda las primeras 50 líneas dentro de:
+
+```text
+datos_agua_50.csv
+```
+
+5. Comprueba cuántas líneas tiene el nuevo archivo.
+
+6. Selecciona dos columnas y muestra solamente las primeras diez filas.
+
+7. Selecciona una columna categórica y encuentra los valores que aparecen con mayor frecuencia.
+
+8. Busca un valor que hayas observado previamente en los datos.
+
+9. Cuenta cuántas líneas contienen ese valor.
+
+10. Repite la búsqueda ignorando mayúsculas y minúsculas. ¿Cambia el resultado?
+
+11. Utiliza al menos tres comandos conectados con `|` para contestar una pregunta sencilla sobre los datos.
+
+La idea no es memorizar cada comando. La pregunta importante es:
+
+> ¿Qué información quiero obtener y qué operaciones pequeñas puedo combinar para obtenerla?
+
+
+
 ## Parte 6. Instalar `uv`
 
 Durante el curso utilizaremos **`uv`** para administrar:
