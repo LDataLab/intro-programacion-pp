@@ -10,5 +10,5 @@ pwd
 echo "Archivos:"
 ls -lh
 echo "nueva linea al final"
-echo "otra al final explo 2"
+echo "otra al final main"
 
