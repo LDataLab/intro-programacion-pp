@@ -51,11 +51,11 @@ bibliography: references.bib
 
 :::
 
-::: {.callout-caution collapse="true"}
+::: {.callout-caution collapse="false"}
 ### 04. Ambientes virtuales Python
 
 - Estructura para un buen funcionamiento de Python
-    - [Material 05](materiales/m05_python.html) 
+    - [Material 06](materiales/m06_python.html) 
 
 :::
 
