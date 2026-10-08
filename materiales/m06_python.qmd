@@ -1,0 +1,362 @@
+---
+title: "Proyectos y ambientes virtuales con uv"
+subtitle: "Python: dependencias y reproducibilidad"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# ¿Por qué necesitamos ambientes virtuales?
+
+Cuando trabajamos con Python, nuestros proyectos suelen utilizar bibliotecas externas, como `pandas`, `numpy` o `requests`. Estas bibliotecas también pueden depender de otras bibliotecas y de versiones específicas de Python.
+
+Un **ambiente virtual** es un espacio aislado donde instalamos las dependencias de un proyecto, sin modificar las de otros proyectos o las de Python instalado en el sistema.
+
+Por ejemplo, dos proyectos pueden requerir versiones diferentes de `pandas`. Un ambiente virtual permite mantenerlas separadas.
+
+::: {.callout-note}
+## Tres conceptos distintos
+- **Python:** el lenguaje y su intérprete.
+- **Ambiente virtual (`.venv`):** el espacio aislado donde se instalan paquetes.
+- **Gestor de dependencias:** herramienta para declarar, instalar y actualizar las bibliotecas que necesita el proyecto.
+:::
+
+Los ambientes virtuales ayudan a evitar conflictos, pero **por sí solos no garantizan reproducibilidad**. Para reconstruir un proyecto necesitamos documentar sus dependencias, sus versiones y, cuando corresponda, la versión de Python.
+
+## Herramientas que podemos encontrar
+
+| Herramienta | ¿Para qué sirve? |
+|---|---|
+| `venv` | Crear ambientes virtuales; viene con Python. |
+| `virtualenv` | Crear ambientes virtuales mediante una herramienta externa. |
+| `pip` | Instalar paquetes de Python, normalmente desde PyPI. |
+| `pyenv` | Instalar y seleccionar versiones de Python; no es principalmente un gestor de dependencias. |
+| `poetry` | Gestionar dependencias y empaquetar proyectos. |
+| **`uv`** | Gestionar versiones de Python, ambientes, dependencias y ejecución de proyectos. Es nuestra herramienta principal. |
+
+# Antes de uv: `venv`, `pip` y `requirements.txt`
+
+Es importante reconocer estas herramientas porque aparecen en numerosos repositorios y tutoriales.
+
+## Crear un ambiente con venv
+
+Desde la raíz del proyecto:
+
+```{.sh}
+python -m venv .venv
+```
+
+Para activarlo en macOS o Linux (incluido WSL):
+
+```{.sh}
+source .venv/bin/activate
+```
+
+En PowerShell, para ambientes creados directamente en Windows:
+
+```{.powershell}
+.\.venv\Scripts\Activate.ps1
+```
+
+Para salir del ambiente:
+
+```{.sh}
+deactivate
+```
+
+## Instalar paquetes con pip
+
+`pip` es el instalador de paquetes de Python. Podemos utilizarlo dentro de un ambiente virtual:
+
+```{.sh}
+python -m pip install pandas
+python -m pip list
+```
+
+En proyectos tradicionales es común encontrar un archivo `requirements.txt`:
+
+```text
+pandas==2.2.3
+requests>=2.32,<3
+```
+
+Que se instala con:
+
+```{.sh}
+python -m pip install -r requirements.txt
+```
+
+También es frecuente encontrar:
+
+```{.sh}
+python -m pip freeze > requirements.txt
+```
+
+Este último comando guarda los paquetes instalados en el ambiente, **incluidas dependencias transitivas**; no distingue necesariamente entre paquetes que elegimos directamente y los que se instalaron porque otros los requieren.
+
+::: {.callout-important}
+## Convención para esta clase
+Aprenderemos a reconocer `pip` y `requirements.txt`, pero **los proyectos nuevos los administraremos con `uv`**. Si recibimos un proyecto antiguo con `requirements.txt`, aprenderemos a migrarlo, siempre que sea apropiado modificar su configuración.
+:::
+
+# Trabajar con uv
+
+`uv` es una herramienta para gestionar proyectos de Python, escrita en Rust. Permite administrar dependencias, crear ambientes virtuales, instalar versiones de Python y ejecutar programas sin tener que activar manualmente el ambiente.
+
+Documentación: <https://docs.astral.sh/uv/>
+
+::: {.callout-important}
+## Instalar `uv`
+
+En **Ubuntu/WSL y macOS**, ejecuta:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Cuando termine la instalación, **cierra y vuelve a abrir la terminal**.
+
+Después verifica:
+
+```bash
+uv --version
+```
+
+Deberás observar algo similar a:
+
+```text
+uv 0.x.x
+```
+
+> La versión exacta puede ser diferente.
+:::
+
+
+
+## 1. Verificar la instalación
+
+Asumimos que ya instalaste `uv` durante la configuración inicial del curso.
+
+```{.sh}
+uv --version
+uv python list --only-installed
+```
+
+Si necesitas instalar una versión de Python, primero consulta las versiones de Python disponibles:
+
+```bash
+uv python list
+```
+
+Después instala Python 3.12:
+
+```bash
+uv python install 3.12
+```
+
+Verifica nuevamente:
+
+```bash
+uv python list
+```
+
+## 2. Crear un proyecto
+
+```{.sh}
+uv init mi_proyecto
+cd mi_proyecto
+```
+
+Esto crea los archivos iniciales de un proyecto de Python, incluido `pyproject.toml`.
+
+Para establecer la versión de Python que usaremos:
+
+```{.sh}
+uv python pin 3.12
+```
+
+Esto escribe `.python-version`. La versión concreta instalada puede variar entre equipos, aunque el proyecto también debe declarar en `pyproject.toml` las versiones compatibles de Python.
+
+## 3. Agregar dependencias
+
+```{.sh}
+uv add pandas matplotlib
+```
+
+`uv` registra las dependencias en `pyproject.toml`, resuelve sus versiones, crea o actualiza `uv.lock` y sincroniza el ambiente `.venv`.
+
+Para agregar una dependencia que solo utilizaremos durante el desarrollo:
+
+```{.sh}
+uv add --dev pytest
+```
+
+Para quitar una dependencia:
+
+```{.sh}
+uv remove matplotlib
+```
+
+## 4. Ejecutar código
+
+Crea un archivo `main.py`:
+
+```{.python}
+import pandas as pd
+
+print("Versión de pandas:", pd.__version__)
+```
+
+Ejecútalo con:
+
+```{.sh}
+uv run python main.py
+```
+
+**No necesitamos activar manualmente `.venv`**: `uv run` utiliza el ambiente del proyecto y lo sincroniza cuando hace falta.
+
+También podemos usar una sesión interactiva:
+
+```{.sh}
+uv run python
+```
+
+## 5. Reconstruir un proyecto existente
+
+Si clonamos un repositorio que ya utiliza `uv`:
+
+```{.sh}
+git clone URL_DEL_REPOSITORIO
+cd NOMBRE_DEL_REPOSITORIO
+uv sync
+uv run python main.py
+```
+
+`uv sync` instala y sincroniza las dependencias declaradas, utilizando el archivo de bloqueo existente. Si queremos impedir que se actualice el bloqueo durante la sincronización, podemos usar `uv sync --locked`.
+
+# ¿Qué archivos debemos conocer?
+
+| Archivo o directorio | Función | ¿Se versiona en Git? |
+|---|---|---|
+| `pyproject.toml` | Declara el proyecto, sus dependencias directas y la compatibilidad de Python. | Sí |
+| `uv.lock` | Registra la resolución concreta de las dependencias, incluidas las transitivas. | Sí, normalmente en aplicaciones y proyectos de análisis. |
+| `.python-version` | Indica la versión de Python seleccionada para el proyecto. | Sí, normalmente. |
+| `.venv/` | Contiene el ambiente virtual instalado en tu computadora. | **No** |
+| `.gitignore` | Indica qué archivos o carpetas no debe rastrear Git. | Sí |
+
+Un `.gitignore` debe incluir al menos:
+
+```{.gitignore}
+.venv/
+__pycache__/
+*.pyc
+.env
+```
+
+**Idea central:** compartimos las instrucciones para reconstruir el ambiente, no el ambiente instalado en nuestra computadora.
+
+## `pyproject.toml` y `uv.lock` no son lo mismo
+
+- `pyproject.toml` expresa **qué necesita el proyecto** y las restricciones permitidas. Por ejemplo, `pandas>=2.2`.
+- `uv.lock` registra **qué versiones concretas se resolvieron** para satisfacer esas restricciones y las de sus dependencias.
+
+Esto permite que otras personas reproduzcan con mayor consistencia el entorno de trabajo, sujeto a compatibilidad de plataforma y disponibilidad de los paquetes.
+
+# Migrar de requirements.txt a uv
+
+Supongamos que recibimos un repositorio con esta estructura:
+
+```text
+proyecto_heredado/
+├── analysis.py
+└── requirements.txt
+```
+
+El archivo contiene:
+
+```text
+pandas==2.2.3
+requests>=2.32,<3
+```
+
+Desde la raíz del repositorio:
+
+```{.sh}
+uv init --bare
+uv add -r requirements.txt
+uv sync
+```
+
+- `uv init --bare` crea una configuración mínima de proyecto sin generar archivos de aplicación innecesarios. Si el repositorio ya contiene `pyproject.toml`, **no repetimos este paso**.
+- `uv add -r requirements.txt` importa los requisitos compatibles como dependencias del proyecto.
+- `uv sync` sincroniza el ambiente.
+
+Después podemos ejecutar:
+
+```{.sh}
+uv run python analysis.py
+```
+
+Y revisar los cambios:
+
+```{.sh}
+git status
+```
+
+Ahora podemos versionar `pyproject.toml` y `uv.lock`. **No eliminamos automáticamente `requirements.txt`**: primero revisamos si otras personas, herramientas o procesos de despliegue todavía lo necesitan.
+
+::: {.callout-warning}
+## Antes de migrar
+Un `requirements.txt` puede incluir archivos adicionales con `-r` o `-c`, referencias Git, rutas locales, opciones de instalación o dependencias específicas de una plataforma. No todos los casos se convierten de manera automática a un proyecto equivalente. Revisa el archivo, las instrucciones del repositorio y prueba que el código siga funcionando.
+:::
+
+## ¿Y si solamente quiero instalar un requirements.txt?
+
+También existe una alternativa de transición, sin convertir todavía el proyecto a `pyproject.toml`:
+
+```{.sh}
+uv venv
+uv pip install -r requirements.txt
+```
+
+Esto instala los paquetes en `.venv`, pero **no los declara automáticamente en `pyproject.toml` ni genera un `uv.lock` de proyecto**. Por eso, para nuestros proyectos nuevos preferimos `uv add` y `uv sync`.
+
+# Tabla de referencia: pip y uv
+
+| Necesidad | Flujo tradicional | Flujo de proyecto con uv |
+|---|---|---|
+| Crear ambiente | `python -m venv .venv` | `uv sync` (crea `.venv` si hace falta) |
+| Instalar una dependencia | `python -m pip install pandas` | `uv add pandas` |
+| Instalar desde requirements | `python -m pip install -r requirements.txt` | `uv add -r requirements.txt` para migrar |
+| Reconstruir dependencias | `python -m pip install -r requirements.txt` | `uv sync` |
+| Ejecutar un script | `python main.py` con ambiente activado | `uv run python main.py` |
+| Eliminar una dependencia | `python -m pip uninstall pandas` | `uv remove pandas` |
+| Registrar versiones | `pip freeze > requirements.txt` | `pyproject.toml` y `uv.lock` |
+
+**Atención:** los comandos no son equivalencias exactas. `uv add` modifica la declaración del proyecto; `pip install` instala paquetes en un ambiente. `uv pip install` existe para el flujo compatible con `pip`, pero no sustituye al flujo de proyectos de `uv`.
+
+# Práctica: proyecto reproducible
+
+1. Crea un proyecto con `uv init practica_uv` y entra a su directorio.
+2. Selecciona Python 3.12 con `uv python pin 3.12` (instálalo con `uv python install 3.12` si hace falta).
+3. Agrega `pandas` y `matplotlib` con `uv add`.
+4. Crea un script que importe ambas bibliotecas e imprima sus versiones.
+5. Ejecuta el script con `uv run python main.py`.
+6. Identifica qué cambió en `pyproject.toml` y qué contiene `uv.lock`.
+7. Revisa `git status` y verifica que `.venv/` no se agregará al repositorio.
+8. Compara: ¿qué información se comparte mediante Git y qué información se reconstruye en cada computadora?
+
+::: {.callout-tip}
+## Para reflexionar
+Si mañana otra persona clona tu repositorio, ¿qué necesita para ejecutar el proyecto sin pedirte que le compartas tu carpeta `.venv`?
+:::
+
+# ¿Qué veremos después?
+
+En una sesión posterior podemos profundizar en cómo organizar código Python en funciones, módulos y paquetes, cómo funciona la búsqueda de importaciones y cuándo conviene utilizar programación procedural u orientada a objetos.
+
+Por ahora, lo importante es que podamos **crear, ejecutar, compartir y reconstruir un proyecto de Python** con sus dependencias documentadas.

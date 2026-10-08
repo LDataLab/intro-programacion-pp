@@ -1,64 +1,543 @@
+---
+title: "Tarea 3: Git, GitHub y análisis desde CLI"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+    code-copy: true
+date: today
+---
 
-# Una práctica colaborativa
+# Tarea 3
 
-## 32. Parte A. Flujo básico
+El objetivo de esta tarea es practicar un flujo de trabajo **colaborativo** con Git y GitHub.
 
-En parejas:
+Trabajarán en parejas sobre un mismo repositorio. La meta no es solamente que cada persona haga una parte y la suba, sino que practiquen cómo:
 
-1. clonen el mismo repositorio;
-2. cada persona cree una rama distinta;
-3. cada persona cree un archivo diferente;
-4. hagan al menos un commit;
-5. suban las ramas;
-6. creen un Pull Request;
-7. revisen el Pull Request de la otra persona;
-8. hagan merge.
+- organizar trabajo mediante *issues*;
+- trabajar en ramas distintas;
+- hacer commits y `push`;
+- abrir y revisar Pull Requests;
+- integrar cambios a `main`;
+- mantener una rama actualizada;
+- trabajar sobre un mismo archivo;
+- provocar y resolver un conflicto de Git;
+- utilizar herramientas de línea de comandos para hacer una primera exploración de datos;
+- dejar un repositorio cuyo historial permita reconstruir cómo colaboró el equipo.
 
-Al terminar:
+::: {.callout-important}
+## Parte central de la tarea
+
+Al finalizar, el equipo deberá tener **un solo reporte final**:
+
+```text
+docs/reporte.md
+```
+
+Las dos personas deberán haber contribuido a ese archivo mediante ramas y Pull Requests diferentes.
+
+Además, deberán **provocar y resolver al menos un conflicto de Git de manera intencional**. El conflicto forma parte de la práctica y no se considera un error.
+:::
+
+# 1. Formar el equipo
+
+La tarea se realiza en **parejas**.
+
+Cada equipo deberá definir:
+
+- nombre del equipo;
+- integrante A;
+- integrante B.
+
+Una de las dos personas creará el repositorio.
+
+# 2. Crear el repositorio en GitHub
+
+Creen un repositorio con el siguiente formato:
+
+```text
+progra-<nombre-equipo>
+```
+
+Por ejemplo:
+
+```text
+progra-mapaches
+```
+
+El repositorio puede ser privado.
+
+## Agregar colaboradores
+
+La persona que crea el repositorio deberá agregar:
+
+1. a su compañera o compañero de equipo;
+2. a la profesora.
+
+Si el repositorio pertenece a una cuenta personal de GitHub, agréguenme como **collaborator**.
+
+Si el repositorio pertenece a una organización y pueden asignar roles, agréguenme con permisos suficientes para revisar el desarrollo del repositorio.
+
+::: {.callout-note}
+En Canvas deberán entregar el enlace al repositorio. Asegúrense de que yo tenga acceso antes de entregar.
+:::
+
+# 3. Estructura inicial
+
+El repositorio deberá contener, como mínimo:
+
+```text
+.
+├── data/
+├── docs/
+│   └── reporte.md
+├── infra/
+├── src/
+├── .gitignore
+└── README.md
+```
+
+Pueden agregar otras carpetas si lo consideran necesario.
+
+Utilicen `.gitkeep` si necesitan conservar una carpeta vacía.
+
+El archivo `.gitignore` debe evitar que se suban archivos que no deberían formar parte del repositorio.
+
+Por ejemplo:
+
+```text
+.env
+.venv/
+__pycache__/
+.DS_Store
+```
+
+::: {.callout-warning}
+No suban contraseñas, tokens, llaves privadas ni archivos `.env` con credenciales.
+:::
+
+# 4. Crear el archivo que van a construir entre las dos personas
+
+Desde `main`, creen:
+
+```text
+docs/reporte.md
+```
+
+con la siguiente estructura:
+
+```markdown
+# Reporte de exploración
+
+## Integrantes
+
+- Integrante A:
+- Integrante B:
+
+## Base de datos
+
+Nombre:
+
+Fuente:
+
+Descripción breve:
+
+## Exploración inicial
+
+Pendiente.
+
+## Hallazgo del integrante A
+
+Pendiente.
+
+## Hallazgo del integrante B
+
+Pendiente.
+
+## Conclusión del equipo
+
+ESTADO_CONCLUSION: PENDIENTE
+
+## Reflexión sobre Git
+
+Pendiente.
+```
+
+Hagan un commit inicial con esta estructura antes de comenzar el trabajo individual.
+
+Por ejemplo:
+
+```bash
+git add .
+git commit -m "Crea estructura inicial del proyecto"
+git push
+```
+
+# 5. Seleccionar y descargar una base de datos
+
+Elijan **una** base de datos abierta que pueda descargarse como CSV.
+
+Pueden utilizar alguna de las siguientes:
+
+```text
+https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD
+https://data.lacity.org/api/views/2nrs-mtv8/rows.csv?accessType=DOWNLOAD
+https://data.cdc.gov/api/views/hfr9-rurv/rows.csv?accessType=DOWNLOAD
+https://data.cityofnewyork.us/api/views/c3uy-2p5r/rows.csv?accessType=DOWNLOAD
+https://data.cityofnewyork.us/api/views/h9gi-nx95/rows.csv?accessType=DOWNLOAD
+https://data.transportation.gov/api/views/keg4-3bc2/rows.csv?accessType=DOWNLOAD
+https://data.cdc.gov/api/views/yni7-er2q/rows.csv?accessType=DOWNLOAD
+```
+
+Descarguen los datos utilizando CLI.
+
+Pista:
+
+```bash
+curl -L "<URL>" -o data/datos.csv
+```
+
+o una herramienta equivalente disponible en su sistema.
+
+Antes de continuar, revisen:
+
+```bash
+ls -lh data/
+```
+
+::: {.callout-note}
+Si el archivo es demasiado grande para subirlo al repositorio, agréguenlo a `.gitignore` y documenten en el `README.md` cómo descargarlo.
+:::
+
+# 6. Organizar el trabajo con issues
+
+Creen, como mínimo, los siguientes **issues** en GitHub:
+
+1. `Exploración inicial de datos`
+2. `Hallazgo integrante A`
+3. `Hallazgo integrante B`
+4. `Conclusión colaborativa y resolución de conflicto`
+
+Cada issue debe contener una descripción breve de lo que se realizará.
+
+Asignen los issues correspondientes a cada integrante.
+
+# 7. Primera colaboración: trabajar en el mismo archivo sin conflicto
+
+Esta parte busca mostrar que **dos personas pueden trabajar sobre el mismo archivo sin que necesariamente exista un conflicto**.
+
+Antes de comenzar, ambas personas deben tener `main` actualizado:
 
 ```bash
 git switch main
 git pull origin main
 ```
 
-Ambas personas deberían tener los dos archivos.
+## Integrante A
 
----
+Crea una rama:
 
-## 33. Parte B. Dos personas modifican el mismo archivo sin conflicto
-
-Partan de un archivo:
-
-```text
-equipo.txt
+```bash
+git switch -c analisis-integrante-a
 ```
 
-con al menos 10 líneas.
+En `docs/reporte.md` deberá completar:
 
-- Persona A modifica la línea 2.
-- Persona B modifica la línea 9.
+```text
+## Exploración inicial
+```
 
-Cada persona trabaja en su propia rama.
+y:
 
-Después creen Pull Requests e integren ambos.
+```text
+## Hallazgo del integrante A
+```
+
+## Integrante B
+
+Desde `main` actualizado, crea otra rama:
+
+```bash
+git switch -c analisis-integrante-b
+```
+
+En el mismo archivo `docs/reporte.md` deberá completar:
+
+```text
+## Hallazgo del integrante B
+```
+
+Cada persona deberá hacer al menos un commit.
+
+Por ejemplo:
+
+```bash
+git status
+git diff
+git add docs/reporte.md
+git commit -m "Agrega hallazgo sobre <tema>"
+git push -u origin <nombre-rama>
+```
+
+# 8. Análisis con CLI
+
+El análisis debe realizarse utilizando herramientas de línea de comandos.
+
+No es necesario responder exactamente las mismas preguntas por persona, pero entre las dos contribuciones el reporte deberá incluir lo siguiente.
+
+## Exploración inicial
+
+Utilicen CLI para identificar:
+
+1. directorio donde está almacenado el archivo;
+2. tamaño del archivo;
+3. número de líneas;
+4. número de observaciones sin contar el encabezado;
+5. primeras cinco filas;
+6. últimas cinco filas;
+7. nombres de las columnas;
+8. número aproximado de variables.
+
+Algunos comandos que pueden ser útiles son:
+
+```bash
+pwd
+ls -lh
+wc -l
+head
+tail
+cut
+```
+
+## Hallazgo de cada integrante
+
+Cada integrante deberá contestar **una pregunta distinta** sobre los datos utilizando una combinación de comandos.
+
+Algunas posibilidades:
+
+- encontrar los valores más frecuentes de una variable categórica;
+- filtrar registros mediante `grep`;
+- contar cuántas veces aparece un valor;
+- ordenar valores;
+- calcular una suma o promedio sencillo mediante `awk`;
+- identificar valores vacíos;
+- comparar dos categorías;
+- construir un pipeline con varios comandos conectados mediante `|`.
+
+Cada integrante deberá incluir en su sección:
+
+1. la pregunta que quiso responder;
+2. el comando o pipeline utilizado;
+3. el resultado obtenido;
+4. una interpretación breve.
+
+Por ejemplo:
+
+````markdown
+## Hallazgo del integrante A
 
 ### Pregunta
 
-¿Por qué Git pudo combinar los cambios automáticamente?
+¿Cuáles son los cinco valores más frecuentes de la variable X?
 
----
+### Comando
 
-## 34. Parte C. Crear un conflicto intencionalmente
+```bash
+tail -n +2 data/datos.csv | cut -d',' -f2 | sort | uniq -c | sort -nr | head -5
+```
 
-Ahora ambas personas modificarán **la misma línea** de `equipo.txt`, cada una desde su propia rama.
+### Resultado
 
-1. Persona A modifica la línea.
-2. Persona B modifica la misma línea de manera diferente.
-3. Ambas hacen commit y push.
-4. Integren primero uno de los Pull Requests.
-5. Observen qué ocurre con el segundo.
-6. Actualicen la segunda rama con `main`.
-7. Identifiquen los marcadores:
+...
+
+### Interpretación
+
+...
+````
+
+::: {.callout-important}
+No basta con pegar comandos. Deben explicar **qué información querían obtener y qué hace el pipeline de izquierda a derecha**.
+:::
+
+# 9. Pull Requests de la primera colaboración
+
+Cada integrante deberá subir su rama y crear un **Pull Request hacia `main`**.
+
+Antes de hacer merge:
+
+1. revisen el Pull Request de su compañera o compañero;
+2. revisen la pestaña de cambios;
+3. dejen al menos un comentario o revisión;
+4. verifiquen que los cambios correspondan al issue;
+5. hagan merge de un Pull Request a la vez.
+
+Después del primer merge, la segunda persona deberá actualizar su rama con los cambios recientes de `main`.
+
+Estando en su rama:
+
+```bash
+git pull origin main
+```
+
+Si Git puede integrar los cambios automáticamente, continúen normalmente.
+
+Después:
+
+```bash
+git push
+```
+
+y hagan merge del segundo Pull Request.
+
+Al terminar, actualicen `main`:
+
+```bash
+git switch main
+git pull origin main
+```
+
+En este punto, `docs/reporte.md` debe contener las contribuciones de ambas personas.
+
+# 10. Segunda colaboración: provocar un conflicto intencionalmente
+
+Ahora van a crear un conflicto **a propósito**.
+
+::: {.callout-warning}
+No eviten el conflicto. La tarea consiste precisamente en generarlo, observarlo y resolverlo.
+:::
+
+## Paso 1. Partir del mismo `main`
+
+Ambas personas deben actualizar su repositorio:
+
+```bash
+git switch main
+git pull origin main
+```
+
+## Paso 2. Crear dos ramas nuevas
+
+Integrante A:
+
+```bash
+git switch -c conclusion-a
+```
+
+Integrante B:
+
+```bash
+git switch -c conclusion-b
+```
+
+Es importante que ambas ramas nazcan del mismo estado de `main`.
+
+# 11. Modificar exactamente la misma línea
+
+En `docs/reporte.md` existe esta línea:
+
+```text
+ESTADO_CONCLUSION: PENDIENTE
+```
+
+Ambas personas deberán modificar **esa misma línea**, pero de manera diferente.
+
+Por ejemplo:
+
+Integrante A:
+
+```text
+ESTADO_CONCLUSION: El principal hallazgo del análisis fue...
+```
+
+Integrante B:
+
+```text
+ESTADO_CONCLUSION: Los datos muestran principalmente que...
+```
+
+Además, cada persona puede escribir su propuesta de conclusión debajo de esa línea.
+
+Después cada una deberá:
+
+```bash
+git status
+git diff
+git add docs/reporte.md
+git commit -m "Propone conclusión del análisis"
+git push -u origin <nombre-rama>
+```
+
+Cada persona abre su propio Pull Request hacia `main`.
+
+# 12. Integrar el primer Pull Request
+
+Elijan uno de los dos Pull Requests y hagan merge normalmente.
+
+Después de hacerlo, `main` tendrá una de las dos versiones de:
+
+```text
+ESTADO_CONCLUSION
+```
+
+El segundo Pull Request ahora deberá estar basado en una versión anterior de `main`.
+
+# 13. Resolver el conflicto desde la segunda rama
+
+La persona cuyo Pull Request todavía no se ha integrado deberá trabajar **desde su rama**, no desde `main`.
+
+Primero:
+
+```bash
+git status
+```
+
+Después:
+
+```bash
+git pull origin main
+```
+
+Git deberá intentar integrar los cambios recientes de `main`.
+
+Como ambas ramas modificaron la misma línea, debería aparecer un conflicto.
+
+Observen el mensaje de Git.
+
+Después:
+
+```bash
+git status
+```
+
+Identifiquen el archivo en conflicto.
+
+Al abrir `docs/reporte.md` deberían encontrar marcadores similares a:
+
+```text
+<<<<<<< HEAD
+...
+=======
+...
+>>>>>>> ...
+```
+
+# 14. Resolver el conflicto
+
+No deben simplemente elegir una versión al azar.
+
+Las dos personas deberán decidir **cuál debe ser el contenido final** y escribir una conclusión que integre las ideas de ambas.
+
+Por ejemplo, el resultado final podría contener:
+
+```markdown
+## Conclusión del equipo
+
+El análisis realizado por ambas personas sugiere que...
+```
+
+Eliminen completamente los marcadores:
 
 ```text
 <<<<<<<
@@ -66,206 +545,224 @@ Ahora ambas personas modificarán **la misma línea** de `equipo.txt`, cada una 
 >>>>>>>
 ```
 
-8. Acuerden cuál debe ser el contenido final.
-9. Resuelvan el conflicto.
-10. Hagan commit y push.
-11. Revisen nuevamente el Pull Request.
-
-### Discusión
-
-- ¿Por qué Git no podía resolver el cambio solo?
-- ¿Resolver un conflicto significa necesariamente elegir una de las dos versiones?
-- ¿Qué prácticas podrían haber reducido la probabilidad de conflicto?
-
----
-
-## 35. Parte D. Diagnóstico
-
-Para cada escenario, antes de ejecutar un comando responde:
-
-**¿Qué observarías primero?**
-
-### Escenario 1
-
-```text
-git push
-! [rejected] ... non-fast-forward
-```
-
-### Escenario 2
-
-```text
-Your local changes would be overwritten by checkout.
-```
-
-### Escenario 3
-
-```text
-both modified: README.md
-```
-
-### Escenario 4
-
-Tu rama está en GitHub, pero tiene tres commits menos que `main`.
-
-### Escenario 5
-
-Ejecutaste accidentalmente:
+Después:
 
 ```bash
-git add datos.csv
+git add docs/reporte.md
+git status
+git commit -m "Resuelve conflicto en conclusión del reporte"
+git push
 ```
 
-pero todavía no has hecho commit.
+El Pull Request se actualizará.
 
-La respuesta debería comenzar casi siempre por observar el estado del repositorio:
+Revisen nuevamente los cambios y hagan merge.
+
+# 15. Verificar el resultado
+
+Ambas personas deberán regresar a `main` y actualizar:
+
+```bash
+git switch main
+git pull origin main
+```
+
+Verifiquen:
 
 ```bash
 git status
 ```
 
-y, cuando sea necesario, el historial:
+y observen el historial:
 
 ```bash
 git log --oneline --graph --all
 ```
 
-
-
-# Práctica: primera exploración de datos
-
-Solo utiliza *CLI* para responder las siguientes preguntas sobre `datos_agua.csv`.
-
-## Parte 1. Conocer el archivo
-
-1. ¿En qué directorio está almacenado?
-2. ¿Cuánto pesa?
-3. ¿Cuántas líneas tiene?
-4. ¿Cuántas observaciones tiene si quitamos el encabezado?
-5. ¿Cuáles son las primeras cinco filas?
-6. ¿Cuáles son las últimas cinco filas?
-
-## Parte 2. Entender la estructura
-
-Observa el encabezado:
-
-```{.sh}
-head -n 1 datos_agua.csv
-```
-
-Responde:
-
-1. ¿Cuántas variables parece tener?
-2. ¿Qué variables parecen numéricas?
-3. ¿Qué variables parecen categóricas?
-4. ¿Hay alguna variable que parezca una fecha o identificador?
-
-No importa todavía si no sabemos exactamente qué significa cada campo. La idea es aprender a hacer una **primera inspección**.
-
-## Parte 3. Construir un pipeline
-
-Intenta explicar, de izquierda a derecha, qué hace:
-
-```{.sh}
-tail -n +2 datos_agua.csv | cut -d',' -f2 | sort | uniq -c | sort -nr | head
-```
-
-Después modifica el comando para explorar otra columna.
-
-
-# Práctica: combina comandos
-
-Intenta resolver los siguientes ejercicios utilizando solamente Bash.
-
-1. Muestra las primeras 15 líneas de `datos_agua.csv`.
-
-2. Muestra las últimas 20 líneas.
-
-3. Cuenta cuántas observaciones contiene el archivo sin contar el encabezado.
-
-4. Guarda las primeras 50 líneas dentro de:
+El archivo final:
 
 ```text
-datos_agua_50.csv
+docs/reporte.md
 ```
 
-5. Comprueba cuántas líneas tiene el nuevo archivo.
+deberá contener:
 
-6. Selecciona dos columnas y muestra solamente las primeras diez filas.
+- información de ambas personas;
+- exploración inicial;
+- hallazgo del integrante A;
+- hallazgo del integrante B;
+- una conclusión conjunta;
+- una reflexión sobre el conflicto.
 
-7. Selecciona una columna categórica y encuentra los valores que aparecen con mayor frecuencia.
+# 16. Reflexión sobre Git
 
-8. Busca un valor que hayas observado previamente en los datos.
-
-9. Cuenta cuántas líneas contienen ese valor.
-
-10. Repite la búsqueda ignorando mayúsculas y minúsculas. ¿Cambia el resultado?
-
-11. Utiliza al menos tres comandos conectados con `|` para contestar una pregunta sencilla sobre los datos.
-
-La idea no es memorizar cada comando. La pregunta importante es:
-
-> ¿Qué información quiero obtener y qué operaciones pequeñas puedo combinar para obtenerla?
-
-
-
-## Parte 6. Instalar `uv`
-
-Durante el curso utilizaremos **`uv`** para administrar:
-
-* versiones de Python;
-* ambientes virtuales;
-* dependencias;
-* proyectos de Python.
-
-Esto significa que no necesitamos instalar Python manualmente por separado.
-
-En **Ubuntu/WSL y macOS**, ejecuta:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Cuando termine la instalación, **cierra y vuelve a abrir la terminal**.
-
-Después verifica:
-
-```bash
-uv --version
-```
-
-Deberás observar algo similar a:
+En la sección:
 
 ```text
-uv 0.x.x
+## Reflexión sobre Git
 ```
 
-> La versión exacta puede ser diferente.
+respondan brevemente, como equipo:
 
----
+1. ¿Por qué en la primera parte ambas personas pudieron modificar `docs/reporte.md` sin generar un conflicto?
+2. ¿Por qué en la segunda parte sí apareció un conflicto?
+3. ¿Qué información les dio `git status` durante la resolución?
+4. ¿Qué hicieron para resolver el conflicto?
+5. ¿Resolver un conflicto significa necesariamente escoger la versión de una sola persona?
+6. ¿Qué prácticas podrían utilizar en un proyecto real para reducir conflictos?
+7. ¿Qué diferencia observaron entre trabajar en una rama y trabajar directamente en `main`?
 
-# Parte 7. Instalar Python con `uv`
+# 17. README
 
-Primero consulta las versiones de Python disponibles:
+El archivo `README.md` debe incluir:
+
+- nombre del equipo;
+- nombres de los integrantes;
+- descripción breve de la base de datos;
+- fuente de los datos;
+- instrucciones para descargar los datos, si no están versionados;
+- descripción breve del objetivo del análisis;
+- ubicación del reporte final.
+
+Por ejemplo:
+
+```text
+docs/reporte.md
+```
+
+# 18. Evidencia que debe existir en GitHub
+
+No necesitan entregar capturas de cada comando.
+
+La evidencia principal será **el propio repositorio y su historial**.
+
+Yo revisaré que existan:
+
+- issues;
+- ramas;
+- commits de ambas personas;
+- Pull Requests de ambas personas;
+- revisiones o comentarios entre integrantes;
+- merges hacia `main`;
+- evidencia de que ambas personas modificaron `docs/reporte.md`;
+- un commit explícito de resolución de conflicto;
+- el archivo final integrado en `main`.
+
+::: {.callout-important}
+El historial importa.
+
+No hagan todo el trabajo en `main` al final para que “se vea limpio”. Parte del objetivo es poder observar cómo se desarrolló la colaboración.
+:::
+
+# 19. Resultado final esperado
+
+La rama `main` debe quedar funcional y limpia.
+
+Al clonar el repositorio:
 
 ```bash
-uv python list
+git clone <URL>
+cd <repositorio>
 ```
 
-Después instala Python 3.12:
+debe existir:
+
+```text
+README.md
+docs/reporte.md
+```
+
+y el reporte debe poder leerse como un único documento final construido por ambas personas.
+
+El repositorio no debe quedar con:
+
+- conflictos sin resolver;
+- marcadores `<<<<<<<`, `=======` o `>>>>>>>`;
+- archivos temporales innecesarios;
+- credenciales;
+- ramas utilizadas como sustituto de `main` para la entrega final.
+
+# 20. Entrega en Canvas
+
+Cada equipo entregará **un solo enlace**:
+
+```text
+https://github.com/<usuario>/progra-<nombre-equipo>
+```
+
+Antes de entregar revisen:
 
 ```bash
-uv python install 3.12
+git switch main
+git pull origin main
+git status
 ```
 
-Verifica nuevamente:
+Idealmente deberán ver:
 
-```bash
-uv python list
+```text
+nothing to commit, working tree clean
 ```
 
-Deberás poder identificar una instalación de Python 3.12 administrada por `uv`.
+Comprueben también que:
 
----
+- el reporte final está en `main`;
+- ambas contribuciones fueron integradas;
+- el conflicto fue resuelto;
+- los Pull Requests están cerrados mediante merge;
+- yo tengo acceso al repositorio.
 
+# Checklist
 
+## Configuración
+
+- [ ] Formamos un equipo de dos personas.
+- [ ] Creamos el repositorio `progra-<nombre-equipo>`.
+- [ ] Agregamos a ambos integrantes como colaboradores.
+- [ ] Agregamos a la profesora al repositorio.
+- [ ] Creamos la estructura inicial.
+- [ ] Configuramos `.gitignore`.
+- [ ] Creamos `docs/reporte.md`.
+
+## Datos y CLI
+
+- [ ] Seleccionamos una base de datos.
+- [ ] Documentamos su fuente.
+- [ ] Hicimos la exploración inicial utilizando CLI.
+- [ ] Cada integrante respondió una pregunta diferente.
+- [ ] Cada integrante utilizó al menos un pipeline de comandos.
+- [ ] Explicamos qué hacen los comandos.
+
+## Git y GitHub
+
+- [ ] Creamos issues.
+- [ ] Cada integrante trabajó en ramas propias.
+- [ ] Ambas personas modificaron `docs/reporte.md`.
+- [ ] Cada integrante hizo commits propios.
+- [ ] Cada integrante hizo `push`.
+- [ ] Cada integrante creó Pull Requests.
+- [ ] Revisamos el trabajo de la otra persona.
+- [ ] Integramos cambios a `main`.
+
+## Conflicto
+
+- [ ] Creamos dos ramas desde el mismo estado de `main`.
+- [ ] Modificamos intencionalmente la misma línea.
+- [ ] Hicimos merge del primer Pull Request.
+- [ ] Actualizamos la segunda rama con `main`.
+- [ ] Observamos el conflicto.
+- [ ] Utilizamos `git status`.
+- [ ] Resolvimos manualmente el conflicto.
+- [ ] Eliminamos los marcadores de conflicto.
+- [ ] Hicimos un commit de resolución.
+- [ ] Hicimos `push`.
+- [ ] Integramos el segundo Pull Request.
+
+## Entrega
+
+- [ ] `main` contiene el trabajo final.
+- [ ] `docs/reporte.md` es un único reporte integrado.
+- [ ] `README.md` documenta el proyecto.
+- [ ] El repositorio no contiene credenciales.
+- [ ] La profesora tiene acceso.
+- [ ] Entregamos el enlace en Canvas.
