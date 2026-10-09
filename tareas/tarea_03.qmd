@@ -50,9 +50,9 @@ Cada equipo deberá definir:
 - nombre del equipo;
 - integrante A;
 - integrante B.
-- Una de las dos personas creará el repositorio, y tendrán que enviarme el nombre del equipo a mi correo [villalobos_elena@tec.mx](villalobos_elena@tec.mx).
 
 ## Crear el repositorio en GitHub
+
 
 Creen un repositorio con el siguiente formato:
 
@@ -79,8 +79,11 @@ Si el repositorio pertenece a una cuenta personal de GitHub, agréguenme como **
 
 
 ::: {.callout-caution}
-## Revisen que tenga acceso
-En Canvas deberán entregar el enlace al repositorio. Asegúrense de que yo tenga acceso antes de entregar.
+## Revisen que tenga acceso y que creen su equipo en canvas
+En Canvas deberán entregar el enlace al repositorio en equipo, por lo que:
+
+- Asegúrense de que yo tenga acceso antes de entregar,
+- y que se registraron bien sus parejas en Canvas
 :::
 
 ## Estructura inicial
