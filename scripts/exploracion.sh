@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+echo "cambio durante clase"
 echo "nueva linea al inicio"
 echo "Explorando datos"
 echo "hola!!!!!!!!!!!!!! Este es mi archivo bash"
