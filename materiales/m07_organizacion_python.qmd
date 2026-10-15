@@ -1,0 +1,501 @@
+---
+title: "Organización de código en Python"
+subtitle: "Funciones, módulos, paquetes y paradigmas de programación"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Objetivos de la sesión
+
+Hasta ahora hemos aprendido a trabajar con la terminal, Git y ambientes de Python administrados con `uv`. En esta sesión vamos a **organizar el código para que otras personas puedan comprenderlo, ejecutarlo y reutilizarlo**.
+
+Al finalizar, podrán:
+
+- Separar tareas en **funciones** con parámetros y valores de retorno.
+- Diferenciar un **script**, un **módulo** y un **paquete**.
+- Organizar archivos en una estructura de proyecto y ejecutar módulos con `uv run python -m`.
+- Entender cómo Python resuelve las **importaciones** y diagnosticar errores frecuentes.
+- Comparar programación **procedural** y **orientada a objetos** sin asumir que una es siempre mejor.
+- Compartir un repositorio que pueda reconstruirse a partir de `pyproject.toml` y `uv.lock`.
+
+::: {.callout-note}
+## Ejemplo de trabajo
+Usaremos una lista de viajes **ficticios**, definida en el código. No necesitamos descargar archivos, acceder a bases de datos ni instalar `pandas`. Al final, cada estudiante tendrá un proyecto ejecutable desde la terminal.
+:::
+
+# 1. Del código en una celda al código de un proyecto
+
+En un notebook podemos definir variables y ejecutar celdas en distintos momentos. Es muy útil para explorar datos, pero también podemos terminar dependiendo de variables que quedaron en memoria o de un orden de ejecución poco claro.
+
+Un **script** (`.py`) es un archivo de código que podemos ejecutar; un **módulo** es un archivo de Python que podemos importar; un **paquete** agrupa módulos bajo un espacio de nombres. Un mismo archivo puede ser tanto script como módulo, según cómo lo usemos.
+
+La idea central es separar:
+
+1. **Datos de entrada**: ¿con qué trabajaremos?
+2. **Lógica**: ¿qué cálculos o transformaciones queremos hacer?
+3. **Ejecución**: ¿en qué orden se llaman las funciones y qué resultados se muestran?
+
+## Datos de ejemplo
+
+Crearemos una colección de registros usando estructuras básicas de Python:
+
+```{.python}
+viajes = [
+    {"estacion": "Centro", "duracion_min": 12, "tipo": "anual"},
+    {"estacion": "Norte", "duracion_min": 25, "tipo": "ocasional"},
+    {"estacion": "Centro", "duracion_min": 18, "tipo": "anual"},
+    {"estacion": "Sur", "duracion_min": 8, "tipo": "ocasional"},
+    {"estacion": "Centro", "duracion_min": 30, "tipo": "ocasional"},
+]
+```
+
+Una **lista** contiene varios elementos; cada **diccionario** representa un viaje. Accedemos a los campos con sus llaves:
+
+```{.python}
+print(viajes[0])
+print(viajes[0]["duracion_min"])
+print(len(viajes))
+```
+
+# 2. Funciones: dividir problemas en tareas
+
+Una función es un bloque de código con un nombre, que puede recibir **parámetros** y devolver un resultado con `return`.
+
+```{.python}
+def promedio(valores):
+    if not valores:
+        raise ValueError("No es posible calcular un promedio sin datos")
+    return sum(valores) / len(valores)
+
+edades = [20, 21, 24, 25]
+print(promedio(edades))
+```
+
+- `def` inicia la definición.
+- `valores` es un parámetro de la función.
+- `return` devuelve un valor para que pueda utilizarse más adelante.
+- `print()` muestra información en la terminal, pero **no equivale a devolverla**.
+
+## Composición de funciones
+
+En lugar de repetir operaciones, escribimos funciones que realizan una tarea identificable:
+
+```{.python}
+def duraciones(registros):
+    return [viaje["duracion_min"] for viaje in registros]
+
+
+def filtrar_por_estacion(registros, estacion):
+    return [viaje for viaje in registros if viaje["estacion"] == estacion]
+
+
+viajes_centro = filtrar_por_estacion(viajes, "Centro")
+resultado = promedio(duraciones(viajes_centro))
+print(resultado)  # 20.0
+```
+
+Una función puede llamar a otra. Esta **composición** nos permite probar y reutilizar partes pequeñas del programa.
+
+::: {.callout-tip}
+## Buenas prácticas iniciales
+Prefiere nombres descriptivos (`filtrar_por_estacion` en lugar de `f1`), funciones con una responsabilidad clara y resultados devueltos con `return`. Evita que una función dependa innecesariamente de variables globales.
+:::
+
+## Práctica 1: funciones
+
+1. Crea una función `contar_viajes(registros)` que devuelva el número de viajes.
+2. Crea `duracion_maxima(registros)` que devuelva la duración mayor.
+3. Crea `filtrar_por_tipo(registros, tipo)` y úsala para calcular la duración promedio de los viajes `"ocasional"`.
+4. ¿Qué pasaría si la lista estuviera vacía? Decide cómo debería comportarse cada función.
+
+# 3. Módulos y paquetes
+
+Cuando todo el código vive en un mismo archivo, es difícil localizar responsabilidades. Podemos dividirlo en **módulos** y agruparlos en **paquetes**.
+
+Vamos a crear esta estructura en el repositorio:
+
+```text
+mi_proyecto/
+├── .gitignore
+├── .python-version
+├── pyproject.toml
+├── uv.lock
+└── src/
+    ├── __init__.py
+    ├── datos.py
+    └── analysis/
+        ├── __init__.py
+        ├── metricas.py
+        └── resumen.py
+```
+
+- `datos.py`: proporciona los datos ficticios.
+- `metricas.py`: contiene funciones reutilizables.
+- `resumen.py`: define qué acciones se ejecutan y presenta resultados.
+- `__init__.py`: indica explícitamente que esos directorios son paquetes de Python.
+
+::: {.callout-important}
+## Sobre el directorio `src`
+En esta clase usamos `src` como **nombre de un paquete**, para mostrar importaciones como `from src.analysis.metricas import promedio`. En proyectos instalables es frecuente utilizar el diseño `src/nombre_paquete/`, donde `src` es solo un directorio contenedor y **no** forma parte del nombre importable. Veremos esa diferencia más adelante.
+:::
+
+## 3.1 Crear el proyecto con uv
+
+Desde una terminal bash o zsh (macOS o WSL):
+
+```{.sh}
+uv init mi_proyecto
+cd mi_proyecto
+uv sync
+mkdir -p src/analysis
+touch src/__init__.py src/analysis/__init__.py
+```
+
+`uv init` crea la configuración inicial. `uv sync` prepara el entorno y genera o actualiza el archivo `uv.lock`. Como solo utilizaremos la biblioteca estándar de Python, no necesitamos agregar dependencias de terceros.
+
+### Archivo `src/datos.py`
+
+```{.python}
+"""Datos de ejemplo para la sesión."""
+
+VIAJES = [
+    {"estacion": "Centro", "duracion_min": 12, "tipo": "anual"},
+    {"estacion": "Norte", "duracion_min": 25, "tipo": "ocasional"},
+    {"estacion": "Centro", "duracion_min": 18, "tipo": "anual"},
+    {"estacion": "Sur", "duracion_min": 8, "tipo": "ocasional"},
+    {"estacion": "Centro", "duracion_min": 30, "tipo": "ocasional"},
+]
+```
+
+### Archivo `src/analysis/metricas.py`
+
+```{.python}
+"""Funciones para resumir registros de viajes."""
+
+
+def promedio(valores):
+    if not valores:
+        raise ValueError("No es posible calcular un promedio sin datos")
+    return sum(valores) / len(valores)
+
+
+def duraciones(registros):
+    return [viaje["duracion_min"] for viaje in registros]
+
+
+def filtrar_por_estacion(registros, estacion):
+    return [viaje for viaje in registros if viaje["estacion"] == estacion]
+
+
+def filtrar_por_tipo(registros, tipo):
+    return [viaje for viaje in registros if viaje["tipo"] == tipo]
+```
+
+### Archivo `src/analysis/resumen.py`
+
+```{.python}
+"""Punto de entrada para ejecutar el análisis."""
+
+from src.datos import VIAJES
+from src.analysis.metricas import duraciones, filtrar_por_estacion, promedio
+
+
+def main():
+    viajes_centro = filtrar_por_estacion(VIAJES, "Centro")
+    resultado = promedio(duraciones(viajes_centro))
+    print(f"Viajes analizados: {len(viajes_centro)}")
+    print(f"Duración promedio en Centro: {resultado:.1f} minutos")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## 3.2 Ejecutar el módulo desde el directorio raíz
+
+```{.sh}
+uv run python -m src.analysis.resumen
+```
+
+Salida esperada:
+
+```text
+Viajes analizados: 3
+Duración promedio en Centro: 20.0 minutos
+```
+
+El modificador `-m` le indica a Python que ejecute un **módulo por su nombre de importación**. Desde la raíz del repositorio, Python puede encontrar el paquete `src` y luego `src.analysis.resumen`.
+
+::: {.callout-warning}
+## ¿Por qué no ejecutar `python src/analysis/resumen.py`?
+Al ejecutar una ruta directamente, Python utiliza el directorio donde vive ese archivo como punto inicial de búsqueda. Como consecuencia, la importación `from src.datos import VIAJES` podría fallar. Ejecutar el módulo con `-m` desde la raíz evita este problema en nuestra estructura.
+:::
+
+# 4. ¿Cómo busca Python los módulos que importamos?
+
+Cuando escribimos:
+
+```{.python}
+from src.analysis.metricas import promedio
+```
+
+Python intenta encontrar `src`, luego `analysis` dentro de ese paquete y finalmente `metricas`, donde busca el nombre `promedio`.
+
+La búsqueda depende, entre otros elementos, de:
+
+1. Módulos que ya están cargados y módulos integrados en el intérprete.
+2. Las ubicaciones indicadas por `sys.path` (por ejemplo, el directorio desde donde se ejecuta `python -m`, rutas de la biblioteca estándar y paquetes instalados).
+3. Las rutas adicionales definidas mediante `PYTHONPATH`, si están configuradas.
+
+Podemos inspeccionar las rutas de búsqueda:
+
+```{.sh}
+uv run python -c "import sys; print(*sys.path, sep='\n')"
+```
+
+También podemos averiguar desde qué archivo se importó un módulo:
+
+```{.sh}
+uv run python -c "import src.analysis.metricas as m; print(m.__file__)"
+```
+
+## 4.1 `PYTHONPATH` no debería ser nuestra primera solución
+
+`PYTHONPATH` es una **variable de entorno** que añade directorios a la búsqueda de importaciones. Por ejemplo, desde la raíz:
+
+```{.sh}
+export PYTHONPATH="$PWD"
+```
+
+Con esto se añade el directorio del proyecto a la búsqueda para los procesos iniciados desde esa terminal. Pero no es necesario para el proyecto que acabamos de construir cuando usamos `uv run python -m ...` desde su raíz. Configurar rutas manualmente puede ocultar problemas de organización y dificultar la reproducibilidad.
+
+Para proyectos más grandes, una mejor alternativa es **empaquetar e instalar el proyecto** en el ambiente correspondiente; no depender de una configuración manual de `PYTHONPATH`.
+
+## 4.2 Errores frecuentes
+
+| Mensaje o síntoma | Posible causa | Qué revisar |
+|---|---|---|
+| `ModuleNotFoundError: No module named 'src'` | Estás ejecutando desde un directorio distinto o como archivo directo. | Verifica `pwd` y ejecuta `uv run python -m src.analysis.resumen` desde la raíz. |
+| `ImportError: cannot import name 'promedio'` | El módulo existe, pero no contiene ese nombre o existe una importación circular. | Verifica el nombre de la función y las importaciones. |
+| Importa un archivo inesperado | Nombraste un archivo igual que una biblioteca, como `random.py`. | Revisa nombres de archivos y `modulo.__file__`. |
+| Código funciona solo en tu computadora | Depende de rutas, paquetes o configuración no compartidos. | Revisa la estructura y los archivos de dependencias. |
+
+## Práctica 2: importar módulos
+
+1. Agrega `duracion_maxima(registros)` a `metricas.py`.
+2. Impórtala desde `resumen.py` y muestra el resultado.
+3. Ejecuta el módulo desde la raíz con `uv run python -m src.analysis.resumen`.
+4. Inspecciona `sys.path`. ¿Qué entradas reconoces? ¿Por qué varían de computadora a computadora?
+5. Cambia temporalmente el nombre `metricas.py` a `metricas_v2.py`. ¿Qué error aparece? Restituye el nombre original.
+
+# 5. Programación procedural y orientada a objetos
+
+Python admite distintos **paradigmas de programación**: estilos para estructurar soluciones. No es necesario utilizar clases en todos los proyectos.
+
+## 5.1 Enfoque procedural: funciones que operan sobre datos
+
+En el enfoque procedural organizamos el programa en operaciones, frecuentemente expresadas como funciones. Los datos se pasan mediante argumentos y los resultados se devuelven.
+
+```{.python}
+def calcular_area(largo, ancho):
+    return largo * ancho
+
+
+def calcular_perimetro(largo, ancho):
+    return 2 * (largo + ancho)
+
+
+print(calcular_area(5, 3))       # 15
+print(calcular_perimetro(5, 3))  # 16
+```
+
+Este estilo resulta claro para cálculos independientes, scripts y transformaciones. **Programación procedural no es lo mismo que programación funcional**: aunque ambas pueden utilizar funciones, la programación funcional enfatiza, entre otras ideas, funciones puras e inmutabilidad.
+
+## 5.2 Enfoque orientado a objetos: datos y comportamiento juntos
+
+Una **clase** describe qué atributos y métodos tendrán los objetos que construyamos a partir de ella.
+
+```{.python}
+class Rectangulo:
+    def __init__(self, largo, ancho):
+        self.largo = largo
+        self.ancho = ancho
+
+    def area(self):
+        return self.largo * self.ancho
+
+    def perimetro(self):
+        return 2 * (self.largo + self.ancho)
+
+
+rectangulo = Rectangulo(5, 3)
+print(rectangulo.area())       # 15
+print(rectangulo.perimetro())  # 16
+```
+
+### Conceptos principales
+
+- **Clase**: definición de un tipo de objetos (`Rectangulo`).
+- **Objeto o instancia**: un elemento construido a partir de la clase (`rectangulo`).
+- **`__init__`**: método que inicializa los atributos de la instancia.
+- **`self`**: referencia a la instancia actual; por convención se llama así.
+- **Atributo**: dato asociado al objeto (`self.largo`).
+- **Método**: función definida dentro de la clase (`area`).
+
+```{.python}
+otro_rectangulo = Rectangulo(2, 4)
+print(otro_rectangulo.area())  # 8
+print(rectangulo.area())       # 15
+```
+
+Cada objeto conserva sus propios atributos.
+
+## 5.3 ¿Cuándo conviene cada enfoque?
+
+| Pregunta | Procedural | Orientado a objetos |
+|---|---|---|
+| ¿Cómo organizamos el código? | Funciones que reciben datos y devuelven resultados. | Objetos que mantienen atributos y ofrecen métodos. |
+| ¿Cuándo resulta natural? | Tareas bien delimitadas y transformaciones. | Entidades que tienen estado y varias operaciones relacionadas. |
+| ¿Qué dificultad aparece? | Muchas funciones pueden requerir los mismos argumentos. | Las clases mal diseñadas introducen complejidad y estado innecesarios. |
+| ¿Puede servir en proyectos grandes? | Sí, con buena modularidad. | Sí, con responsabilidades claras. |
+
+**Una clase no es automáticamente mejor porque el proyecto sea grande.** Primero considera si necesitas representar una entidad con estado y comportamiento. Puedes combinar funciones y clases en el mismo proyecto.
+
+## 5.4 El mismo análisis con una clase
+
+Comparemos la función `promedio(duraciones(registros))` con una clase que conserva los registros como atributo:
+
+```{.python}
+class AnalizadorViajes:
+    def __init__(self, registros):
+        self.registros = registros
+
+    def duracion_promedio(self):
+        if not self.registros:
+            raise ValueError("No hay viajes para analizar")
+        duraciones = [v["duracion_min"] for v in self.registros]
+        return sum(duraciones) / len(duraciones)
+
+    def contar_por_estacion(self, estacion):
+        return sum(v["estacion"] == estacion for v in self.registros)
+
+
+analizador = AnalizadorViajes(VIAJES)
+print(analizador.duracion_promedio())  # 18.6
+print(analizador.contar_por_estacion("Centro"))  # 3
+```
+
+Para ejecutarlo en el proyecto, incorpora esta clase en un módulo e importa `VIAJES` desde `src.datos`. En un notebook, necesitarás ejecutar antes la celda que define `VIAJES`.
+
+**Reflexiona:** ¿Qué ventaja aporta aquí conservar los registros dentro del objeto? ¿Sería necesaria una clase para calcular solamente un promedio?
+
+## 5.5 Herencia (extensión opcional)
+
+La **herencia** permite que una clase especializada reutilice o redefina comportamientos de otra. Retomemos el ejemplo geométrico:
+
+```{.python}
+class Cuadrado(Rectangulo):
+    def __init__(self, lado):
+        super().__init__(lado, lado)
+
+
+cuadrado = Cuadrado(4)
+print(cuadrado.area())       # 16
+print(cuadrado.perimetro())  # 16
+```
+
+`Cuadrado` hereda los métodos de `Rectangulo` y `super().__init__` inicializa los atributos usando el método de la clase base. La herencia puede ser útil, pero tampoco es obligatoria: muchas veces conviene **componer objetos** en lugar de formar jerarquías extensas.
+
+## Práctica 3: comparar decisiones de diseño
+
+1. Implementa una función `contar_por_estacion(registros, estacion)`.
+2. Incorpora el método equivalente a `AnalizadorViajes`.
+3. Ejecuta ambos y verifica que los resultados coinciden.
+4. Explica qué enfoque prefieres para esta tarea y por qué. No basta con indicar que uno es más corto.
+
+# 6. Compartir y reconstruir el proyecto
+
+La organización del código y la gestión de dependencias se complementan. Para que otra persona pueda trabajar con tu proyecto, debe saber **qué ejecutar y cómo preparar el ambiente**.
+
+## 6.1 Archivos que versionamos con Git
+
+| Archivo o directorio | ¿Lo subimos? | ¿Por qué? |
+|---|---|---|
+| Código `src/` | Sí | Contiene la lógica del proyecto. |
+| `pyproject.toml` | Sí | Declara el proyecto y las dependencias directas. |
+| `uv.lock` | Sí | Registra versiones resueltas para reproducir el ambiente. |
+| `.python-version` | Sí, cuando se utiliza | Documenta la versión de Python solicitada. |
+| `.gitignore` | Sí | Define qué archivos no se versionan. |
+| `.venv/` | No | El ambiente local se reconstruye. |
+| Credenciales y secretos | No | No deben publicarse en el repositorio. |
+
+Revisa que `.gitignore` incluya al menos:
+
+```{.gitignore}
+.venv/
+__pycache__/
+*.py[cod]
+.secrets/
+.env
+```
+
+## 6.2 Flujo de reconstrucción
+
+En otra computadora con `uv` y Git instalados:
+
+```{.sh}
+git clone URL_DEL_REPOSITORIO
+cd mi_proyecto
+uv sync --locked
+uv run python -m src.analysis.resumen
+```
+
+`uv sync --locked` comprueba que el archivo de bloqueo es compatible con la configuración del proyecto y sincroniza el ambiente sin actualizar el bloqueo. Si el proyecto necesita una dependencia nueva:
+
+```{.sh}
+uv add pandas
+```
+
+Esto actualiza la declaración de dependencias y el archivo de bloqueo. **No necesitamos instalar paquetes globalmente ni subir `.venv/` a Git.**
+
+::: {.callout-note}
+## ¿Y los proyectos con `requirements.txt`?
+En repositorios antiguos puedes encontrar `requirements.txt`. Puedes crear un proyecto con `uv` e incorporar esas dependencias con `uv add -r requirements.txt` (si el archivo es una lista de requisitos compatible). Después revisa `pyproject.toml`, `uv.lock` y las posibles restricciones del proyecto original. No borres automáticamente archivos de requisitos usados por despliegues, CI u otras herramientas.
+:::
+
+# 7. Actividad integradora
+
+Trabaja en tu propio repositorio. El resultado debe poder ejecutarse desde una terminal **sin base de datos y sin notebook**.
+
+1. Crea un proyecto con `uv` y reproduce la estructura `src/analysis/`.
+2. Coloca los datos ficticios en `datos.py`, las funciones en `metricas.py` y la ejecución en `resumen.py`.
+3. Incorpora **dos funciones adicionales** que produzcan información útil de los viajes.
+4. Implementa **una clase pequeña** para resolver una de las mismas tareas y compara la elección de diseño con la solución procedural.
+5. Ejecuta todo usando `uv run python -m src.analysis.resumen`.
+6. Redacta un `README.md` breve que explique la estructura del proyecto, cómo reconstruirlo con `uv sync --locked` y cómo ejecutar el programa.
+7. Usa `git status` para asegurarte de que `.venv/` no está incluido entre los archivos a subir. Versiona el código, la configuración y el bloqueo.
+
+### Preguntas para discutir
+
+- ¿Qué diferencia hay entre dividir el código en funciones y dividirlo en archivos?
+- ¿Por qué funciona una importación en un contexto, pero no necesariamente en otro?
+- ¿Qué responsabilidad tiene cada módulo? ¿Hay archivos que mezclan tareas distintas?
+- ¿Qué problema resuelve una clase en tu solución? ¿Podrías resolverlo con funciones?
+- ¿Qué archivos necesita otra persona para **reconstruir**, en lugar de copiar, tu ambiente?
+
+::: {.callout-important}
+## Entregable mínimo
+El repositorio debe contener código Python organizado, un `README.md`, `pyproject.toml`, `uv.lock` y `.gitignore`. Debe ejecutarse desde la raíz con `uv run python -m src.analysis.resumen` después de sincronizar el ambiente.
+:::
+
+# Para seguir explorando
+
+- [Tutorial de Python: módulos](https://docs.python.org/3/tutorial/modules.html)
+- [Tutorial de Python: clases](https://docs.python.org/3/tutorial/classes.html)
+- [Python: la ruta de búsqueda de módulos](https://docs.python.org/3/tutorial/modules.html#the-module-search-path)
+- [Documentación de uv: proyectos](https://docs.astral.sh/uv/guides/projects/)
