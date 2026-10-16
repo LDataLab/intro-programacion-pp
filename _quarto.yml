@@ -17,6 +17,8 @@ website:
             href: tareas/tarea_01_q.html
           - text: "2. Conexión ssh-github"
             href: tareas/tarea_02.html
+          - text: "3. Práctica cli y git"
+            href: tareas/tarea_03.html
       - section: "**Documentos**"
         contents:
           - text: "Temario detallado"
