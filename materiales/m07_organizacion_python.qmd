@@ -1,0 +1,414 @@
+---
+title: "Organización del código en Python"
+subtitle: "Funciones, módulos, paquetes y paradigmas de programación"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# ¿Por qué organizar el código?
+
+Hasta ahora hemos trabajado con instrucciones de Python y notebooks. Un notebook es útil para aprender, explorar y documentar un análisis; sin embargo, una investigación o aplicación suele crecer hasta incluir funciones que se repiten en diferentes archivos. Nuestro objetivo no es abandonar los notebooks, sino **separar el código reutilizable de los experimentos que hacemos con él**.
+
+En esta nota discutimos la lógica. En el notebook `c07_python_practica.ipynb` probaremos cada idea, conservando el recorrido del material original: funciones, un analizador y los ejemplos de rectángulos y cuadrados. No utilizaremos bases de datos.
+
+# 1. ¿Qué es una función?
+
+Una función agrupa instrucciones que realizan una tarea. Puede recibir *parámetros* y regresar un resultado mediante `return`. Por ejemplo:
+
+```python
+def promedio(valores):
+    return sum(valores) / len(valores)
+```
+
+La instrucción `def` **define** la función; no ejecuta su contenido hasta que la llamamos. `valores` es un parámetro; al llamar `promedio([10, 20, 30])`, la lista es el argumento. `return` entrega el resultado a quien llamó la función; `print` únicamente lo muestra.
+
+Separar problemas en funciones permite **reutilizar, probar y explicar** cada transformación. Una función debe tener una responsabilidad reconocible y, siempre que sea posible, recibir explícitamente los datos que necesita.
+
+
+# 2. Funciones, módulos y paquetes
+
+- Un **módulo** es un archivo `.py` que podemos importar. 
+- Un **paquete** organiza módulos y subpaquetes bajo un nombre común. 
+- Para un uso adecuado generamos archivos `__init__.py` que marcan los directorios de paquetes.
+
+```markdown
+intro-programacion-pp/
+├── pyproject.toml
+├── uv.lock
+├── notebooks/
+│   └── c07_python_practica.ipynb
+└── src/
+    └── progra/
+        ├── __init__.py
+        └── analysis/
+            ├── __init__.py
+            ├── graficos.py
+            └── metricas.py
+```
+
+Revisa el archivo `metricas.py`, ahí definimos funciones como `promedio` y `calcular_area` que se pueden utilizar en un notebook mediante:
+
+```python
+from progra.analysis.metricas import promedio, calcular_area
+```
+
+- La lectura de derecha a izquierda ayuda: importa la función `promedio` del módulo `metricas`, dentro del subpaquete `analysis` del paquete `progra`. 
+
+:::{.callout-tip}
+## ¿Dónde debe vivir el código?
+
+- En el notebook: preguntas, exploración, narración y visualizaciones.
+- En los módulos `.py`: funciones o clases que reutilizamos en más de un lugar.
+- En `pyproject.toml`: requisitos de Python, dependencias y configuración para instalar el proyecto.
+:::
+
+# 3. ¿Cómo busca Python las importaciones?
+
+Cuando escribimos `import progra`, Python primero consulta módulos cargados y mecanismos de importación, y después busca entre los lugares configurados para encontrarlo. 
+
+- `ModuleNotFoundError: No module named 'progra'` significa que el intérprete que ejecutó el código no encontró ese nombre entre sus módulos disponibles. 
+
+- No significa necesariamente que el archivo no exista: puede estar usando otro ambiente, que el paquete no se haya instalado, o que la estructura del proyecto no coincida.
+
+:::{.callout-warning}
+## `PYTHONPATH` y `sys.path`
+
+- `PYTHONPATH` añade directorios a la búsqueda. Por ejemplo, si `src/` estuviera agregado allí, Python podría encontrar `progra`. 
+- **No lo usaremos como solución principal en el curso**: depende de configuraciones locales que otra persona quizá no tiene. 
+- **Tampoco usaremos** `sys.path.append("../src")` como solución dentro de los notebooks o módulos: puede ocultar errores de organización y hacer que funcionen solo desde un directorio específico.
+:::
+
+##  Un proyecto instalable con uv
+
+`uv` gestiona el entorno del proyecto y sus dependencias, pero **tener un `pyproject.toml` no implica automáticamente que el código de `src/progra` se instale como paquete**. 
+
+Necesitamos declarar un sistema de construcción (*build backend*). Para este ejemplo usaremos `hatchling` y especificaremos que el paquete se encuentra en `src/progra`.
+
+```toml
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/progra"]
+```
+
+El resto de `[project]` puede conservarse. Una vez creada la estructura:
+
+```bash
+uv sync
+```
+
+`uv sync` reconstruye el ambiente e instala el proyecto editable: los cambios en un `.py` se reflejan sin reinstalar el paquete, aunque un notebook podría necesitar volver a importar o reiniciar el kernel. 
+
+Para que Jupyter importe correctamente, debemos seleccionar el intérprete del proyecto, que VS code lo marca como recomendado. E
+
+# 5. Programación en Python
+
+## Programación procedural (orientada a procedimientos)
+
+Es el tipo de programación que hemos usado casi siempre: usamos funciones sueltas que reciben datos, hacen algo y devuelven resultados.
+
+- El enfoque procedural organiza el trabajo en pasos y se ejecuta de arriba hacia abajo. 
+- Las funciones son independientes una de otra. 
+- Se centra en las acciones que realiza el programa (calcular, filtrar, imprimir...).
+- Es sencilla, directa y fácil de entender para programas pequeños.
+- **El problema aparece si se acumulan variables globales, funciones demasiado extensas o dependencias ocultas.**
+- Si varias funciones usan los mismos datos, hay que pasarlos todo el tiempo.
+
+```python
+valores = [10, 20, 30]
+resultado = promedio(valores)
+print(resultado)
+```
+
+
+## Programación orientación a objetos
+
+La programación con clases cambia la forma de pensar: en lugar de centrarse solo en funciones, se centra en objetos que agrupan datos y comportamientos.
+
+
+La programación orientada a objetos reúne **datos y comportamientos relacionados** en objetos creados a partir de clases. En el notebook contrastaremos `promedio(datos)` con un objeto `Analizador(datos)` y las operaciones sobre un rectángulo.
+
+```python
+class Analizador:
+    def __init__(self, datos):
+        self.datos = datos
+
+    def promedio(self):
+        return sum(self.datos) / len(self.datos)
+```
+
+
+- **Clase**: definición de un tipo de objeto.
+- **Instancia**: objeto creado a partir de esa clase.
+- **Atributo**: dato asociado a un objeto (`self.datos`).
+- **Método**: función o comportamiento definido en una clase (`promedio`).
+- **`self`**: referencia convencional a la instancia que recibe un método.
+- **`__init__`**: método de inicialización que se invoca al crear la instancia (no es, estrictamente, el mecanismo completo de construcción del objeto).
+
+El objeto tiene *estado*: `Analizador([1, 2, 3])` guarda su propia lista. Eso es útil cuando varias operaciones trabajan sobre los mismos datos o cuando el objeto debe mantener información consistente.
+
+### 7. ¿Cómo decidimos entre funciones y objetos?
+
+| Pregunta | Generalmente convienen funciones | Puede convenir una clase |
+|---|---|---|
+| ¿Son transformaciones independientes? | Sí | No necesariamente |
+| ¿Necesitamos conservar estado entre operaciones? | No | Sí |
+| ¿El mismo conjunto de datos tiene muchos comportamientos relacionados? | A veces | Frecuentemente |
+| ¿Una clase agrega claridad o solo más sintaxis? | Preferir funciones si no agrega claridad | Usar clase si simplifica el diseño |
+
+**No es una escala donde clases = mejor o más avanzado.** Podemos usar funciones dentro de módulos, métodos dentro de clases y ambos enfoques dentro del mismo proyecto. Para análisis exploratorio, es habitual empezar con funciones pequeñas; las clases resultan útiles cuando hay una abstracción concreta y estado que administrar.
+
+# Más detalle de programación orientada a objetos
+
+La **programación orientada a objetos (POO)** es un paradigma que permite organizar el código agrupando datos y funciones dentro de una misma estructura llamada **clase**.
+
+Una clase define las características y comportamientos que tendrán los objetos creados a partir de ella.
+
+Sus principales características son:
+
+- **Agrupa datos y acciones:** los atributos (`self.datos`) y los métodos (`promedio()`) pertenecen a un mismo objeto.
+- **Mantiene un estado propio:** cada objeto creado puede almacenar información diferente.
+- **Facilita la organización del código:** permite representar entidades y comportamientos mediante componentes reutilizables.
+
+**Ventajas:**
+
+- Facilita la organización de programas cuando existen entidades con datos y comportamientos relacionados.
+- Permite crear múltiples objetos de una misma clase con diferentes atributos.
+- Favorece la reutilización y extensión del código.
+- Puede facilitar el mantenimiento de proyectos complejos.
+
+**Desventajas:**
+
+- Tiene una curva de aprendizaje inicial, especialmente para comprender `self`, atributos y métodos.
+- Puede agregar complejidad innecesaria cuando el problema se resuelve fácilmente mediante funciones.
+
+#### Comparación: programación con funciones y programación orientada a objetos
+
+| Concepto | Programación con funciones | Programación con clases |
+|---|---|---|
+| Enfoque | Funciones que reciben datos y realizan operaciones | Objetos que agrupan datos y métodos |
+| Datos | Se pasan como argumentos entre funciones | Pueden almacenarse como atributos del objeto |
+| Estado | Puede manejarse explícitamente mediante variables y argumentos | Puede mantenerse dentro de cada instancia |
+| Organización | Funciones agrupadas en módulos y paquetes | Clases agrupadas en módulos y paquetes |
+| Escalabilidad | Puede escalar adecuadamente con una buena organización | Puede escalar adecuadamente con un buen diseño |
+| Ejemplo | `promedio(lista)` | `analizador.promedio()` |
+| Ideal para | Transformaciones, cálculos, scripts y tareas independientes | Entidades con estado, comportamientos relacionados y aplicaciones complejas |
+
+**Importante:** ninguno de estos enfoques es necesariamente mejor que el otro. La elección depende de la naturaleza del problema y de cómo convenga organizar la información y las operaciones.
+
+### Especificaciones de programación con clases
+
+Dentro de una clase hay tres conceptos esenciales: **`self`, atributos y métodos**.
+
+#### 1. `self`: referencia al objeto
+
+`self` es una referencia a la **instancia actual** de una clase.
+
+- Permite acceder a los datos y métodos del propio objeto.
+- Se utiliza dentro de una clase para consultar o modificar sus atributos.
+- Por convención, aparece como primer parámetro de los métodos de instancia.
+- Python proporciona automáticamente la instancia cuando llamamos al método desde un objeto.
+
+Por ejemplo:
+
+```python
+class Identificador:
+    def saludar(self):
+        print("Hola")
+```
+
+Cuando creamos una instancia y ejecutamos:
+
+```python
+persona = Identificador()
+persona.saludar()
+```
+
+Python pasa automáticamente `persona` como el argumento correspondiente a `self`.
+
+Esto es equivalente a:
+
+```python
+Identificador.saludar(persona)
+```
+
+#### 2. Atributos: propiedades del objeto
+
+Los **atributos** son las propiedades o características que almacenan información de un objeto.
+
+- Representan los datos asociados a una instancia.
+- Pueden tener valores distintos para cada objeto.
+- Habitualmente se inicializan dentro del método `__init__()`.
+
+El método `__init__()` permite inicializar los atributos cuando creamos un objeto.
+
+Por ejemplo:
+
+```python
+class Identificador:
+    def __init__(self, nombre, edad):
+        self.nombre = nombre
+        self.edad = edad
+```
+
+Ahora podemos crear una instancia de la clase:
+
+```python
+persona = Identificador("Luis", 29)
+```
+
+Cuando ejecutamos esta instrucción, Python crea el objeto y llama a `__init__()` para inicializar sus atributos.
+
+De forma simplificada, la inicialización equivale a:
+
+```python
+Identificador.__init__(persona, "Luis", 29)
+```
+
+Por lo tanto:
+
+- `self.nombre` almacena `"Luis"`.
+- `self.edad` almacena `29`.
+
+Podemos acceder a sus atributos mediante:
+
+```python
+print(persona.nombre)
+print(persona.edad)
+```
+
+**Cada objeto tiene sus propios atributos.**
+
+Por ejemplo:
+
+```python
+persona1 = Identificador("Luis", 29)
+persona2 = Identificador("Daniel", 27)
+```
+
+Ambos objetos pertenecen a la clase `Identificador`, pero contienen valores diferentes:
+
+```python
+print(persona1.nombre)  # Luis
+print(persona2.nombre)  # Daniel
+```
+
+Esto significa que **una clase define la estructura general, mientras que cada instancia contiene sus propios datos**.
+
+#### 3. Métodos: comportamiento del objeto
+
+Los **métodos** son funciones definidas dentro de una clase que representan las acciones o comportamientos de sus objetos.
+
+- Se definen mediante `def`, igual que las funciones.
+- Los métodos de instancia reciben `self` como primer parámetro.
+- Pueden consultar o modificar los atributos del propio objeto.
+- Se ejecutan utilizando la notación `objeto.metodo()`.
+
+Por ejemplo, agreguemos un método `saludar()` a nuestra clase:
+
+```python
+class Identificador:
+    def __init__(self, nombre, edad):
+        self.nombre = nombre
+        self.edad = edad
+
+    def saludar(self):
+        print(f"Hola, soy {self.nombre} y tengo {self.edad} años.")
+```
+
+Ahora podemos crear distintos objetos y ejecutar el mismo método:
+
+```python
+persona1 = Identificador("Luis", 29)
+persona2 = Identificador("Daniel", 27)
+
+persona1.saludar()
+persona2.saludar()
+```
+
+**Resultado:**
+
+```text
+Hola, soy Luis y tengo 29 años.
+Hola, soy Daniel y tengo 27 años.
+```
+
+Observa que `saludar()` es el mismo método para ambos objetos, pero produce resultados diferentes porque utiliza los atributos de cada instancia.
+
+#### ¿Cómo se relacionan `self`, atributos y métodos?
+
+En conjunto:
+
+- Los **atributos** representan el estado del objeto.
+- Los **métodos** representan su comportamiento.
+- **`self`** permite acceder al estado y a los métodos de una instancia desde sus propios métodos.
+
+En nuestro ejemplo:
+
+```python
+persona1 = Identificador("Luis", 29)
+persona1.saludar()
+```
+
+1. `Identificador` es la clase.
+2. `persona1` es una instancia de esa clase.
+3. `nombre` y `edad` son atributos.
+4. `saludar()` es un método.
+5. `self` permite que `saludar()` acceda a los atributos de `persona1`.
+
+### Otro ejemplo: clases para realizar cálculos
+
+Consideremos una clase `Analizador` que almacena una lista de valores y permite calcular su promedio.
+
+```python
+class Analizador:
+    def __init__(self, datos):
+        self.datos = datos
+
+    def promedio(self):
+        return sum(self.datos) / len(self.datos)
+```
+
+Creamos dos objetos:
+
+```python
+analizador1 = Analizador([10, 20, 30])
+analizador2 = Analizador([5, 15, 25, 35])
+
+print(analizador1.promedio())
+print(analizador2.promedio())
+```
+
+**Resultado:**
+
+```text
+20.0
+20.0
+```
+
+Aunque ambos objetos tienen datos distintos, utilizan el mismo método para calcular el promedio.
+
+También podríamos resolverlo mediante una función independiente:
+
+```python
+def promedio(datos):
+    return sum(datos) / len(datos)
+
+promedio([10, 20, 30])
+```
+
+**Pregunta para reflexionar:** si únicamente necesitamos calcular el promedio de una lista, ¿realmente necesitamos crear una clase? ¿En qué circunstancias tendría sentido utilizar `Analizador` en lugar de una función independiente?
+
+### Para seguir explorando
+
+- [Tutorial de Python: módulos](https://docs.python.org/3/tutorial/modules.html)
+- [Tutorial de Python: clases](https://docs.python.org/3/tutorial/classes.html)
+- [Python: la ruta de búsqueda de módulos](https://docs.python.org/3/tutorial/modules.html#the-module-search-path)
+- [Documentación de uv: proyectos](https://docs.astral.sh/uv/guides/projects/)

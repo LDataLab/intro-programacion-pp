@@ -10,32 +10,7 @@ format:
 date: today
 ---
 
-# Comandos útiles
-
-
-| Objetivo | Comando |
-|---|---|
-| Ver estado | `git status` |
-| Ver ramas | `git branch` |
-| Ver remotos | `git remote -v` |
-| Ver historial compacto | `git log --oneline --graph --all` |
-| Ver cambios | `git diff` |
-| Ver cambios preparados | `git diff --staged` |
-| Agregar archivo | `git add <archivo>` |
-| Registrar commit | `git commit -m "mensaje"` |
-| Descargar información remota | `git fetch` |
-| Actualizar rama | `git pull` |
-| Subir commits | `git push` |
-| Cambiar de rama | `git switch <rama>` |
-| Crear y cambiar a rama | `git switch -c <rama>` |
-| Integrar otra rama | `git merge <rama>` |
-| Descartar cambios locales de un archivo | `git restore <archivo>` |
-| Quitar archivo del staging | `git restore --staged <archivo>` |
-| Eliminar rama local integrada | `git branch -d <rama>` |
-
-
-
-# La idea central
+# Idea central de git
 
 Git no es solamente una forma de “subir archivos”.
 
@@ -58,21 +33,66 @@ Cosas a considerar:
 - Una cosa es el trabajo que hagas en tu repositorio local (para efectos de la clase bastión) y otra lo que hagas en gitlab (la página del repositorio o el repositorio remoto), por lo que, recuerda **siempre actualizar tu local para que coincida con lo que tienes en línea**. 
 
 
-##  `.gitignore`.
+## Comandos principales
 
-> Tengo un archivo que Git no debería rastrear
 
-Utiliza `.gitignore`.
+| Objetivo | Comando |
+|---|---|
+| Ver estado | `git status` |
+| Ver ramas | `git branch` |
+| Ver cambios | `git diff` |
+| Agregar archivo | `git add <archivo>` |
+| Registrar commit | `git commit -m "mensaje"` |
+| Subir commits | `git push` |
+| Actualizar rama | `git pull` |
 
-Ejemplo:
+## Comandos de soporte
 
-```gitignore
+| Objetivo | Comando |
+|---|---|
+| Crear y cambiar a rama | `git switch -c <rama>` |
+| Subir una rama local al remoto | `git push -u origin <rama>` |
+| Ver cambios preparados | `git diff --staged` |
+| Descargar información remota | `git fetch` |
+| Cambiar de rama | `git switch <rama>` |
+| Descartar cambios locales de un archivo | `git restore <archivo>` |
+| Quitar archivo del staging | `git restore --staged <archivo>` |
+| Ver historial compacto | `git log --oneline --graph --all` |
+| Integrar otra rama | `git merge <rama>` |
+| Eliminar rama local integrada | `git branch -d <rama>` |
+| Ver remotos | `git remote -v` |
+
+# Archivos de gestión
+
+##  `.gitignore`
+
+Existen archivos que no se deben de subir al repositorio, como credenciales y/o bases de datos. 
+Para hacer que un archivo no se rastreé en el control de versiones se utiliza `.gitignore`.
+
+
+::: {.callout-important}
+## Siempre utiliza `.gitignore` y nunca subas contraseñas
+Este es un archivo importantísimo para un buen manejo de repositorios, utilízalo en cada
+repositorio que tengas.
+
+**Nunca** debes subir al repositorio:
+
+- contraseñas;
+- tokens;
+- llaves privadas;
+- archivos `.env` con credenciales.
+:::
+
+Ejemplo de archivos que no queremos control de versiones:
+
+```python
 .env
 .venv/
 __pycache__/
 *.pyc
 .DS_Store
 data/raw/
+.secrets
 ```
 
 El archivo `.gitignore` indica qué archivos o patrones Git debe ignorar.
@@ -81,15 +101,8 @@ El archivo `.gitignore` indica qué archivos o patrones Git debe ignorar.
 `.gitignore` no elimina automáticamente archivos que Git **ya estaba rastreando**.
 :::
 
-Nunca deberías subir al repositorio:
 
-- contraseñas;
-- tokens;
-- llaves privadas;
-- archivos `.env` con credenciales.
-
-
-## ¿Y `.gitkeep`?
+## `.gitkeep`
 
 Git no registra carpetas vacías; registra archivos.
 
@@ -110,7 +123,7 @@ Que dos personas cambien el mismo archivo **no significa automáticamente que ha
 
 Por ejemplo:
 
-```text
+```python
 Persona A modifica línea 10.
 Persona B modifica línea 80.
 ```
@@ -121,7 +134,7 @@ El problema aparece cuando Git no puede decidir con seguridad cuál debe ser el 
 
 Un caso común es:
 
-```text
+```python
 Persona A modifica línea 10.
 Persona B modifica la misma línea 10.
 ```
@@ -139,25 +152,25 @@ También puede ocurrir, por ejemplo, cuando:
 
 Supongamos que ambas personas parten del mismo estado:
 
-```text
+```python
 A --- B
 ```
 
 Persona 1 hace:
 
-```text
+```python
 A --- B --- C
 ```
 
 Mientras Persona 2 hace:
 
-```text
+```python
 A --- B --- D
 ```
 
 Ahora existen dos líneas de desarrollo:
 
-```text
+```python
           C
          /
 A --- B
@@ -250,38 +263,39 @@ Mientras trabajabas, otra persona pudo haber integrado cambios a `main`.
 
 Entonces puedes tener:
 
-```text
+```python
 main:        A --- B --- C --- D
                   \
 tu-rama:           E --- F
 ```
 
-Antes de integrar tu trabajo conviene traer los cambios recientes de `main`.
-
-Una forma sencilla es:
+Si estás trabajando en tu-rama, puedes traer los cambios recientes de `main`
+e integrarlos directamente con:
 
 ```bash
-git switch main
 git pull origin main
-git switch <tu-rama>
-git merge main
 ```
 
-Si no existen conflictos, Git integrará los cambios.
+Este comando obtiene los cambios de main en GitHub (origin/main) y los
+integra a la rama en la que estás trabajando.
 
-Después:
+Si no existen conflictos, Git hará la integración automáticamente.
+
+Después puedes subir tu rama actualizada:
 
 ```bash
-git push
+git push 
 ```
 
 Tu Pull Request quedará actualizado.
 
-::: {.callout-note}
-Git también permite actualizar una rama mediante `rebase`. Es una herramienta útil, pero modifica la forma en que se representa el historial. Para este curso utilizaremos `merge` para mantener el flujo inicial más explícito.
+:::{.callout-warning}
+## Considera:
+- `git pull origin main` actualiza tu rama actual con los cambios de `origin/main`, pero no actualiza tu rama local `main`. Cuando regreses a `main`, puedes actualizarla con `git pull origin main`.
+- GitHub también puede mostrar un botón **Update branch** en algunos Pull Requests cuando la rama está atrasada respecto a `main`.
+
 :::
 
-GitHub también puede mostrar un botón **Update branch** en algunos Pull Requests cuando la rama está atrasada respecto a `main`.
 
 
 # Conflictos
@@ -613,7 +627,7 @@ Primero:
 git status
 ```
 
-### Todavía no hiciste commit
+### Si todavía no hiciste commit
 
 Puedes crear una nueva rama conservando tus cambios:
 
@@ -623,7 +637,7 @@ git switch -c mi-rama
 
 Ahora tus modificaciones permanecen contigo, pero ya estás trabajando en una rama distinta de `main`.
 
-### Ya hiciste commit
+### Si ya hiciste commit
 
 No borres cosas al azar.
 
@@ -680,7 +694,7 @@ Si se abrió Vim:
 1. presiona `Esc`;
 2. escribe:
 
-```text
+```bash
 :wq
 ```
 
@@ -690,59 +704,9 @@ Esto guarda el mensaje y cierra Vim.
 
 Para salir sin guardar:
 
-```text
+```bash
 :q!
 ```
-
-
-
-# Issues y Pull Requests
-
-## ¿Para qué sirve un issue?
-
-Un **issue** permite registrar una tarea, problema o propuesta.
-
-Puede incluir:
-
-- objetivo;
-- contexto;
-- criterios de terminación;
-- persona responsable;
-- etiquetas;
-- conversación.
-
-Por ejemplo:
-
-```text
-Issue #12
-Agregar validación de nombres de columnas
-```
-
-Después puedes crear una rama relacionada:
-
-```text
-issue-12-validacion-columnas
-```
-
-o:
-
-```text
-fix/12-validacion-columnas
-```
-
-No todos los cambios pequeños necesitan necesariamente un issue, pero en proyectos colaborativos ayudan a organizar el trabajo.
-
-
-## Relacionar un Pull Request con un issue
-
-En la descripción de un Pull Request puedes escribir, por ejemplo:
-
-```text
-Closes #12
-```
-
-Cuando el Pull Request se integra, GitHub puede cerrar automáticamente el issue relacionado.
-
 
 
 

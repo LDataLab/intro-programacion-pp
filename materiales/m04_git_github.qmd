@@ -289,7 +289,7 @@ git push
 
 # Trabajo colaborativo
 
-## 6. ¿Por qué utilizar ramas?
+## 1. ¿Por qué utilizar ramas?
 
 La rama `main` representa la versión principal del proyecto.
 
@@ -306,7 +306,7 @@ En lugar de eso:
 
 Esto permite que varias personas trabajen en paralelo sin modificar directamente la versión principal.
 
-```text
+```python
 main
   |
   A----B------------------E
@@ -316,7 +316,7 @@ main
 ```
 
 
-## 7. Un workflow sencillo para GitHub
+## 2. Un workflow sencillo para GitHub
 
 Para este curso utilizaremos un flujo basado en ramas cortas y Pull Requests.
 
@@ -347,12 +347,12 @@ git switch -c <nombre-rama>
 Por ejemplo:
 
 ```bash
-git switch -c script_exploratorio
+git switch -c exploracion
 ```
 
 Algunos equipos utilizan convenciones como:
 
-```text
+```python
 feature/nueva-variable
 fix/error-fechas
 docs/actualiza-readme
@@ -386,25 +386,26 @@ Puedes hacer varios commits durante el desarrollo.
 
 ### Paso 6. Sube la rama a GitHub
 
-La primera vez:
+La primera vez que subes la rama al repositorio remoto debes de utilizar `-u` que es la
+abreviatura de `--set-upstream`, que es para vincular tu rama local actual con una rama
+específica en el repositorio remoto:
 
 ```bash
-git push origin <nombre-rama>
+git push -u origin <nombre-rama>
 ```
 
 Por ejemplo:
 
 ```bash
-git push origin limpieza-nombres
+git push -u origin exploracion
 ```
 
-Después normalmente basta con:
+Después basta con (porque ya está vinculada la rama con el `-u`:
 
 ```bash
 git push
 ```
 
-- La opción `-u` vincula tu rama local con la rama remota correspondiente en caso de que no exista
 
 ### Paso 7. Abre un Pull Request en GitHub
 
