@@ -183,9 +183,6 @@ database.yaml
 # logs
 *.debug
 
-# pyenv
-.python-version
-
 *.swp
 *.swo
 
