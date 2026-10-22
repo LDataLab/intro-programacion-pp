@@ -1,0 +1,275 @@
+---
+title: "DuckDB, SQL y análisis desde Python"
+subtitle: "De Parquet a raw y clean en un proyecto reproducible"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    highlight-style: github
+date: today
+execute:
+  eval: false
+---
+
+::: {.callout-warning}
+## Borrador adaptable
+
+Esta sesión define el **flujo de trabajo**, no una base definitiva. Los nombres `apoyos`, `id_apoyo`, `municipio`, `monto` y `fecha` son ilustrativos. Ajustar consultas, validaciones y transformaciones después de elegir la fuente de datos real.
+:::
+
+## Objetivos de aprendizaje
+
+- Crear una base de datos local con DuckDB.
+- Distinguir archivos Parquet, vistas SQL y tablas persistentes.
+- Organizar un proyecto en esquemas `raw` y `clean`.
+- Aplicar transformaciones de limpieza con SQL y validar resultados.
+- Consultar tablas desde Python y generar un resultado analítico.
+- Reproducir una base a partir de datos de entrada, scripts SQL y dependencias versionadas.
+
+## 1. El proyecto que construiremos
+
+**Flujo:** archivo Parquet de origen → vista en `raw` → tabla materializada en `clean` → consulta SQL → DataFrame de pandas → gráfica en Python.
+
+```text
+proyecto/
+├── data/
+│   └── raw/
+│       └── apoyos.parquet       # Archivo de origen (ejemplo)
+├── sql/
+│   ├── 01_schemas.sql
+│   ├── 02_raw.sql
+│   ├── 03_clean.sql
+│   └── 04_queries.sql
+├── src/
+│   └── build_db.py
+├── notebooks/
+│   └── 01_analisis.ipynb
+├── proyecto.duckdb              # Base local generada; NO subir a Git
+├── pyproject.toml
+├── uv.lock
+├── .gitignore
+└── README.md
+```
+
+### ¿Qué se sube a Git?
+
+- Scripts SQL, código Python, `pyproject.toml`, `uv.lock`, instrucciones y metadatos del origen.
+- Datos originales únicamente si son pequeños y está permitido redistribuirlos; de otro modo, registrar fuente, versión, fecha de descarga y validación.
+- **No subir** `proyecto.duckdb` ni archivos temporales de DuckDB.
+
+## 2. Preparar el ambiente con uv
+
+```{.sh}
+uv add duckdb pandas matplotlib
+```
+
+La práctica utiliza DuckDB desde Python; no hace falta instalar el cliente `duckdb` de terminal. Más adelante puede mostrarse la CLI como herramienta complementaria.
+
+```{.python}
+import duckdb
+print(duckdb.__version__)
+```
+
+## 3. Crear una base de datos y sus esquemas
+
+```{.python}
+import duckdb
+con = duckdb.connect("proyecto.duckdb")
+```
+
+Archivo `sql/01_schemas.sql`:
+
+```{.sql}
+CREATE SCHEMA IF NOT EXISTS raw;
+CREATE SCHEMA IF NOT EXISTS clean;
+CREATE SCHEMA IF NOT EXISTS ontology;
+```
+
+**Discusión:** un esquema es una organización lógica de objetos, no una carpeta del sistema. `ontology` se presenta ahora, pero no se desarrolla en esta práctica.
+
+## 4. Representar los datos de origen en raw
+
+### 4.1 ¿Por qué Parquet?
+
+- Formato de archivo columnar, comprimido y con tipos de datos.
+- No equivale a una tabla interna de DuckDB.
+- El motor puede consultar Parquet sin copiarlo a su almacenamiento.
+
+### 4.2 Crear una vista sobre un Parquet
+
+Archivo `sql/02_raw.sql`:
+
+```{.sql}
+CREATE OR REPLACE VIEW raw.apoyos AS
+SELECT *
+FROM read_parquet('data/raw/apoyos.parquet');
+```
+
+**Una vista guarda una definición de consulta**, no una copia de todas las filas. Para esta práctica asumimos que ejecutamos Python desde la raíz del repositorio y que el archivo existe allí.
+
+### 4.3 Explorar antes de limpiar
+
+```{.sql}
+DESCRIBE raw.apoyos;
+SELECT COUNT(*) AS n_registros FROM raw.apoyos;
+SELECT * FROM raw.apoyos LIMIT 10;
+```
+
+**Preguntas:** ¿Qué representa cada fila? ¿Hay columnas identificadoras? ¿Tipos incorrectos? ¿Valores nulos? ¿Registros potencialmente duplicados?
+
+## 5. Construir una tabla en clean
+
+Archivo `sql/03_clean.sql` (ejemplo sujeto al conjunto de datos):
+
+```{.sql}
+CREATE OR REPLACE TABLE clean.apoyos AS
+SELECT
+    id_apoyo,
+    UPPER(TRIM(municipio)) AS municipio,
+    TRY_CAST(monto AS DOUBLE) AS monto,
+    TRY_CAST(fecha AS DATE) AS fecha
+FROM raw.apoyos
+WHERE id_apoyo IS NOT NULL;
+```
+
+### 5.1 Qué hace cada transformación
+
+- `TRIM`, `UPPER`: estandarización de texto.
+- `TRY_CAST`: conversión de tipos; si no se puede convertir, devuelve `NULL`.
+- `WHERE`: regla explícita de filtrado.
+- `CREATE OR REPLACE TABLE ... AS`: materializa el resultado dentro de `.duckdb`.
+
+::: {.callout-important}
+## Validar antes de asumir que la limpieza fue correcta
+
+No eliminar observaciones ni corregir valores de manera arbitraria. Cada regla debe responder a un problema encontrado en los datos y acompañarse de una validación: conteos antes/después, filas excluidas, nulos creados por conversiones y unicidad de identificadores cuando corresponda.
+:::
+
+### 5.2 Verificaciones
+
+```{.sql}
+SELECT COUNT(*) FROM raw.apoyos;
+SELECT COUNT(*) FROM clean.apoyos;
+SELECT COUNT(*) FROM clean.apoyos WHERE monto IS NULL;
+SELECT COUNT(*) - COUNT(DISTINCT id_apoyo) AS ids_repetidos
+FROM clean.apoyos;
+```
+
+**Nota:** un identificador repetido puede ser esperado si la unidad de observación no es un evento único. Interpretar primero la definición de cada registro.
+
+## 6. Consultas sobre clean
+
+Archivo `sql/04_queries.sql`:
+
+```{.sql}
+SELECT
+    municipio,
+    COUNT(*) AS total_apoyos,
+    SUM(monto) AS monto_total
+FROM clean.apoyos
+GROUP BY municipio
+ORDER BY monto_total DESC;
+```
+
+**Reto:** proponer una consulta multivariable y justificar qué pregunta contesta.
+
+## 7. Construir o reconstruir la base con Python
+
+Archivo `src/build_db.py`:
+
+```{.python}
+from pathlib import Path
+import duckdb
+
+ROOT = Path(__file__).resolve().parents[1]
+DB = ROOT / "proyecto.duckdb"
+SCRIPTS = [
+    "01_schemas.sql",
+    "02_raw.sql",
+    "03_clean.sql",
+]
+
+# read_parquet usa rutas relativas: trabajar desde la raíz del proyecto.
+import os
+os.chdir(ROOT)
+
+with duckdb.connect(str(DB)) as con:
+    for filename in SCRIPTS:
+        sql = (ROOT / "sql" / filename).read_text(encoding="utf-8")
+        con.execute(sql)
+
+print(f"Base construida: {DB}")
+```
+
+Ejecutar desde la raíz:
+
+```{.sh}
+uv run python src/build_db.py
+```
+
+**Discusión:** este procedimiento es reproducible si coinciden también el archivo de entrada, los scripts, las versiones de dependencias y las reglas de transformación. Para un caso real, agregar validaciones automáticas y manejo de errores.
+
+## 8. Consultar desde Python y visualizar
+
+```{.python}
+import duckdb
+import matplotlib.pyplot as plt
+
+with duckdb.connect("proyecto.duckdb", read_only=True) as con:
+    df = con.execute("""
+        SELECT municipio, SUM(monto) AS monto_total
+        FROM clean.apoyos
+        GROUP BY municipio
+        ORDER BY monto_total DESC
+    """).df()
+
+ax = df.plot.bar(x="municipio", y="monto_total", legend=False)
+ax.set_ylabel("Monto total")
+plt.tight_layout()
+plt.show()
+```
+
+**Idea central:** consultar/agregar con SQL y llevar a Python el resultado necesario para el análisis, en lugar de copiar toda la base a pandas.
+
+## 9. Colaboración y reproducibilidad
+
+- Integrar cambios a SQL mediante Git y pull requests.
+- Reconstruir la base en cada computadora después de actualizar los scripts.
+- No editar `clean` manualmente como única fuente de verdad.
+- Comprobar cantidades, tipos y resultados de consultas de control.
+- Comparar versiones de los datos originales y del `uv.lock`.
+
+`.gitignore` recomendado:
+
+```{.gitignore}
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp/
+```
+
+## 10. Entregable y reflexión
+
+**Entregable:** un repositorio con datos de origen accesibles y documentados, scripts SQL, script para construir la base, y un notebook que consulte `clean` desde Python para responder una pregunta concreta.
+
+Preguntas de cierre:
+
+- ¿Qué diferencia hay entre un Parquet en `data/raw/`, una vista `raw.apoyos` y una tabla `clean.apoyos`?
+- ¿Qué queda almacenado en `proyecto.duckdb`?
+- ¿Qué necesitaría otra persona para reconstruir la base sin recibir el archivo `.duckdb`?
+- ¿Qué ventajas y límites tendría este flujo frente a una base PostgreSQL compartida?
+
+## Pendientes para adaptar a la base real
+
+- [ ] Seleccionar fuente pública, licencia y versión de datos.
+- [ ] Documentar unidad de observación y llaves.
+- [ ] Identificar transformaciones justificadas por errores observados.
+- [ ] Agregar al menos una relación entre tablas si la fuente lo permite.
+- [ ] Diseñar consultas que respondan preguntas de política pública.
+- [ ] Probar reconstrucción completa en Windows/WSL y macOS.
+
+## Referencias
+
+- DuckDB Python API: <https://duckdb.org/docs/stable/clients/python/overview>
+- DuckDB Parquet: <https://duckdb.org/docs/stable/data/parquet/overview>
+- DuckDB `CREATE VIEW`: <https://duckdb.org/docs/stable/sql/statements/create_view>
