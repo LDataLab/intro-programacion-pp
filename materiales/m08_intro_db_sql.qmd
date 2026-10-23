@@ -1,0 +1,214 @@
+---
+title: "Introducción a bases de datos relacionales y SQL"
+subtitle: "Fundamentos, motores y consultas"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+## Objetivos de aprendizaje
+
+Al finalizar la sesión, podrás:
+
+- Distinguir un archivo de datos, una base de datos y un sistema gestor de bases de datos (DBMS).
+- Explicar el modelo relacional, sus tablas, llaves y relaciones.
+- Comparar PostgreSQL, DuckDB, SQLite y otras alternativas según su propósito.
+- Leer y escribir consultas con `SELECT`, `FROM`, `WHERE`, `GROUP BY`, `HAVING`, `ORDER BY` y `JOIN`.
+- Relacionar las consultas SQL con preguntas de análisis de política pública.
+
+::: {.callout-note}
+## Pregunta de apertura
+
+Tenemos tres archivos: `beneficiarios.csv`, `programas.csv` y `entregas.csv`. ¿Cómo identificar cuántas personas recibieron apoyos por municipio, sin duplicar beneficiarios que aparecen en múltiples entregas?
+:::
+
+## 1. ¿Qué es una base de datos?
+
+Una **base de datos** es una colección organizada de datos; un **sistema gestor de bases de datos** (DBMS) es el software que permite definirlos, almacenarlos, consultarlos y modificarlos de manera controlada. Una base puede ser local o compartida; no todas necesitan un servidor separado.
+
+### 1.1 Archivos vs. bases de datos
+
+- CSV y Parquet son **formatos de archivo**; no son motores de bases de datos.
+- Un motor puede administrar tablas propias y/o consultar archivos externos.
+- Consideraciones: persistencia, estructura, tipos, validación, relaciones, consultas y concurrencia.
+- Un conjunto de archivos puede ser adecuado para un análisis; una base de datos aporta otras capacidades según el motor.
+
+### 1.2 Bases operacionales y analíticas
+
+- **OLTP**: muchas transacciones pequeñas, actualizaciones y consultas concurrentes.
+- **OLAP**: análisis y agregaciones sobre grandes volúmenes de datos.
+- No son categorías excluyentes: describen principalmente cargas de trabajo.
+
+## 2. Modelo relacional
+
+### 2.1 Tablas, filas, columnas y tipos
+
+En el modelo relacional, la información se organiza mediante relaciones representadas habitualmente como tablas. Las filas representan registros y las columnas atributos con tipos definidos.
+
+**Ejemplo conceptual:**
+
+| id_persona | nombre | municipio |
+|---:|---|---|
+| 101 | Ana | Puebla |
+| 102 | Luis | Oaxaca |
+| 103 | Sofía | Puebla |
+
+**Tabla de entregas:**
+
+| id_entrega | id_persona | monto |
+|---|---:|---:|
+| A01 | 101 | 2500 |
+| A02 | 101 | 2500 |
+| A03 | 102 | 3000 |
+
+### 2.2 Llaves y relaciones
+
+- **Llave primaria**: identifica de forma única un registro de una tabla.
+- **Llave foránea**: referencia un registro de otra tabla, sujeto a las restricciones declaradas.
+- Relaciones **uno a uno**, **uno a muchos** y **muchos a muchos** (frecuentemente mediante una tabla intermedia).
+- **Integridad referencial**: evitar referencias a registros inexistentes cuando se aplican restricciones.
+- **Normalización (intuición)**: organizar tablas para reducir redundancia y anomalías de actualización.
+
+### 2.3 Unidad de observación, entidades y eventos
+
+- **Entidad**: objeto o persona que queremos identificar (por ejemplo, beneficiario).
+- **Evento**: suceso registrado respecto de una entidad (por ejemplo, entrega de un apoyo).
+- **Unidad de observación**: qué representa una fila en una tabla dada.
+- ¿Por qué un `id_persona` puede aparecer varias veces en la tabla de entregas sin que eso implique duplicados erróneos?
+- ¿Un folio repetido implica el mismo evento? Depende del proceso de registro y de la calidad de los datos.
+
+### 2.4 Valores faltantes: `NULL`
+
+- `NULL` significa ausencia o desconocimiento del valor, no equivale a cero ni a cadena vacía.
+- Usar `IS NULL` / `IS NOT NULL` (no `= NULL`).
+- En agregaciones, considerar cuándo los valores faltantes se excluyen del cálculo.
+
+## 3. Herramientas y arquitecturas
+
+| Motor | Arquitectura predominante | Uso típico |
+|---|---|---|
+| PostgreSQL | Cliente-servidor, relacional | Sistemas operacionales y bases compartidas con roles/permisos |
+| MySQL/MariaDB | Cliente-servidor, relacional | Aplicaciones y transacciones |
+| SQLite | Embebida, relacional | Aplicaciones y datos locales; archivo portable |
+| DuckDB | Embebida, relacional, analítica | Consultas y transformaciones analíticas sobre tablas/CSV/Parquet |
+| MongoDB | NoSQL, documentos | Documentos con estructura flexible |
+| BigQuery | Almacén analítico administrado | SQL analítico en infraestructura cloud |
+
+### 3.1 Diferencia entre cliente, servidor y motor embebido
+
+- PostgreSQL: un **servidor** administra las bases; clientes como `psql` envían consultas.
+- DuckDB y SQLite: el motor se ejecuta **dentro del proceso** de la aplicación; no requieren instalar un servidor de BD separado.
+- **Documentación complementaria** para la siguiente unidad: conexión remota, autenticación, usuarios, roles y permisos en PostgreSQL.
+
+### 3.2 Esquemas y organización de proyectos
+
+En PostgreSQL y DuckDB, los **esquemas** agrupan lógicamente objetos de una base. Una convención útil para productos de datos es:
+
+- `raw`: representación de datos de origen, sin transformaciones semánticas.
+- `clean`: datos estandarizados y validados.
+- `ontology`: entidades, eventos u otras tablas estructuradas para análisis posteriores.
+
+Estos nombres son convenciones del proyecto, **no** esquemas obligatorios ni capacidades idénticas en todos los motores.
+
+## 4. Introducción a SQL
+
+SQL es un lenguaje principalmente **declarativo**: expresamos la información que deseamos y el motor decide cómo ejecutar la consulta.
+
+### 4.1 Consultar y definir datos
+
+- Consultas: `SELECT`.
+- Definición: `CREATE TABLE`, `CREATE VIEW`, `ALTER TABLE`, `DROP TABLE`.
+- Cambios de registros: `INSERT`, `UPDATE`, `DELETE`.
+- Gestión de acceso (en motores compatibles): `GRANT`, `REVOKE`.
+
+### 4.2 Anatomía de una consulta
+
+```{.sql}
+SELECT
+    municipio,
+    COUNT(*) AS total_entregas,
+    SUM(monto) AS monto_total
+FROM entregas
+WHERE monto > 0
+GROUP BY municipio
+HAVING COUNT(*) >= 2
+ORDER BY monto_total DESC
+LIMIT 10;
+```
+
+**Nota:** El ejemplo anterior asume una tabla de entregas que ya contiene `municipio`. Si el municipio está solo en la tabla de personas, necesitaremos un `JOIN` antes de agrupar.
+
+| Cláusula | Función |
+|---|---|
+| `SELECT` | Escoger columnas y calcular expresiones |
+| `FROM` | Identificar fuente(s) de datos |
+| `JOIN ... ON` | Relacionar tablas |
+| `WHERE` | Filtrar filas antes de agrupar |
+| `GROUP BY` | Agrupar filas |
+| `HAVING` | Filtrar grupos |
+| `ORDER BY` | Ordenar resultados |
+| `LIMIT` | Restringir número de filas devueltas |
+
+**Orden lógico simplificado:** `FROM/JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT`.
+
+### 4.3 Operadores, agregaciones y nulos
+
+- Comparaciones `=`, `<>`, `<`, `>`, `<=`, `>=`.
+- Combinaciones `AND`, `OR`, `NOT`; `IN`, `BETWEEN`.
+- Valores únicos: `DISTINCT`.
+- Agregaciones: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`.
+- `COUNT(*)` cuenta filas; `COUNT(columna)` cuenta valores no nulos.
+- Atención a la diferencia entre `WHERE` y `HAVING`.
+
+### 4.4 Relacionar tablas mediante `JOIN`
+
+```{.sql}
+SELECT
+    p.municipio,
+    COUNT(*) AS total_entregas,
+    COUNT(DISTINCT p.id_persona) AS personas_con_apoyo,
+    SUM(e.monto) AS monto_total
+FROM entregas AS e
+INNER JOIN personas AS p
+    ON e.id_persona = p.id_persona
+GROUP BY p.municipio
+ORDER BY monto_total DESC;
+```
+
+Comparar `INNER JOIN` con `LEFT JOIN`, y discutir por qué un `JOIN` mal definido puede multiplicar registros.
+
+## 5. Actividad guiada: leer y construir consultas
+
+**Datos de trabajo:** dos tablas pequeñas de personas y entregas (entregadas por la docente o definidas en clase).
+
+1. ¿Cuántas filas contiene cada tabla? ¿Cuál es su unidad de observación?
+2. ¿Qué municipios aparecen? Construir una lista sin repeticiones.
+3. ¿Cuántas entregas se registraron por persona?
+4. ¿Cuál es el monto total y promedio por municipio?
+5. ¿Cuántas personas distintas recibieron al menos una entrega?
+6. ¿Qué cambia entre contar entregas y contar beneficiarios?
+7. ¿Cómo identificarías personas sin entregas utilizando `LEFT JOIN`?
+
+::: {.callout-tip}
+## Reflexión
+
+Una consulta puede ser SQL válido y aun así dar una respuesta incorrecta si confundimos la unidad de observación, duplicamos filas en un `JOIN` o ignoramos datos faltantes.
+:::
+
+## 6. Cierre y preparación para la sesión práctica
+
+- Las tablas tienen un significado y una unidad de observación.
+- SQL permite consultar y transformar datos declarativamente.
+- En la siguiente sesión utilizaremos DuckDB para crear una base local reproducible con `raw` y `clean` y consultar sus resultados desde Python.
+- **Preparación:** disponer de Git y `uv` funcionando; el conjunto de datos definitivo se elegirá antes de la práctica.
+
+## Lecturas y documentación
+
+- PostgreSQL: <https://www.postgresql.org/docs/>
+- DuckDB: <https://duckdb.org/docs/stable/>
+- SQLite: <https://www.sqlite.org/docs.html>
+- MySQL: <https://dev.mysql.com/doc/>

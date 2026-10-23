@@ -10,29 +10,34 @@ format:
 date: today
 ---
 
-# ¿Por qué organizar el código?
 
-Hasta ahora hemos trabajado con instrucciones de Python y notebooks. Un notebook es útil para aprender, explorar y documentar un análisis; sin embargo, una investigación o aplicación suele crecer hasta incluir funciones que se repiten en diferentes archivos. Nuestro objetivo no es abandonar los notebooks, sino **separar el código reutilizable de los experimentos que hacemos con él**.
-
-En esta nota discutimos la lógica. En el notebook `c07_python_practica.ipynb` probaremos cada idea, conservando el recorrido del material original: funciones, un analizador y los ejemplos de rectángulos y cuadrados. No utilizaremos bases de datos.
+En esta nota discutimos la lógica de cómo organizar código en Python, en el notebook 
+`c07_python_practica.ipynb` probaremos las ideas. Veremos la lógica de la siguiente manera:
+funciones, un analizador y los ejemplos de rectángulos y cuadrados.
 
 # 1. ¿Qué es una función?
 
-Una función agrupa instrucciones que realizan una tarea. Puede recibir *parámetros* y regresar un resultado mediante `return`. Por ejemplo:
+Una función agrupa instrucciones que realizan una tarea. Puede recibir *parámetros* y regresar un
+resultado mediante `return`. Por ejemplo:
+
 
 ```python
 def promedio(valores):
     return sum(valores) / len(valores)
 ```
 
-La instrucción `def` **define** la función; no ejecuta su contenido hasta que la llamamos. `valores` es un parámetro; al llamar `promedio([10, 20, 30])`, la lista es el argumento. `return` entrega el resultado a quien llamó la función; `print` únicamente lo muestra.
+La instrucción `def` **define** la función; no ejecuta su contenido hasta que la llamamos. `valores`
+es un parámetro; al llamar `promedio([10, 20, 30])`, la lista es el argumento. `return` entrega el
+resultado a quien llamó la función; `print` únicamente lo muestra.
 
-Separar problemas en funciones permite **reutilizar, probar y explicar** cada transformación. Una función debe tener una responsabilidad reconocible y, siempre que sea posible, recibir explícitamente los datos que necesita.
+Separar problemas en funciones permite **reutilizar, probar y explicar** cada transformación. 
+Una función debe tener una responsabilidad reconocible y, siempre que sea posible, recibir 
+explícitamente los datos que necesita.
 
 
 # 2. Funciones, módulos y paquetes
 
-- Un **módulo** es un archivo `.py` que podemos importar. 
+- Un **módulo** es un archivo `.py` que tiene **funciones** que podemos importar. 
 - Un **paquete** organiza módulos y subpaquetes bajo un nombre común. 
 - Para un uso adecuado generamos archivos `__init__.py` que marcan los directorios de paquetes.
 
@@ -57,12 +62,13 @@ Revisa el archivo `metricas.py`, ahí definimos funciones como `promedio` y `cal
 from progra.analysis.metricas import promedio, calcular_area
 ```
 
-- La lectura de derecha a izquierda ayuda: importa la función `promedio` del módulo `metricas`, dentro del subpaquete `analysis` del paquete `progra`. 
+- La lectura de derecha a izquierda ayuda: importa la función `promedio` y `calcular_area`
+del módulo `metricas`, dentro del subpaquete `analysis` del paquete `progra`. 
 
 :::{.callout-tip}
 ## ¿Dónde debe vivir el código?
 
-- En el notebook: preguntas, exploración, narración y visualizaciones.
+- En el notebook deben de venir las preguntas, la exploración, la narración y las visualizaciones.
 - En los módulos `.py`: funciones o clases que reutilizamos en más de un lugar.
 - En `pyproject.toml`: requisitos de Python, dependencias y configuración para instalar el proyecto.
 :::
@@ -106,9 +112,22 @@ uv sync
 
 `uv sync` reconstruye el ambiente e instala el proyecto editable: los cambios en un `.py` se reflejan sin reinstalar el paquete, aunque un notebook podría necesitar volver a importar o reiniciar el kernel. 
 
-Para que Jupyter importe correctamente, debemos seleccionar el intérprete del proyecto, que VS code lo marca como recomendado. E
+:::{.callout-important}
 
-# 5. Programación en Python
+## Para que Jupyter importe correctamente en VS Code
+Debemos seleccionar el ambiente virtual del proyecto, que VS code 
+lo marca como recomendado. 
+
+![](pythonenv.png)
+
+Es necesario instalar las extensiones en VS code para que funcione 
+adecuadamente.
+
+Asegúrate que la administración de las librerías de Python, sea utilizando
+la línea de comandos y que no instales fuera de tu ambiente virtual creado para tu proyecto. 
+:::
+
+# 4. Programación en Python
 
 ## Programación procedural (orientada a procedimientos)
 
@@ -130,10 +149,12 @@ print(resultado)
 
 ## Programación orientación a objetos
 
-La programación con clases cambia la forma de pensar: en lugar de centrarse solo en funciones, se centra en objetos que agrupan datos y comportamientos.
+La programación con clases cambia la forma de pensar: en lugar de centrarse
+solo en funciones, se centra en **objetos que agrupan datos y comportamientos.**
 
 
-La programación orientada a objetos reúne **datos y comportamientos relacionados** en objetos creados a partir de clases. En el notebook contrastaremos `promedio(datos)` con un objeto `Analizador(datos)` y las operaciones sobre un rectángulo.
+La programación orientada a objetos reúne **datos y comportamientos relacionados** en objetos creados a partir de clases. En el notebook 
+contrastamos `promedio(datos)` con un objeto `Analizador(datos)` y las operaciones sobre un rectángulo.
 
 ```python
 class Analizador:
@@ -154,22 +175,13 @@ class Analizador:
 
 El objeto tiene *estado*: `Analizador([1, 2, 3])` guarda su propia lista. Eso es útil cuando varias operaciones trabajan sobre los mismos datos o cuando el objeto debe mantener información consistente.
 
-### 7. ¿Cómo decidimos entre funciones y objetos?
 
-| Pregunta | Generalmente convienen funciones | Puede convenir una clase |
-|---|---|---|
-| ¿Son transformaciones independientes? | Sí | No necesariamente |
-| ¿Necesitamos conservar estado entre operaciones? | No | Sí |
-| ¿El mismo conjunto de datos tiene muchos comportamientos relacionados? | A veces | Frecuentemente |
-| ¿Una clase agrega claridad o solo más sintaxis? | Preferir funciones si no agrega claridad | Usar clase si simplifica el diseño |
+### Más detalle de programación orientada a objetos
 
-**No es una escala donde clases = mejor o más avanzado.** Podemos usar funciones dentro de módulos, métodos dentro de clases y ambos enfoques dentro del mismo proyecto. Para análisis exploratorio, es habitual empezar con funciones pequeñas; las clases resultan útiles cuando hay una abstracción concreta y estado que administrar.
+La **programación orientada a objetos (POO)** es un paradigma que permite organizar el código agrupando datos y funciones dentro de la misma 
+estructura llamada **clase**.
 
-# Más detalle de programación orientada a objetos
-
-La **programación orientada a objetos (POO)** es un paradigma que permite organizar el código agrupando datos y funciones dentro de una misma estructura llamada **clase**.
-
-Una clase define las características y comportamientos que tendrán los objetos creados a partir de ella.
+- Una clase define las características y comportamientos que tendrán los objetos creados a partir de ella.
 
 Sus principales características son:
 
@@ -188,20 +200,6 @@ Sus principales características son:
 
 - Tiene una curva de aprendizaje inicial, especialmente para comprender `self`, atributos y métodos.
 - Puede agregar complejidad innecesaria cuando el problema se resuelve fácilmente mediante funciones.
-
-#### Comparación: programación con funciones y programación orientada a objetos
-
-| Concepto | Programación con funciones | Programación con clases |
-|---|---|---|
-| Enfoque | Funciones que reciben datos y realizan operaciones | Objetos que agrupan datos y métodos |
-| Datos | Se pasan como argumentos entre funciones | Pueden almacenarse como atributos del objeto |
-| Estado | Puede manejarse explícitamente mediante variables y argumentos | Puede mantenerse dentro de cada instancia |
-| Organización | Funciones agrupadas en módulos y paquetes | Clases agrupadas en módulos y paquetes |
-| Escalabilidad | Puede escalar adecuadamente con una buena organización | Puede escalar adecuadamente con un buen diseño |
-| Ejemplo | `promedio(lista)` | `analizador.promedio()` |
-| Ideal para | Transformaciones, cálculos, scripts y tareas independientes | Entidades con estado, comportamientos relacionados y aplicaciones complejas |
-
-**Importante:** ninguno de estos enfoques es necesariamente mejor que el otro. La elección depende de la naturaleza del problema y de cómo convenga organizar la información y las operaciones.
 
 ### Especificaciones de programación con clases
 
@@ -405,6 +403,21 @@ promedio([10, 20, 30])
 ```
 
 **Pregunta para reflexionar:** si únicamente necesitamos calcular el promedio de una lista, ¿realmente necesitamos crear una clase? ¿En qué circunstancias tendría sentido utilizar `Analizador` en lugar de una función independiente?
+
+#### Comparación: programación con funciones y programación orientada a objetos
+
+| Concepto | Programación con funciones | Programación con clases |
+|---|---|---|
+| Enfoque | Funciones que reciben datos y realizan operaciones | Objetos que agrupan datos y métodos |
+| Datos | Se pasan como argumentos entre funciones | Pueden almacenarse como atributos del objeto |
+| Estado | Puede manejarse explícitamente mediante variables y argumentos | Puede mantenerse dentro de cada instancia |
+| Organización | Funciones agrupadas en módulos y paquetes | Clases agrupadas en módulos y paquetes |
+| Escalabilidad | Puede escalar adecuadamente con una buena organización | Puede escalar adecuadamente con un buen diseño |
+| Ejemplo | `promedio(lista)` | `analizador.promedio()` |
+| Ideal para | Transformaciones, cálculos, scripts y tareas independientes | Entidades con estado, comportamientos relacionados y aplicaciones complejas |
+
+**Importante:** ninguno de estos enfoques es necesariamente mejor que el otro. La elección depende de la naturaleza del problema y de cómo convenga organizar la información y las operaciones.
+
 
 ### Para seguir explorando
 
