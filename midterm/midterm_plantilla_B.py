@@ -117,21 +117,41 @@ respuesta_05 = ""
 # II. CLI Y SISTEMA DE ARCHIVOS
 # ============================================================
 
-# PREGUNTA 06. Archivos ocultos y staging
-# En proyecto/ hay un archivo oculto .config_local y otro README.md.
-# Ninguno está en .gitignore ni ha sido rastreado por Git.
-# Ejecutas:
+# PREGUNTA 06. Archivos ocultos y Git
+#
+# En la raíz de tu proyecto ejecutas:
 #
 #     ls
-#     git add .
-#     git status
 #
-# ¿Qué afirmación es correcta?
+# y obtienes:
 #
-# A) Como .config_local no aparece con ls, Git tampoco puede agregarlo.
-# B) git add . solo prepara archivos con extensión visible, como .md.
-# C) git add . ignora automáticamente todos los archivos que empiezan por .
-# D) git add . puede preparar también .config_local, aunque sea oculto en ls.
+#     README.md  src/
+#
+# Después ejecutas:
+#
+#     ls -a
+#
+# y obtienes:
+#
+#     .  ..  .git  .gitignore  .config_local  README.md  src/
+#
+# Al ejecutar git status, observas que .config_local
+# aparece en la sección "Untracked files".
+#
+# ¿Qué puedes concluir?
+#
+# A) .config_local está siendo ignorado por Git porque
+#    su nombre comienza con un punto.
+#
+# B) .config_local ya está registrado en Git, pero
+#    todavía no se ha publicado en GitHub.
+#
+# C) .config_local está oculto para ls, pero Git lo
+#    detecta como un archivo que todavía no rastrea.
+#
+# D) .config_local está en el staging area porque
+#    aparece en la salida de git status.
+
 respuesta_06 = ""
 
 
