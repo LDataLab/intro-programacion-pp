@@ -91,7 +91,16 @@ bibliography: references.bib
 ### 06. Docker y ambientes reproducibles
 
 - Introducción a docker
-    - [Material 12](materiales/m09_intro_db_sql.html) 
+    - [Material 12](materiales/m12_docker.html) 
+:::
+
+
+::: {.callout-tip collapse="true"}
+### 06. Docker y ambientes reproducibles
+
+- Introducción a docker
+    - [Material 13](materiales/m13_apis.html) 
+    - [Material 14](materiales/m14_pipeline.html) 
 :::
 
 
