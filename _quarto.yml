@@ -23,6 +23,8 @@ website:
         contents:
           - text: "Temario detallado"
             href: docs/d00_temario.html
+          - text: "Uso de Markdown"
+            href: docs/d02_markdown.html
           - text: "CSVKIT"
             href: docs/d01_csvkit.html
           - text: "Instalación Python"
