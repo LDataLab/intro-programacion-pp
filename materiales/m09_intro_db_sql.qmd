@@ -22,12 +22,15 @@ date: today
 - Un motor puede administrar tablas propias y/o consultar archivos externos.
 - Consideraciones: persistencia, estructura, tipos, validación, relaciones, consultas y concurrencia.
 - Un conjunto de archivos puede ser adecuado para un análisis; una base de datos aporta otras capacidades según el motor.
+- **Transaccional vs. analítico:** los sistemas transaccionales (OLTP) registran muchas operaciones pequeñas y simultáneas (una venta, una entrega); los analíticos (OLAP) leen muchas filas para resumir tendencias. DuckDB está orientado a lo segundo y puede consultar directamente CSV y Parquet con `read_csv()` y `read_parquet()`.
 
 ## 2. Modelo relacional
 
 #### Tablas, filas, columnas y tipos
 
 En el modelo relacional, la información se organiza mediante relaciones representadas habitualmente como tablas. Las filas representan registros y las columnas atributos con tipos definidos.
+
+Cada tabla suele tener una **llave primaria**, una columna que identifica cada fila (como `id_persona` en `personas`). Las columnas que hacen referencia a la llave de otra tabla se llaman **llaves foráneas** (como `id_persona` en `entregas`). Así se relacionan las tablas sin repetir sus datos.
 
 **Ejemplo conceptual:**
 
@@ -76,6 +79,8 @@ En PostgreSQL y DuckDB, los **esquemas** agrupan lógicamente objetos de una bas
 
 Estos nombres son convenciones del proyecto, **no** esquemas obligatorios ni capacidades idénticas en todos los motores.
 
+En la práctica con ecobici, `raw` corresponde a los archivos CSV originales y `clean.ecobici` es la tabla ya estandarizada (ver [m10](m10_practica_db.qmd)).
+
 #### Unidad de observación, entidades y eventos
 
 - **Entidad**: objeto o persona que queremos identificar (por ejemplo, beneficiario).
@@ -86,24 +91,24 @@ Estos nombres son convenciones del proyecto, **no** esquemas obligatorios ni cap
 ## 5. Introducción a SQL
 
 SQL es un lenguaje principalmente **declarativo**: expresamos la información que deseamos y el motor decide cómo ejecutar la consulta. 
-Veámos el siguiente query: 
+Veamos el siguiente query: 
 
 ```{.sql}
-SELECT                        # Qué información
+SELECT                        -- Qué información
     municipio,
     COUNT(*) AS total_entregas,
     SUM(monto) AS monto_total
-FROM                          # De dónde se obtiene
+FROM                          -- De dónde se obtiene
     entregas
-WHERE                         # Filtro de filas
+WHERE                         -- Filtro de filas
     monto > 0              
-GROUP BY                      # Agrupar
+GROUP BY                      -- Agrupar
     municipio         
-HAVING                        # Filtrar grupos
+HAVING                        -- Filtrar grupos
     COUNT(*) >= 2         
-ORDER BY                       # Ordenar
+ORDER BY                       -- Ordenar
     monto_total DESC    
-LIMIT 10;                     # Limitar
+LIMIT 10;                     -- Limitar
 ```
 
 
@@ -137,6 +142,15 @@ LIMIT 10;                     # Limitar
 - Usar `IS NULL` / `IS NOT NULL` (no `= NULL`).
 - En agregaciones, considerar cuándo los valores faltantes se excluyen del cálculo.
 
+```{.sql}
+SELECT
+    COUNT(*)      AS filas,          -- cuenta todas las filas
+    COUNT(monto)  AS montos_validos  -- cuenta solo los montos no nulos
+FROM entregas;
+```
+
+**Conversión de tipos:** `CAST(monto AS DOUBLE)` o `monto::DOUBLE` cambian el tipo de una columna. Con `CAST`, un valor que no se puede convertir produce error; `TRY_CAST` lo convierte en `NULL`.
+
 
 #### Relacionar tablas mediante `JOIN`
 
@@ -153,11 +167,11 @@ GROUP BY p.municipio
 ORDER BY monto_total DESC;
 ```
 
-- `INNER JOIN` 
-- `LEFT JOIN`
+- `INNER JOIN`: devuelve solo las filas que tienen coincidencia en ambas tablas (por ejemplo, entregas de personas registradas). 
+- `LEFT JOIN`: devuelve todas las filas de la tabla izquierda; si no hay pareja en la derecha, las columnas de la derecha aparecen como `NULL` (por ejemplo, personas sin entregas).
 
 
-#### Otra operaciones comunes: 
+#### Otras operaciones comunes: 
 
 - Definición: `CREATE TABLE`, `CREATE VIEW`, `ALTER TABLE`, `DROP TABLE`.
 - Cambios de registros: `INSERT`, `UPDATE`, `DELETE`.
@@ -171,3 +185,4 @@ En el siguiente material realizaremos una práctica de bases de datos.
 - DuckDB: <https://duckdb.org/docs/stable/>
 - SQLite: <https://www.sqlite.org/docs.html>
 - MySQL: <https://dev.mysql.com/doc/>
+- Introducción a SQL en DuckDB: <https://duckdb.org/docs/stable/sql/introduction>
