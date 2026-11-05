@@ -1,0 +1,201 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Carga y gestión de datos en AWS S3 mediante la interfaz de línea de comandos (AWS CLI)
+
+Este documento describe el procedimiento para **instalar, configurar y utilizar AWS CLI** con el fin de **listar, cargar, descargar y sincronizar archivos** en un bucket de Amazon S3 desde la línea de comandos, ya sea en una máquina local o en un servidor bastión.
+
+---
+
+## 1. Requisitos previos
+
+Para utilizar AWS CLI es necesario contar con:
+
+- Acceso a una máquina Linux (local o bastión).
+- Python 3 instalado.
+- `pip`, el gestor de paquetes de Python.
+- Credenciales de acceso a AWS (Access Key y Secret Key).
+
+---
+
+## 2. Instalación de AWS CLI
+
+### 2.1 Instalación de Python y pip
+
+En sistemas basados en Debian/Ubuntu:
+
+```bash
+sudo apt-get update
+sudo apt-get install python3-pip
+```
+
+
+### 2.2 Instalación de AWS CLI
+
+
+```
+sudo pip install awscli
+```
+
+### 2.3 Verificación de la instalación
+
+
+```
+aws --version
+```
+
+La salida debe mostrar la versión instalada de AWS CLI.
+
+# 3. Configuración de credenciales de AWS
+
+Para interactuar con S3 es necesario configurar, por única vez, el archivo de credenciales.
+
+### 3.1 Crear el directorio de configuración
+
+```
+cd
+mkdir ~/.aws
+```
+
+Si el directorio ya existe, puedes continuar con el siguiente paso.
+
+### 3.2 Crear el archivo de credenciales
+
+```
+nano ~/.aws/credentials
+```
+
+### 3.3 Estructura del archivo de credenciales
+
+Dentro del archivo coloca las llaves de AWS que te fueron proporcionadas (por ejemplo, en el archivo credenciales_infra), siguiendo esta estructura:
+
+```
+[default]
+aws_access_key_id = <aqui_llave>
+aws_secret_access_key = <aqui_llave_secreta>
+```
+
+Guarda el archivo y cierra el editor.
+
+Importante:
+Este archivo contiene información sensible. No debe compartirse ni subirse a repositorios.
+
+## 4. Comandos básicos para trabajar con Amazon S3
+
+Los siguientes comandos permiten listar, copiar, descargar y sincronizar archivos entre el sistema local y un bucket de S3.
+
+### 4.1 Listar archivos en un bucket (aws s3 ls)
+
+Estructura general
+
+```
+aws s3 ls s3://<nombre-del-bucket>/
+```
+
+
+Ejemplo
+
+```
+aws s3 ls s3://ejemploprotocolo/
+```
+
+
+Listar el contenido de una carpeta específica dentro del bucket:
+
+```
+aws s3 ls s3://ejemploprotocolo/data/raw/
+```
+
+
+### 4.2 Cargar un archivo individual a S3 (aws s3 cp)
+
+Estructura general
+
+```
+aws s3 cp <archivo-local> s3://<nombre-del-bucket>/<ruta-destino>/
+```
+
+
+Ejemplo
+
+```
+aws s3 cp datos.dump s3://ejemploprotocolo/
+```
+
+Cargando el archivo a una carpeta específica dentro del bucket:
+
+```
+aws s3 cp datos.dump s3://ejemploprotocolo/backups/
+```
+
+### 4.3 Descargar un archivo desde S3 a local
+
+```
+aws s3 cp s3://ejemploprotocolo/datos.dump .
+```
+
+
+### 4.4 Sincronizar directorios completos (aws s3 sync)
+
+El comando sync permite copiar todos los archivos de un directorio, manteniendo la estructura y transfiriendo únicamente los cambios detectados.
+
+Sincronizar de local a S3
+
+```
+aws s3 sync ./data/raw s3://ejemploprotocolo/data/raw
+```
+
+Sincronizar de S3 a local
+
+```
+aws s3 sync s3://ejemploprotocolo/data/raw ./data/raw
+```
+
+### 4.5 Opciones comunes del comando sync
+
+Excluir archivos o carpetas específicas:
+
+```
+aws s3 sync ./data s3://ejemploprotocolo/data --exclude "outputs/*"
+```
+
+Simular la sincronización sin ejecutar cambios (dry run):
+
+```
+aws s3 sync ./data s3://ejemploprotocolo/data --dryrun
+```
+
+
+
+## 5. Buenas prácticas
+
+- No compartas tus credenciales de AWS.
+
+- No subas el archivo ~/.aws/credentials a ningún repositorio.
+
+- Usa cp para archivos individuales y sync para cargas masivas.
+
+- Verifica siempre el bucket y la ruta destino antes de ejecutar comandos en producción.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
