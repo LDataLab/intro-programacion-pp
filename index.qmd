@@ -72,7 +72,7 @@ bibliography: references.bib
 
 
 
-::: {.callout-tip collapse="true"}
+::: {.callout-tip collapse="false"}
 ### 06. Bases de datos
 
 - Introducción a bases de datos estructuradas
@@ -87,16 +87,16 @@ bibliography: references.bib
 :::
 
 
-::: {.callout-tip collapse="true"}
-### 06. Docker y ambientes reproducibles
+::: {.callout-caution collapse="true"}
+### 07. Docker y ambientes reproducibles
 
 - Introducción a docker
     - [Material 12](materiales/m12_docker.html) 
 :::
 
 
-::: {.callout-tip collapse="true"}
-### 06. Docker y ambientes reproducibles
+::: {.callout-caution collapse="true"}
+### 08. Docker y ambientes reproducibles
 
 - Introducción a docker
     - [Material 13](materiales/m13_apis.html) 

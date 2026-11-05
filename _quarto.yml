@@ -29,7 +29,7 @@ website:
             href: docs/d01_csvkit.html
           - text: "Instalación Python"
             href: docs/d03_instalacion_python.html
-          - text: "Instalación Python"
+          - text: "Quarto"
             href: docs/d04_quarto.html
 
 html:
