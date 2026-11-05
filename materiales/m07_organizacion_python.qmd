@@ -118,7 +118,7 @@ uv sync
 Debemos seleccionar el ambiente virtual del proyecto, que VS code 
 lo marca como recomendado. 
 
-![](pythonenv.png)
+![](img/pythonenv.png)
 
 Es necesario instalar las extensiones en VS code para que funcione 
 adecuadamente.
