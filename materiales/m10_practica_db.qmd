@@ -12,11 +12,15 @@ execute:
   eval: false
 ---
 
-::: {.callout-warning}
-## Borrador adaptable
 
-Esta sesión define el **flujo de trabajo**, no una base definitiva. Los nombres `apoyos`, `id_apoyo`, `municipio`, `monto` y `fecha` son ilustrativos. Ajustar consultas, validaciones y transformaciones después de elegir la fuente de datos real.
-:::
+Instalar DuckDB:
+
+```
+curl https://install.duckdb.org | bash
+```
+
+
+
 
 ## Objetivos de aprendizaje
 
