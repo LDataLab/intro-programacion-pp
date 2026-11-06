@@ -1,0 +1,661 @@
+---
+title: "Infraestructura de un proyecto de Ciencia de Datos"
+subtitle: "Guía práctica sobre los componentes que necesitas"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# Introducción: más allá del análisis
+
+> ¿Qué necesitamos, como mínimo, para desarrollar y mantener un producto de datos?
+
+Cuando empezamos con ciencia de datos, el flujo parece simple:
+
+```text
+datos → Python → resultado
+```
+
+Pero en la práctica, un proyecto que funciona real y sostenidamente requiere resolver preguntas mucho más concretas:
+
+- ¿Dónde viven los datos?
+- ¿Dónde se procesan?
+- ¿Dónde vive el código?
+- ¿Cómo reproducimos el proceso si algo falla?
+- ¿Quién puede acceder a qué?
+- ¿Qué pasa cuando el proceso falla a las 3 a.m.?
+
+**La infraestructura es el conjunto de decisiones y herramientas que responden estas preguntas.** 
+
+- No se trata de convertirse en especialista en *cloud engineering*, sino de entender dónde está cada cosa, para qué sirve, cómo se conecta y qué puede fallar.
+
+## Pipelines reproducibles: el corazón de la infraestructura
+
+Un buen *pipeline* de datos tiene estas características:
+
+- **Repetible**: el mismo proceso con los mismos insumos produce siempre el mismo resultado.
+- **Controlable**: cada paso está documentado y es verificable. Podemos auditar qué ocurrió y con qué datos.
+- **Automatizable**: no depende de copiar, pegar o ejecutar pasos manualmente.
+- **Con dependencias explícitas**: sabemos qué necesita cada paso y qué versiones de software usa.
+- **Recuperable**: un error en el paso 3 no obliga a comenzar desde cero en el paso 1.
+- **Portable**: idealmente puede ejecutarse fuera de la computadora de quien lo desarrolló.
+
+::: {.callout-important}
+**Punto clave**: si un proceso solo funciona en tu computadora personal, no tienes una infraestructura reproducible.
+:::
+
+## Componentes principales
+
+Una infraestructura de datos típica tiene estos elementos:
+
+1. **Cómputo**: dónde corre el código
+2. **Almacenamiento**: dónde viven los datos
+3. **Código**: control de versiones y colaboración
+4. **Ambientes y reproducibilidad**: con qué versiones corre
+5. **Orquestación**: cuándo y en qué orden corre
+6. **Seguridad e identidad**: quién puede ver o hacer qué
+7. **Operación**: logs, respaldos, monitoreo y costos
+
+::: {.callout-note}
+No todos los proyectos necesitan todos estos componentes desde el primer día. La infraestructura debe crecer con el problema.
+:::
+
+# 1. Cómputo: dónde corre el código
+
+El procesamiento puede ocurrir en distintos lugares según el tamaño y naturaleza del proyecto.
+
+## Opciones de cómputo
+
+**En tu máquina local:**
+
+- La mayoría de los proyectos de ciencia de datos empiezan aquí.
+- CPU, RAM y disco: importante conocer sus límites.
+- GPU: si trabajas con modelos de *deep learning*.
+- Ventaja: control total, sin costos de nube.
+- Limitación: datos muy grandes pueden no caber en memoria.
+
+**En servidores remotos:**
+
+- Servidor institucional: si tu universidad u organización los proporciona.
+- Máquinas virtuales en la nube:
+  - **AWS**: EC2
+  - **Microsoft Azure**: Virtual Machines
+  - **Google Cloud**: Compute Engine
+- Entornos gestionados: Databricks, SageMaker, Azure ML, Google Colab
+- Serverless: funciones que corren solo cuando se llaman (AWS Lambda, Cloud Functions)
+
+
+> Antes de pedir un servidor más grande, pregunta: ¿el problema es falta de RAM, CPU lenta, o un código ineficiente?
+
+::: {.callout-note}
+## Acceso remoto: SSH
+
+Para conectarte a un servidor remoto de forma segura:
+
+```bash
+ssh usuario@servidor
+```
+
+SSH permite trabajar en una máquina remota como si fuera local, sin exponer contraseñas en texto plano.
+
+```text
+Tu máquina
+    │ SSH (conexión segura)
+    ▼
+Servidor remoto
+```
+
+:::
+
+### Separación de cómputo y almacenamiento
+
+En infraestructuras profesionales, **cómputo y almacenamiento son independientes**:
+
+```text
+           Servidor
+              │
+              ├────────────────┬────────────────┐
+              ▼                ▼                ▼
+         PostgreSQL          S3/Blob      Otros datos
+       (datos tabulares)   (archivos)
+```
+
+El servidor donde corre tu código no es el mismo lugar donde viven los datos. Esto permite:
+
+- Escalar cómputo y almacenamiento por separado.
+- Compartir datos entre múltiples procesos o múltiples usuarios.
+- Usar almacenamiento más económico para datos de poco uso.
+
+# 2. Almacenamiento: dónde viven los datos
+
+Los datos pueden guardarse de muchas formas según su naturaleza y cómo necesites consultarlos.
+
+## Tipos de datos y dónde guardarlos
+
+| Tipo | Ejemplo | Dónde se guarda típicamente |
+|---|---|---|
+| **Estructurado** | CSV, Excel, tablas SQL, Parquet | Bases de datos relacionales |
+| **Semiestructurado** | JSON de una API, XML | MongoDB, *data lakes* |
+| **No estructurado** | PDFs, imágenes, audio | Almacenamiento de objetos (S3, Azure Blob) |
+
+## Archivos y formatos
+
+La infraestructura más sencilla es simplemente archivos organizados:
+
+```python
+proyecto/
+├── data/
+│   ├── raw/        (datos originales)
+│   ├── clean/  (datos limpios)
+│   └── ontology/   (datos para modelado)
+├── src/            (código)
+└── outputs/        (resultados)
+```
+
+
+
+::: {.callout-note}
+Se usa el concepto de `ontology` como referencia de sistemas de datos estructurados que definen conceptos y 
+relaciones en un área específica del conocimiento. Otras arquitecturas como el *Medallion* pueden utilizar: los concepto de `bronce`, `plata` y `oro`. 
+:::
+
+**Formatos comunes y cuándo usarlos:**
+
+| Formato | Cuándo usarlo |
+|---|---|
+| `.csv` | Intercambio simple, pero no preserva tipos de dato |
+| `.parquet` | Análisis de datos tabulares: rápido, comprimido, con tipos |
+| `.sql` | Scripts para crear tablas y cargar datos |
+| `.dump` | Recreación de estructura de base de datos |
+| `.json` | Respuestas de APIs, datos semiestructurados |
+
+::: {.callout-tip}
+## Formato Parquet
+
+- Formato **columnar**: lee una fracción del archivo original, mucho más rápido que CSV. 
+- Para datos tabulares grandes, es casi siempre mejor que CSV.
+:::
+
+## Bases de datos relacionales
+
+Cuando necesitas consultar, actualizar y relacionar (gestión) datos de manera sistemática, usas una base de datos relacional.
+
+**Gestión *sencilla***:
+
+- **SQLite**: un solo archivo, sin servidor. Excelente para aprender.
+- **DuckDB**: en memoria, muy rápido para análisis, también sin servidor.
+
+**Gestión para colaboración o producción**:
+
+- **PostgreSQL**: confiable, extensible, con ecosistema rico.
+- **MySQL**: ampliamente usado, más simple que Postgres.
+- **SQL Server**, **Oracle**: para empresas grandes.
+
+**Gestión para análisis a gran escala:**
+
+- **BigQuery** (Google Cloud), **Snowflake**, **Redshift** (AWS): optimizadas para consultas sobre millones de registros.
+
+::: {.callout-note}
+## IDEs para bases de datos
+DBeaver, pgAdmin y DataGrip son **clientes**: herramientas que te permiten conectarte a una base de datos y escribir consultas. No son bases de datos en sí.
+:::
+
+::: {.callout-note}
+## Sistemas empresariales que generan datos
+
+Software como SAP (ERP) y Salesforce (CRM) no son bases de datos tradicionales. Son sistemas completos que **generan datos**, que típicamente se extraen hacia una base de datos o *data warehouse* para análisis.
+
+```text
+Sistema empresarial    Extracción    Base de datos
+(Salesforce, SAP)  ──────────────►  (para análisis)
+```
+:::
+
+## Object storage: S3, Azure Blob, GCS
+
+Para guardar datos no estructurados o grandes cantidades de archivos de forma económica y escalable, se usa *object storage*:
+
+- **AWS S3**, **Azure Blob Storage**, **Google Cloud Storage**
+- **MinIO**: versión de código abierto para on-premises
+
+Organización típica (*arquitectura medallion* o de capas):
+
+```text
+raw/          → como llega (JSON, CSV, PDF)
+clean/        → tipos definidos, duplicados removidos
+ontology/      → listo para análisis y modelos
+```
+
+**Nunca sobrescribas los datos crudos.** El almacenamiento es barato; la recuperabilidad es cara.
+
+## Bases de datos especializadas
+
+Para datos que no encajan en tablas:
+
+- **MongoDB**: documentos JSON anidados.
+- **Neo4j**: grafos, cuando las relaciones son lo central (redes sociales, fraude, relaciones empresariales).
+- **Elasticsearch/OpenSearch**: búsqueda de texto.
+- **Redis**: llave-valor, muy rápido, para cachés.
+- **Bases vectoriales** (pgvector en Postgres, Pinecone, Chroma): para *embeddings* y búsqueda semántica.
+
+
+::: {.callout-note}
+## Datos georreferenciados
+
+Los datos con componente geográfico requieren herramientas especializadas:
+
+- **PostGIS**: extensión de PostgreSQL. El estándar abierto para datos espaciales.
+- **GeoPackage** (`.gpkg`): archivo único, recomendado para datos vectoriales.
+- **GeoParquet**: formato columnar con geometría, rápido en el análisis.
+- **GeoTIFF / COG**: imágenes raster (satelitales, elevación, temperatura).
+
+Con PostGIS puedes hacer consultas como:
+```sql
+-- ¿Cuántos hospitales hay en cada municipio?
+SELECT municipio, COUNT(*) as n_hospitales
+FROM hospitales h
+JOIN municipios m ON ST_Contains(m.geom, h.geom)
+GROUP BY municipio;
+```
+
+Herramientas útiles: `geopandas`, `shapely`, `rasterio` en Python; QGIS para visualizar y explorar datos geográficos de forma interactiva.
+:::
+
+# 3. Código: versionado y colaboración
+
+El código es la lógica que transforma datos en resultados. Sin un sistema de control de versiones, los proyectos se vuelven un caos rápidamente.
+
+## Control de versiones con Git
+
+**Git** es un sistema de control de versiones descentralizado. No es lo mismo que **GitHub** (un servicio que aloja repositorios Git). Confundir ambos es un error común:
+
+```text
+Git = herramienta local de control de versiones
+GitHub/GitLab/Bitbucket = servicios que alojan repositorios
+```
+
+### ¿Qué debe versionarse?
+
+**Sí:**
+
+- Código (Python, R, SQL)
+- Documentación
+- Configuración del proyecto
+- Archivos pequeños de ejemplo
+- Instrucciones de reproducción
+
+**No (NUNCA):**
+
+- Bases de datos completas y pesadas
+- Credenciales o contraseñas
+- Archivos temporales
+- Resultados enormes
+
+::: {.callout-warning}
+Si subes una contraseña a GitHub, aunque luego la borres, debe considerarse comprometida. GitHub es público y archivado en múltiples lugares.
+:::
+
+::: {.callout-tip}
+### Principios de buen versionado
+
+- **Commits descriptivos**: "Agregar validación de email" es mejor que "fix".
+- **Una rama por feature**: no hagas todo en main.
+- **Revisa el código antes de fusionar**: un segundo par de ojos evita errores.
+:::
+
+# 4. Ambientes y reproducibilidad
+
+Un programa no solo depende de tu código, sino también de qué versión de Python, pandas, scikit-learn y cientos de otras librerías tienes instaladas. Reproducibilidad significa que alguien más pueda correr tu código y obtener exactamente los mismos resultados.
+
+## Gestión de dependencias
+
+Registra exactamente qué paquetes usa tu proyecto:
+
+```text
+pyproject.toml + uv.lock    (Python moderno)
+requirements.txt            (pip tradicional)
+renv.lock                   (R)
+environment.yml             (conda)
+```
+
+Esto permite que otra persona (o tú mismo en 6 meses) reproduzca el entorno exacto donde el código funcionaba.
+
+```bash
+uv sync # uv
+
+pip install -r requirements.txt # pip tradicional
+```
+
+### Ambientes virtuales Python
+
+Cada proyecto debe tener su propio ambiente. Herramientas:
+
+- **uv** (moderno y rápido): recomendado.
+- **venv** (incluido en Python): lo básico.
+- **conda**: si necesitas paquetes científicos complejos.
+
+Los ambientes aíslan dependencias, evitando conflictos entre proyectos.
+
+## Contenedores: Docker
+
+Docker empaqueta tu aplicación, sus dependencias, y el sistema operativo en un **contenedor**:
+
+```text
+┌─────────────────────┐
+│   Contenedor        │
+│ ─────────────────── │
+│ Python 3.12         │
+│ pandas, numpy       │
+│ postgres client     │
+│ tu código           │
+└─────────────────────┘
+```
+
+Ventaja: funciona igual en tu máquina, en un servidor, en la nube.
+
+```bash
+docker build -t mi-app:1.0 .
+docker run mi-app:1.0
+# → corre idénticamente en cualquier lugar
+```
+
+::: {.callout-note}
+Docker es una herramienta poderosa, pero no es una solución mágica. No sustituye código limpio, documentación clara ni control de versiones.
+:::
+
+## Checklist de reproducibilidad
+
+- ✓ Código versionado en Git
+- ✓ Dependencias explícitas (`requirements.txt`, `pyproject.toml`, etc.)
+- ✓ Ambientes virtuales aislados
+- ✓ Configuración externalized (rutas relativas, parámetros en archivos)
+- ✓ Datos con versión y trazabilidad
+- ✓ README con instrucciones de ejecución
+- ✓ Opcionalmente: Docker para garantizar compatibilidad
+
+# 5. Orquestación: automatización de pipelines
+
+Un pipeline real tiene múltiples pasos encadenados. Sin orquestación, alguien tendría que ejecutarlos manualmente cada día. Con orquestación, ocurren automáticamente y en el orden correcto.
+
+#### Ejemplo de un pipeline
+
+```python
+Descargar datos
+    ↓ (solo si fue exitoso)
+Validar
+    ↓
+Limpiar
+    ↓
+Transformar
+    ↓
+Modelar
+    ↓
+Publicar resultados
+```
+
+Un **orquestador** coordina: cuándo corre cada paso, qué ocurre si uno falla, cómo se reintentan, y dónde se guardan los logs.
+
+## Herramientas de orquestación
+
+Ordenadas por complejidad:
+
+| Herramienta | Caso de uso |
+|---|---|
+| `cron` | Ejecutar un script en horarios fijos (simple, sin interfaz) |
+| **GitHub Actions** | Pipelines en Git: CI/CD, tests, despliegues |
+| **Airflow** | Orquestación compleja: DAGs visuales, reintentos, alertas |
+| **Prefect** | Similar a Airflow, más moderno |
+| **Dagster** | Orquestación + validación de datos |
+
+::: {.callout-tip}
+Empieza con `cron` o GitHub Actions. Solo muévete a Airflow si realmente necesitas controlar dependencias complejas entre tareas.
+:::
+
+#### Modelo DAG (Directed Acyclic Graph)
+
+Los orquestadores modernos piensan en pipelines como grafos de dependencias:
+
+```text
+     Descargar
+        ↓
+    Validar ← si esto falla, lo siguiente no corre
+        ↓
+      ...
+```
+
+Si "Validar" falla, "Limpiar" nunca se ejecuta. Esto evita procesar datos malos.
+
+# 6. Seguridad e identidad
+
+No es suficiente tener datos seguros en el servidor. También necesitas controlar quién accede a qué.
+
+### Tres conceptos clave
+
+**Identidad**: ¿Quién eres?
+
+- Usuarios, roles, credenciales.
+
+**Autenticación**: ¿Cómo compruebas quién eres?
+
+- Contraseñas, claves SSH, autenticación de dos factores.
+
+**Autorización**: ¿Qué puedes hacer?
+
+- Permisos por rol: quién puede leer, escribir, eliminar.
+
+## Gestión de permisos
+
+Usa el principio de **mínimo privilegio**: cada persona accede solo a lo que necesita.
+
+```text
+analista_datos
+    └── SELECT (leer datos)
+
+pipeline_automatizado
+    ├── SELECT (leer)
+    └── INSERT (escribir nuevos resultados)
+
+administrador
+    └── ALL (control total)
+```
+
+En PostgreSQL:
+
+```sql
+GRANT SELECT ON datos_publicos TO analista_datos;
+GRANT SELECT, INSERT ON resultados TO pipeline_automatizado;
+```
+
+## Gestión de secretos
+
+**Nunca** hagas esto:
+
+```python
+PASSWORD = "mi_contraseña_real_123"
+```
+
+En su lugar, utilizar variables de entorno con archivos `.env`, `.envrc` ó `.secrets`: 
+
+```bash
+export PGUSER=<usuario>
+export PGHOST=localhost
+export PGPASSWORD=<contraseña>
+export PGPORT=5432
+```
+
+
+::: {.callout-important}
+Si subes una contraseña a Git, considérala comprometida para siempre. GitHub es público y archivado.
+:::
+
+# 7. Operación: logs, backups y monitoreo
+
+## Logs: ¿Qué pasó?
+
+Un pipeline automático que corre a las 3 a.m. debe dejar registro de qué hizo:
+
+```text
+2026-09-28 03:00:01  Pipeline iniciado
+2026-09-28 03:02:45  Descargados 150,000 registros
+2026-09-28 03:05:12  Validación completada: 2 registros descartados
+2026-09-28 03:06:33  ERROR: conexión a PostgreSQL timeout
+2026-09-28 03:06:34  Reintentando (intento 1/3)...
+```
+
+Los logs permiten:
+
+- Detectar errores sin estar presente.
+- Investigar qué salió mal.
+- Auditar transformaciones.
+- Medir tiempo de ejecución.
+
+## Backups: recuperación ante desastres
+
+Preguntas críticas:
+
+- ¿Qué pasa si alguien borra una tabla por accidente?
+- ¿Qué pasa si el servidor se rompe?
+- ¿Podemos recuperar los datos?
+- ¿Cuánto tiempo tomaría?
+
+**Regla 3-2-1**: mantén 3 copias de los datos, en 2 medios distintos, con 1 copia fuera de sitio.
+
+```text
+Primario (Postgres en servidor)
+    ├─ Backup 1 (disco en el mismo servidor)
+    ├─ Backup 2 (S3 en la nube)
+    └─ Backup 3 (Glacier, más económico pero más lento)
+```
+
+::: {.callout-warning}
+Backup ≠ copia local en tu laptop ≠ Git. Git no es un respaldo de datos.
+:::
+
+## Monitoreo: ¿El sistema está sano?
+
+Mientras que los logs responden "¿qué pasó?", el monitoreo responde "¿está funcionando ahora?".
+
+Métrica típicas a monitorear:
+
+- CPU, RAM, espacio en disco
+- Procesos fallidos en las últimas 24h
+- Tiempos de ejecución (¿se hizo más lento?)
+- Disponibilidad de servicios
+- Alertas al equipo si algo falla
+
+## Metadatos y documentación
+
+No basta con tener un archivo `datos.csv`. Necesitas responder:
+
+- ¿De dónde salió?
+- ¿Cuándo se descargó?
+- ¿Qué significa cada columna?
+- ¿Quién lo produjo?
+- ¿Qué transformaciones sufrió?
+- ¿Hay restricciones de uso?
+
+Esto se llama **data lineage**: el recorrido completo de un dato desde su origen hasta su uso final.
+
+```python
+API de gobierno
+    ↓
+raw.parquet (crudo)
+    ↓ (filtros, limpieza)
+clean.parquet (limpio)
+    ↓ (agregaciones)
+tabla_modelo (analítico)
+    ↓
+predicción / tablero
+```
+
+Documenta este recorrido para que otros (y tú en el futuro) entiendan qué datos usas y de dónde vienen.
+
+# Arquitectura práctica: de mínimo a escalable
+
+La infraestructura debe crecer con el problema, no al revés.
+
+## Niveles de complejidad
+
+**Para comenzar (análisis personal):**
+```text
+Tu laptop + Git + Python + CSV/Parquet
+```
+
+**Para un equipo pequeño:**
+```text
+GitHub + PostgreSQL + servidor + ambientes reproducibles (Docker)
+```
+
+**Para un producto en operación:**
+```text
+Cómputo escalable + almacenamiento distribuido + pipelines
++ seguridad + logs + backups + monitoreo
+```
+
+## Ejemplo de arquitectura escalable
+
+```text
+                     INFRAESTRUCTURA DE DATOS
+
+                           ┌──────────┐
+                           │ Usuarios │
+                           └────┬─────┘
+                                │
+                    identidad / permisos / red
+                                │
+        ┌───────────────────────┼────────────────────────┐
+        │                       │                        │
+  ┌─────▼──────┐         ┌──────▼──────┐          ┌──────▼───────┐
+  │  Cómputo   │ ◄─────► │    Datos    │          │  Productos   │
+  │            │         │             │ ───────► │              │
+  │ EC2/VM     │         │ → raw       │          │ Tableros     │
+  │ CPU/GPU    │         │ → clean     │          │ APIs         │
+  │ Python     │         │ → curated   │          │ Modelos      │
+  └─────▲──────┘         │ Postgres y/ó│          │ Reportes     │
+        │                │ S3/Parquet  │          └──────────────┘
+  ┌─────┴──────┐         └─────────────┘
+  │   Código   │
+  │ Git/GitHub │
+  │ Docker     │
+  └─────▲──────┘
+        │
+  ┌─────┴────────┐
+  │ Orquestación │
+  │ (Airflow)    │
+  └──────────────┘
+
+  + seguridad / logs / backups / monitoreo
+```
+
+## Checklist final
+
+A modo de resumen, cuando diseñes o evalúes una infraestructura de datos, pregúntate:
+
+**Cómputo**: ¿Dónde corre el código? ¿Tiene suficiente CPU/RAM? ¿Es escalable?
+
+**Almacenamiento**: ¿Dónde viven los datos? ¿Es recuperable? ¿Es económico?
+
+**Código**: ¿Está versionado? ¿Puede alguien más reproducirlo?
+
+**Ambientes**: ¿Las dependencias están documentadas? ¿Funciona igual en otra máquina?
+
+**Orquestación**: ¿Quién ejecuta el pipeline? ¿Qué pasa si falla un paso?
+
+**Seguridad**: ¿Quién puede acceder a qué? ¿Las credenciales están protegidas?
+
+**Operación**: ¿Hay logs de lo que ocurrió? ¿Tenemos backups? ¿Sabemos si está sano?
+
+**Documentación**: ¿Alguien nuevo entiende la arquitectura? ¿Se entiende de dónde viene cada dato?
+
+## Conclusión
+
+El objetivo no es convertirte en especialista en infraestructura en la nube, sino entender los componentes principales, cómo se conectan entre sí, y cómo escalas cuando sea necesario. Una buena infraestructura es **invisible al usuario** — el análisis simplemente funciona, confiablemente, sin intervención manual.
+
+
+
+
+

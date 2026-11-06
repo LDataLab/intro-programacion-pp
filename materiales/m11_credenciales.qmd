@@ -1,0 +1,5 @@
+
+**Documentación complementaria para la siguiente unidad:** conexión remota, autenticación, usuarios, roles y permisos en PostgreSQL. Estos temas son especialmente relevantes en el modelo cliente-servidor, porque el servidor debe controlar quién se conecta y qué puede hacer cada usuario.
+
+
+

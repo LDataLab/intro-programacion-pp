@@ -1,0 +1,248 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+## Herramientas para pipeline
+
+Las herramientas que vamos a estudiar en esta siguiente fase del curso pueden aplicarse en diferentes etapas a lo largo del pipeline de un proyecto de ciencia de datos. Conocerlas y entender cómo utilizarlas te facilitará desde la transferencia de datos al inicio de un proyecto hasta el despliegue y la implementación en producción.
+
+![](../imgs/pipeline.png)
+
+Estas herramientas incluyen Docker, CI/CD, APIs y conceptos relacionados con el funcionamiento de páginas web. Son tecnologías complementarias que fortalecen tus habilidades técnicas como científico de datos y te permiten abordar proyectos de manera más eficiente y robusta.
+
+Las tres principales herramientas que estaremos viendo son:
+- CI/CD
+- Docker
+- Construcción de una API
+
+Ejemplos de uso: 
+
+- Construir una API para un modelo de predicción de diabetes.
+- Usar Docker para anonimizar datos de manera segura.
+- Implementar Docker para la transferencia eficiente de datos entre sistemas.
+- Utilizar CI/CD para desplegar proyectos automáticamente y sin interrupciones.
+
+# Docker
+
+[<img src="../imgs/docker-logo-blue.png" width="200"/>](https://www.docker.com/)
+
+
+Docker es una herramienta que te permite, crear, probar e implementar aplicaciones rápidamente. 
+Docker empaqueta software en unidades estadarizadas llamadas contenedores que **incluyen todo lo
+necesario para que el software se ejecute**, incluidas bibliotecas, herramientas de sistema, código 
+y tiempo de ejecución. 
+
+Para correr aplicaciones necesitas hacer uso de una **imagen de Docker**, que es una plantilla que
+contiene el sistema operativo, las bibliotecas y el software necesario para ejecutar una
+aplicación. Piensa que es como un recetario a partir del cual se crean los contenedores. Las
+imágenes son inmutables y se almacenan en un registro (por ejemplo, Docker Hub), desde donde puedes
+descargarlas y usarlas para crear contenedores.
+
+#### Ventajas de Docker 
+
+- **Portabilidad**: Puedes ejecutar la misma aplicación en cualquier sistema operativo
+(Windows, macOS, Linux) sin preocuparte por diferencias de configuración.
+- **Consistencia**: Todos los miembros del equipo trabajan en el mismo entorno, evitando problemas 
+de compatibilidad.
+- **Escalabilidad**: Puedes escalar aplicaciones fácilmente utilizando múltiples contenedores.
+- **Aislamiento**: Cada contenedor es independiente, lo que mejora la seguridad y la gestión de recursos.
+
+#### Uso general 
+
+- Docker proporciona una forma estándar de ejecutar código.
+- Actúa como un sistema operativo para contenedores, de manera similar a las *máquinas virtuales*, pero más ligero y eficiente.
+- Los contenedores son más fáciles de administrar porque solo necesitas Docker instalado y puedes descargar imágenes listas para usar desde el repositorio oficial.
+
+Nota: Con Docker puedes ejecutar aplicaciones complejas solo descargando la imagen adecuada.
+
+
+#### VM vs Contenedores de docker 
+
+
+</div>
+
+<div align="center">
+<img src="https://www.opc-router.com/wp-content/uploads/2021/10/Docker_Vergleich-EN-1200x911.png" width="400">
+</div>
+
+</div>
+
+
+## `Dockerfile`
+
+Debes de tener un `Dockerfile` que describe paso a paso cómo construir una imagen, que luego puedes ejecutar como contenedor.
+
+En el archivo `src/api/Dockerfile` puedes ver cómo se toma una imagen que pone de base Python, copia
+el código que utilizaremos e instala dependiencias. Si **solo** tienes el `Dockerfile` corres la siguiente línea:
+
+```{.sh}
+docker build -t <nombre_imagen> .
+```
+
+Luego corres las funciones de la imagen en el contenedor corriendo.
+
+```{.sh}
+docker run <nombre_imagen>
+```
+
+Para construir imagen: `-f` indica donde encontrar el Dockerfile, `-t` asigna el nombre a la imagen que estas construyendo. El `.` especifica el directorio desde donde ejecutarás el comando.
+
+```{.sh}
+# Este corre solo si tienes el Dockerfile y especificas el uso
+docker build -f src/api/Dockerfile -t apiclase .
+```
+
+Para correr contenedor
+
+```{.sh}
+# Este corre solo si tienes el Dockerfile y especificas el uso
+docker run -p 13000:13000 miapiele
+```
+
+## `docker-compose.yaml`
+
+También existe otro archivo muy común al momento de utilizar Docker, este se llama `docker-compose.yaml` que define 
+**cómo se ejecutan uno o varios contenedores**, y es que sí, puedes tener uno o más contenedores que se pueden utilizar entre sí. Sobre todo se usa para describir la configuración de ejecución: puertos, volúmenes, redes, dependencias, etc. 
+
+Para correr un `docker-compose.yaml` es el siguiente comando, que levanta los servicios definidos en el mismo archivo. 
+
+```
+# Construir imágenes
+docker compose build
+
+# Servicios del docker-compose
+docker compose up
+
+# Levántalo en segundo plano (te regresa la terminal)
+docker compose up -d
+
+# Reconstruye la imagen antes de levantar el contenedor
+docker compose up --build
+```
+
+
+Detener si el contenedor está corriendo:
+```{.sh}
+docker compose stop 
+```
+
+Reiniciar un servicio
+```{.sh}
+docker compose restart <nombre_servicio>
+```
+
+
+Apagar contenedores
+```{.sh}
+docker compose down
+```
+
+
+
+Apagar contenedores y borrar los volúmenes
+
+```{.sh}
+docker compose down -v
+```
+
+Ejecutar un comando dentro del contenedor
+
+```{.sh}
+docker compose exec <nombre_servicio> bash
+```
+
+Ver contenedores levantados por compose
+```{.sh}
+docker compose ps
+```
+
+
+### Manejo de docker global 
+
+Para enlistar los contenedores que están en ejecución:
+```{.sh}
+docker ps
+```
+
+Para enlistar los contenedores detenidos:
+```{.sh}
+docker ps -a
+```
+
+Para ver cuáles son las imágenes en el servidor:
+
+```{.sh}
+docker images
+```
+
+
+
+Para eliminar el contenedor
+```{.sh}
+docker rm <container_id>
+```
+
+Para eliminar una imagen
+```{.sh}
+docker rmi <container_id>
+```
+
+Para ver tamaño de contenedor corriendo 
+```{.sh}
+docker ps -s
+```
+
+Para ver tamaño de contenedor detenido
+```{.sh}
+docker ps -a -s
+```
+
+
+```
+                 ┌──────────────────────────────┐
+                 │         Dockerfile           │
+                 │------------------------------│
+                 │  FROM python:3.11-slim       │
+                 │  WORKDIR /app                │
+                 │  RUN pip install fastapi ... │
+                 │  COPY src ./src              │
+                 │  EXPOSE 13000                │
+                 └─────────────┬────────────────┘
+                               │ 
+                               │ cómo construir la imagen
+                               │ (docker build)
+                               ▼
+                        Imagen (apiclase)
+                               │ 
+                               │ cómo ejecutiar uno o más contenedores
+                               │ (docker compose up)
+                               ▼
+                 ┌──────────────────────────────┐
+                 │     docker-compose.yaml      │
+                 │------------------------------│
+                 │  services:                   │
+                 │    api:                      │
+                 │      build: .                │
+                 │      ports: "13000:13000"    │
+                 │      command: uvicorn ...    │
+                 └─────────────┬────────────────┘
+                               │
+                               ▼
+                           Contenedor (instancia viva de esa imagen)
+               (corriendo tu API en localhost:13000)
+
+```
+
+Los contenedores están aislados del sistema operativo host y tienen su propia red interna. Si no mapeas un puerto, la aplicación no será accesible desde el exterior del contenedor.
+
+#### References 
+
+- [Docker-aws](https://aws.amazon.com/es/docker/)
+- [docker](https://www.opc-router.com/what-is-docker/)
