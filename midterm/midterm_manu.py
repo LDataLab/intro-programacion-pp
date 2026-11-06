@@ -17,7 +17,7 @@ Instrucciones:
 Puedes consultar tus notas y documentación.
 No modifiques las preguntas ni la sección que imprime las respuestas.
 """
-
+B
 nombre = "MANUEL PATIÑO LOPEZ"
 
 # ============================================================

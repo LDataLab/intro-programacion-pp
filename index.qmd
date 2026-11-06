@@ -62,9 +62,18 @@ bibliography: references.bib
 
 :::
 
+::: {.callout-tip collapse="false"}
+### 05. Introducción a infraestructura local y en la nube
+
+- Infraestructura para un proyecto de ciencia de datos 
+    - [Material 08](materiales/m08_infraestructura.html) 
+
+:::
+
+
 
 ::: {.callout-caution collapse="true"}
-### 05. Bases de datos
+### 06. Bases de datos
 
 - Introducción a bases de datos estructuradas
     - [Material 08](materiales/m08_intro_db_sql.html) 
@@ -72,16 +81,9 @@ bibliography: references.bib
 - Práctica de bases de datos
     - [Material 09](materiales/m09_practica_db.html) 
 
-:::
-
-::: {.callout-caution collapse="true"}
-### 06. Introducción a infraestructura local y en la nube
-
-- Estructura para un buen funcionamiento de Python
-    - [Material 08](materiales/m10_infraestructura.html) 
-
 - Variables de entorno y credenciales
     - [Material 09](materiales/m11_credenciales.html) 
+
 
 :::
 
