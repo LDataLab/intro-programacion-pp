@@ -1,7 +1,5 @@
 CREATE SCHEMA IF NOT EXISTS clean;
 
-CREATE SCHEMA IF NOT EXISTS clean;
-
 CREATE OR REPLACE TABLE clean.ecobici AS
 SELECT
     Genero_Usuario::VARCHAR AS genero,
