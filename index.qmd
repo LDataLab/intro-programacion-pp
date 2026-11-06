@@ -62,28 +62,49 @@ bibliography: references.bib
 
 :::
 
+::: {.callout-tip collapse="false"}
+### 05. Introducción a infraestructura local y en la nube
 
-::: {.callout-caution collapse="true"}
-### 05. Bases de datos
+- Infraestructura para un proyecto de ciencia de datos 
+    - [Material 08](materiales/m08_infraestructura.html) 
+
+:::
+
+
+
+::: {.callout-tip collapse="false"}
+### 06. Bases de datos
 
 - Introducción a bases de datos estructuradas
-    - [Material 08](materiales/m08_intro_db_sql.html) 
+    - [Material 09](materiales/m09_intro_db_sql.html) 
 
 - Práctica de bases de datos
-    - [Material 09](materiales/m09_practica_db.html) 
-
-:::
-
-::: {.callout-caution collapse="true"}
-### 06. Introducción a infraestructura local y en la nube
-
-- Estructura para un buen funcionamiento de Python
-    - [Material 08](materiales/m10_infraestructura.html) 
+    - [Material 10](materiales/m10_practica_db.html) 
 
 - Variables de entorno y credenciales
-    - [Material 09](materiales/m11_credenciales.html) 
+    - [Material 11](materiales/m11_credenciales.html) 
 
 :::
+
+
+::: {.callout-caution collapse="true"}
+### 07. Docker y ambientes reproducibles
+
+- Introducción a docker
+    - [Material 12](materiales/m12_docker.html) 
+:::
+
+
+::: {.callout-caution collapse="true"}
+### 08. Docker y ambientes reproducibles
+
+- Introducción a docker
+    - [Material 13](materiales/m13_apis.html) 
+    - [Material 14](materiales/m14_pipeline.html) 
+
+Material bien
+:::
+
 
 ## Calendario
 
@@ -99,9 +120,9 @@ bibliography: references.bib
 | 05    | Funcionamiento de Python                  | T4            | [2026-10-15 Thu] |
 | 06    | Datos, SQL y bases de datos               |               | [2026-10-22 Thu] |
 | 07    | Intro infra (local y en la nube)          | Midterm       | [2026-10-29 Thu] |
-| 08    | Docker y ambientes reproducibles          |               | [2026-11-05 Thu] |
-| 09    | APIS y servicios externos                 | T5            | [2026-11-12 Thu] |
-| 10    | Automatización y verificación automática  | T6*           | [2026-11-19 Thu] |
+| 08    | Funcionamiento sql y bases de datos       |               | [2026-11-05 Thu] |
+| 09    | Docker y ambientes reproducibles          | T5            | [2026-11-12 Thu] |
+| 10    | APIS, automatización y verificación       | T6*           | [2026-11-19 Thu] |
 | 11    | Agentes de programación                   |               | [2026-11-26 Thu] |
 | 12    | Evaluación                                | Final         | [2026-12-03 Thu] |
 

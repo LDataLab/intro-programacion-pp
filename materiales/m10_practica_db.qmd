@@ -1,0 +1,260 @@
+---
+title: "Práctica: DuckDB, SQL y análisis desde Python"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    highlight-style: github
+date: today
+execute:
+  eval: false
+---
+
+## 1. Estructura de trabajo 
+
+En este material diseñaremos una estructura de trabajo que hace uso de 
+una base de datos en duckdb, desde su creación hasta su uso en Python.
+
+
+```markdown
+intro-programacion-pp/
+├── data/
+│   ├── raw/                          # CSV descargados (ecobici-2014-01.csv, ...)
+│   └── db/
+│       └── ecobici.duckdb            # Base generada; NO subir a Git
+├── infra/
+│   └── create-duckdb.sh              # Abre/crea la base de datos
+├── pipelines/
+│   └── etl-ecobici.sh                # Descarga los CSV y construye clean.ecobici
+├── sql/
+│   └── t01_create_clean.sql          # Transformaciones: raw CSV → clean.ecobici
+├── src/progra/tools/
+│   └── mydb.py                       # Función myquery(sql) -> DataFrame
+├── notebooks/
+│   └── nb02_exploracion_ecobici.ipynb
+├── pyproject.toml
+└── uv.lock
+```
+
+#### ¿Qué se sube a Git?
+
+- Scripts (`infra/`, `pipelines/`), SQL (`sql/`), código Python (`src/`), notebooks, `pyproject.toml` y `uv.lock`.
+- **No subir** `data/**`: el `.gitignore` del proyecto ya ignora esa carpeta, incluidos los CSV y el archivo `.duckdb`. Solo se conservan los `.gitkeep`.
+- Para reconstruir la base en otra computadora basta con ejecutar el pipeline; por eso no es necesario compartir el archivo `.duckdb`.
+
+## 2. Preparar espacio de trabajo
+
+#### Primero instala DuckDB (CLI):
+
+Esto lo puedes realizar desde tu home:
+
+```.bash
+curl https://install.duckdb.org | bash
+```
+
+
+Ahora, ve al repo y actualiza la última versión de tu repo y actualiza las dependencias de Python:
+
+```{.sh}
+uv sync
+```
+
+## 3. DuckDB
+
+Para esta práctica comenzaremos con el uso de duckdb desde la línea de
+comandos, por lo que todos los comandos se ejecutan **desde la raíz del 
+repositorio**, porque las rutas son relativas a ella.
+
+**Paso 1. Descargar un mes de datos:**
+
+```{.sh}
+curl https://ecobici.cdmx.gob.mx/wp-content/uploads/2022/08/2014-01.csv > data/raw/ecobici-2014-01.csv
+```
+
+**Paso 2. Revisar el CSV antes de cargarlo:**
+
+```{.sh}
+head -3 data/raw/ecobici-2014-01.csv
+```
+
+**Paso 3. Abrir la base con la CLI de DuckDB:**
+
+```{.sh}
+duckdb data/db/ecobici.duckdb
+```
+
+Observa como cambia la terminal.
+```
+show all tables;
+```
+
+Dentro de la CLI, los archivos CSV se pueden consultar sin cargarlos antes:
+
+```{.sql}
+DESCRIBE SELECT * FROM read_csv('data/raw/ecobici-2014-01.csv');
+SELECT COUNT(*) FROM read_csv('data/raw/ecobici-2014-01.csv');
+```
+
+Para salirte de la base:
+
+```
+.quit
+```
+
+
+**Paso 4. Crear la tabla limpia** desde la misma terminal, con el archivo SQL del proyecto:
+
+```{.sh}
+duckdb data/db/ecobici.duckdb -f sql/t01_create_clean.sql
+```
+
+- Observa el archivo `sql/t01_create_clean.sql`
+
+```{.sql filename="sql/t01_create_clean.sql"}
+CREATE SCHEMA IF NOT EXISTS clean;
+
+CREATE OR REPLACE TABLE clean.ecobici AS
+SELECT
+    Genero_Usuario::VARCHAR AS genero,
+    Edad_Usuario::SMALLINT AS edad,
+    Bici::INTEGER AS bici,
+    Ciclo_Estacion_Retiro::SMALLINT AS estacion_retiro,
+    (Fecha_Retiro::DATE + Hora_Retiro::TIME) AS fecha_retiro,
+    Ciclo_Estacion_Arribo::SMALLINT AS estacion_arribo,
+    (Fecha_Arribo::DATE + Hora_Arribo::TIME) AS fecha_arribo
+FROM read_csv('data/raw/ecobici-2014-*.csv');
+```
+
+- Qué hace cada parte
+
+    - **`read_csv('data/raw/ecobici-2014-*.csv')`**: lee todos los CSV que coincidan con el patrón (un *glob*). Así, agregar otro mes solo requiere descargarlo a `data/raw/`.
+    - **Renombrado:** los nombres originales (`Genero_Usuario`, `Ciclo_Estacion_Retiro`, ...) se cambian a nombres cortos en minúsculas (`genero`, `estacion_retiro`, ...).
+    - **Casts (`::`):** convierten cada columna al tipo adecuado. Por ejemplo, `Edad_Usuario::SMALLINT` guarda la edad como número entero pequeño.
+    - **Fecha y hora:** el CSV separa la fecha (`Fecha_Retiro`) de la hora (`Hora_Retiro`). `Fecha_Retiro::DATE + Hora_Retiro::TIME` las combina en un solo valor `TIMESTAMP`.
+    - **`CREATE OR REPLACE TABLE ... AS`:** materializa el resultado dentro de la base. Volver a ejecutar el script reemplaza la tabla, sin duplicar datos.
+
+::: {.callout-important}
+## Validar antes de asumir que la limpieza fue correcta
+
+Cada transformación debe responder a un problema encontrado en los datos y acompañarse de una validación: conteos, valores nulos creados por conversiones, rangos razonables y, cuando aplique, unicidad de identificadores. Preguntas útiles:
+
+- ¿Cuántos viajes hay en el CSV y cuántos en `clean.ecobici`?
+- ¿Hay fechas de arribo anteriores a la de retiro?
+- ¿Qué edades aparecen? ¿Son razonables?
+:::
+
+
+
+**Paso 5. Verificar la tabla:**
+
+```{.sh}
+duckdb data/db/ecobici.duckdb -c "SELECT COUNT(*) AS viajes FROM clean.ecobici;"
+```
+
+**Idea clave:** DuckDB es un motor **embebido**: no hay servidor que iniciar. La base es un archivo (`data/db/ecobici.duckdb`) y cualquier herramienta que use DuckDB puede abrirlo, desde la CLI o desde Python.
+
+## 4. Script `infra/create-duckdb.sh`
+
+```{.bash filename="infra/create-duckdb.sh"}
+## Para crear base de datos
+duckdb data/db/ecobici.duckdb
+```
+
+- La línea de instalación está comentada; se ejecutó una sola vez al preparar el ambiente.
+- La línea final abre la base `data/db/ecobici.duckdb`. Si el archivo no existe, DuckDB lo crea al guardar el primer cambio.
+- Se corre **una vez** para crear la base o cuando se quiera explorarla de manera interactiva. Para salir de la CLI, escribir `.quit`.
+
+```{.sh}
+bash infra/create-duckdb.sh
+```
+
+## 5. El script `pipelines/etl-ecobici.sh`
+
+```{.bash filename="pipelines/etl-ecobici.sh"}
+#!/bin/bash
+
+# Pipeline de descarga de datos para ecobici
+
+# 1. Primero descargamos los datos
+curl https://ecobici.cdmx.gob.mx/wp-content/uploads/2022/08/2014-01.csv > data/raw/ecobici-2014-01.csv
+
+curl https://ecobici.cdmx.gob.mx/wp-content/uploads/2022/08/2014-02.csv > data/raw/ecobici-2014-02.csv
+
+# Carga de esquema clean dentro de duckdb
+
+duckdb data/db/ecobici.duckdb -f sql/t01_create_clean.sql
+```
+
+El pipeline hace tres cosas en orden:
+
+1. **Descarga** dos archivos mensuales (enero y febrero de 2014) a `data/raw/`.
+2. **Carga** la base: ejecuta el SQL `sql/t01_create_clean.sql` dentro de `data/db/ecobici.duckdb`. Si la base no existe, la crea.
+3. Termina. No hay pasos intermedios que revisar, por eso conviene verificar el resultado (paso 3 de la sección anterior).
+
+Se corre desde la raíz del repositorio:
+
+```{.sh}
+bash pipelines/etl-ecobici.sh
+```
+## 6. Verificaciones
+
+Desde la CLI, o desde el notebook con `myquery`:
+
+```{.sql}
+SELECT COUNT(*) AS viajes FROM clean.ecobici;
+SELECT COUNT(*) AS fechas_nulas FROM clean.ecobici WHERE fecha_retiro IS NULL;
+SELECT MIN(edad) AS edad_min, MAX(edad) AS edad_max FROM clean.ecobici;
+SELECT COUNT(*) AS arribos_antes_de_retiro
+FROM clean.ecobici
+WHERE fecha_arribo < fecha_retiro;
+```
+
+## 7. Desde Python Duckdb con función propia: `myquery`
+
+El archivo `src/progra/tools/mydb.py` encapsula la conexión en una función:
+
+```{.python filename="src/progra/tools/mydb.py"}
+from pathlib import Path
+
+import duckdb
+import pandas as pd
+
+DB_PATH = Path(__file__).resolve().parents[3] / "data/db/ecobici.duckdb"
+
+
+def myquery(sql: str) -> pd.DataFrame:
+    """Ejecuta una consulta SQL y devuelve un DataFrame."""
+    with duckdb.connect(str(DB_PATH), read_only=True) as con:
+        return con.execute(sql).df()
+```
+
+Puntos importantes:
+
+- `DB_PATH` se calcula a partir de la ubicación del archivo, así que la función funciona aunque el notebook se ejecute desde otra carpeta.
+- `read_only=True` abre la base sin modificarla: las consultas del análisis no pueden alterar las tablas.
+- La función recibe **SQL como texto** y devuelve un `DataFrame`. Así el trabajo pesado (filtrar, agrupar, contar) lo hace DuckDB, y pandas recibe solo el resultado.
+
+### 7.1 Uso en el notebook `nb02_exploracion_ecobici.ipynb`
+
+El notebook importa la función y la usa como cualquier otra:
+
+```{.python}
+from progra.tools.mydb import myquery
+
+df = myquery("SELECT * FROM clean.ecobici LIMIT 10")
+df.head()
+```
+
+Preguntas de cierre:
+
+- ¿Qué diferencia hay entre un CSV en `data/raw/`, la tabla `clean.ecobici` y el archivo `data/db/ecobici.duckdb`?
+- ¿Qué necesitaría otra persona para reconstruir la base sin recibir el archivo `.duckdb`?
+- ¿Qué ventajas y límites tiene este flujo frente a una base PostgreSQL compartida?
+
+## Referencias
+
+- DuckDB CLI: <https://duckdb.org/docs/stable/clients/cli/overview>
+- DuckDB Python API: <https://duckdb.org/docs/stable/clients/python/overview>
+- DuckDB `read_csv`: <https://duckdb.org/docs/stable/data/csv/overview>
+- DuckDB `CREATE TABLE`: <https://duckdb.org/docs/stable/sql/statements/create_table>

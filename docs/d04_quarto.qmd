@@ -13,7 +13,6 @@ date: today
 
 [Página oficial](https://quarto.org/)
 
-Nota: _Para esta sesión se asume que estarás modificando los archivos en algún editor de texto y que el *preview* del documento se reproduce en el buscador de tu preferencia con el puente de ssh y tu puerto asignado._
 
 Quarto es un sistema (open-source) de publicación científica y técnica. Existen muchas versiones y variedades los documentos que crea quarto. Pueden ser desde pdfs, words, html (versión de notebook), así como documentos más completos como libros en línea (epubs), libros reproducibles, artículos, manuscritos, páginas web, blogs, etc. 
 
@@ -21,10 +20,10 @@ Quarto se corre de la siguiente manera: cuando reproduces (render) un archivo `.
 
 [<img src="https://quarto.org/docs/get-started/hello/images/qmd-how-it-works.png" width="500"/>](https://quarto.org/docs/get-started/hello/text-editor.html)
 
-La función principal para ver documentos en quarto (en bastión) es:
+La función principal para ver la página web completa como está construida en el repo es:
 
 ```{.sh}
-quarto preview archivo.qmd --port <número de puerto personal>
+quarto preview --no-browser
 ```
 
 La función principal para compilar los archivos son:
