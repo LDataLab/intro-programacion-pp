@@ -3,10 +3,12 @@ name = "intro-programacion-pp"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "duckdb>=2.0.0",
     "jupyter>=1.1.1",
     "jupyter-cache>=1.0.1",
     "matplotlib>=3.11.2",
     "pandas>=3.0.6",
+    "pyarrow>=26.0.1",
     "seaborn>=0.13.2",
 ]
 

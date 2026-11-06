@@ -1,0 +1,137 @@
+---
+title: "Tarea 2: Exploración de datos"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+date: today
+---
+
+# APIs (Interfaz de Programación de Aplicaciones) 
+
+Las APIs son **puentes** que permiten compartir información entre diferentes sistemas de software. Es básicamente una interfaz que permite que dos aplicaciones se comuniquen entre sí. Son como un intermediario que traduce solicitudes y datos entre aplicaciones. Las APIs no están diseñadas para ser usadas directamente por humanos, más bien proporcionan un conjunto de reglas y protocolos para que las aplicaciones puedan **intercambiar datos o funcionalidades**. Es un intermediario y entre las principales funciones están:
+
+1. Accesar a datos desde cualquier lugar: Te pueden conectar a servicios que proveen datos en _tiempo real_ (clima).
+2. Iniciar sesión con una sola cuenta entre diferentes apps o sitios web. 
+3. Interactuar con tu propio sistema operativo.
+
+Existen diferentes tipos de APIs el más popular y el que utilizaremos es el de REST. 
+- Una API REST es una de las formas más comunes en que los servicios web se comunican entre sí y que permiten la comunicación entre clientes y servidores. 
+- Es un tipo de API que permite que diferentes sistemas interactúen utilizando http que es el mismo protocolo que tu buscador web utiliza para cargar sitios.
+- Las API REST están diseñadas para ser simples y sin estado, lo que significa que cada solicitud de un cliente contiene toda la información que el servidor necesita para procesarla; no es necesario que el servidor recuerde nada de interacciones anteriores.
+
+### Diferencia entre una App, una API y una Página Web
+
+#### 1. App
+
+Una **aplicación (app)** es cualquier programa que realiza una tarea específica: puede tener o no una interfaz visual. Una app es un conjunto de funciones que resuelven algo.
+Puede interactuar con usuarios (a través de una interfaz) o con otras aplicaciones (a través de una API).
+
+**Ejemplos:**
+- Una app móvil como Instagram o Notion.
+- Un programa de escritorio como Excel o VSCode.
+- Un servicio que limpia datos o entrena un modelo de machine learning.
+
+
+#### 2. Página Web
+
+Una **página web** es una **interfaz visual** que se muestra en un navegador.  
+Normalmente está hecha con **HTML, CSS y JavaScript**, y permite que las personas interactúen con la aplicación. Una página web es la *cara visible* de una aplicación. Muestra información que puede provenir de un servidor o una API.
+
+**Ejemplos:**
+- La página de inicio de Gmail.
+- Un formulario en línea.
+- Un dashboard con gráficos.
+
+
+#### 3. API
+
+Una **API** es un punto de conexión que permite que **una aplicación se comunique con otra**.  
+No tiene una interfaz visual: su función es enviar y recibir datos (normalmente en formato JSON). La API es el *canal de comunicación* entre el usuario (o una página web) y la lógica interna de la aplicación.  
+Recibe solicitudes, las procesa y devuelve respuestas.
+
+
+**Ejemplos:**
+- La API de Spotify que te devuelve información de canciones.
+- Una API de clima que responde con temperatura y humedad.
+- Una API de FastAPI que recibe datos y devuelve una predicción.
+
+
+
+## Endpoints
+
+Un concepto importante es el **endpoint** que es una URL específica que corresponde a una parte
+particular del servicio, donde puedes acceder al recurso o realizar una acción,
+ejemplo: `https://api.com/users`.
+
+- Es la url donde haces tus solicitudes al servicio
+- Puedes solicitar información del servidor
+- Puedes subir información al servidor
+- Puedes eliminar, actualizar. 
+
+De manera más específica lo que puedes hacer con la API se debe especificar con los métodos HTTP:
+
+- `GET`: Para recuperar u obtener datos (por ejemplo, obtener la información de un usuario).
+- `POST`: Para enviar datos o crear un recurso (por ejemplo, registrar un nuevo usuario).
+- `PUT/PATCH`: Para actualizar datos existentes en el servidor (por ejemplo, cambiar la información de un usuario).
+- `DELETE`: Para eliminar un recurso (por ejemplo, borrar un usuario).
+
+Con lo endpoints se hace la solicitud a la API y las respuestas se ven de esta manera:
+
+Códigos de Estado HTTP:
+
+- `200 OK`: La solicitud fue exitosa.
+- `201 Created`: Un recurso fue creado con éxito.
+- `400 Bad Request`: La solicitud tiene un error, como datos inválidos.
+- `404 Not Found`: El recurso solicitado no fue encontrado.
+- `500 Internal Server Error`: Hubo un error en el servidor
+
+Headers:
+
+- Son metadatos que acompañan una solicitud o respuesta HTTP. 
+- Ejemplo: Authorization para enviar un token de autenticación.
+
+Cuerpo de la Solicitud (Request Body):
+
+- Cuando envías datos (con POST o PUT), los datos van en el cuerpo de la solicitud, generalmente en formato JSON.
+
+Autenticación y Seguridad:
+
+- Muchas APIs requieren autenticación (por ejemplo, mediante tokens o claves API) para asegurarse de que solo los usuarios autorizados puedan acceder a los datos.
+
+
+Para generar un API debes de tener  en cuenta: 
+- FastAPI (para Python), Flask, Django, Express.js (para JavaScript), etc.
+- Saber cómo definir rutas y métodos HTTP.
+- Cómo recibir y procesar datos enviados por los clientes. Validar que los datos son correctos y seguros antes de procesarlos.
+- Conexión a una Base de Datos porque muchas APIs necesitan interactuar con bases de datos para almacenar o recuperar información.
+- Conocer cómo manejar una base de datos, como PostgreSQL, MySQL, o una base de datos NoSQL como MongoDB.
+
+```
+┌──────────────────────────────────────────┐
+│              Página web (UI)             │
+│      HTML + CSS + JS (frontend)          │
+│      Ej: botón “Predecir clima”          │
+└──────────────────────────────────────────┘
+                     │
+                     ▼
+          (envía solicitud HTTP POST)
+                     │
+┌──────────────────────────────────────────┐
+│              API (Backend)               │
+│        FastAPI / Flask / Node.js         │
+│Ej: recibe{"mes":"junio", "nublado":True} │
+│  → devuelve {"posibilidad": "Alta"}      │
+└──────────────────────────────────────────┘
+                     │
+                     ▼
+┌──────────────────────────────────────────┐
+│           App / Lógica interna           │
+│   Modelos, cálculos, bases de datos      │
+│   Ej: función que estima la probabilidad │
+└──────────────────────────────────────────┘
+
+```
+
