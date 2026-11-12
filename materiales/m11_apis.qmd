@@ -1,277 +1,355 @@
 ---
-title: "APIs"
-subtitle: "Exponer la base de EcoBici como un servicio REST con FastAPI"
+title: "Del notebook al reporte interactivo y a una API"
+subtitle: "DuckDB, Dash y FastAPI: tres formas de utilizar un mismo producto de datos"
 format:
   html:
     toc: true
     toc-depth: 3
     theme: cosmo
     highlight-style: github
+    code-copy: true
 date: today
 execute:
   eval: false
 ---
 
-### Retomemos:
+## Retomemos: ¿para qué hemos aprendido estas herramientas?
 
-![](../imgs/pipeline.png)
+En las unidades anteriores trabajamos con la terminal, Git/GitHub, Python, `uv` y DuckDB. Ahora nos preguntaremos: **una vez que tenemos datos limpios y un análisis reproducible, ¿cómo entregamos sus resultados a otras personas o sistemas?**
+
+Retomemos:
 
 
+### Objetivos de aprendizaje
 
-### Lo que vamos a aprender:
+Al finalizar podrás:
 
-- Qué es una API y en qué se diferencia de una app o de una página web.
-- Identificar endpoints, métodos HTTP, códigos de estado, encabezados y cuerpos de solicitud.
-- Levantar una API con FastAPI y consultar una base DuckDB con `myquery`.
-- Probar una API REST con `curl` y con la documentación interactiva de FastAPI.
-- Consumir una API desde Python con pandas para usar sus resultados en un análisis.
+- Distinguir qué problema resuelven un **notebook**, un **reporte interactivo con Dash** y una **API con FastAPI**.
+- Leer y modificar una app de Dash: `layout`, componentes, `id`, `Input`, `Output` y `callback`.
+- Reconocer por qué **los datos para presentar** se preparan con SQL, preferentemente en la capa `model`, y no se extraen arbitrariamente con `LIMIT`.
+- Entender una solicitud HTTP, un endpoint y una respuesta JSON; probar una API con `curl` y `/docs`.
+- Recuperar resultados de una API en Python y explicar cuándo conviene consultar DuckDB directamente.
 
-### Cómo lo vamos a aprender
+### Ruta de la sesión
 
-La unidad va de lo conceptual a lo visible:
+1. **Notebook → reporte**: quién consume el trabajo y cómo se comunican hallazgos.
+2. **Dash**: leer un ejemplo de app y modificar su interactividad.
+3. **Reporte → servicio**: qué cambia cuando el consumidor es otro programa.
+4. **FastAPI**: levantar y probar una API que consulta la misma base de EcoBici.
+5. **Cierre**: qué versión de los resultados conviene entregar en cada situación.
 
-1. **Concepto (secciones 1 y 2):** qué es una API, qué es un endpoint y qué significan los códigos de estado. Lo vemos con diagramas y ejemplos, sin programar.
-2. **API en la terminal (sección 3, pasos 1 a 3):** levantamos la API y la probamos con `curl` y con la documentación de FastAPI.
-3. **API en un notebook (sección 3, paso 4):** consumimos la misma API con pandas y comparamos el resultado con `myquery`.
-4. **App de monitoreo (sección 4):** leemos una app de Dash y la corremos para ver los datos en una página.
+**Antes de empezar:** necesitamos `data/db/ecobici.duckdb`, creada en la unidad de DuckDB, y dependencias sincronizadas con `uv sync`. Esta lección supone que ya existe `progra.db.mydb.myquery`; la función permite consultar la base y devuelve resultados que podemos usar como DataFrame.
 
-Antes de empezar necesitas la base `data/db/ecobici.duckdb` creada y el proyecto sincronizado con `uv sync`.
+## 1. Un mismo análisis, tres productos distintos
 
-## 1. ¿Qué es una API?
+Imaginemos que nuestra pregunta es **¿cómo varía el número de retiros de Ecobici según la hora?** Primero debemos resolver correctamente la pregunta con datos; después debemos decidir cómo compartir el resultado.
 
-Imagina que ya tienes el resumen de viajes en tu notebook, con `myquery`. Ahora otra persona necesita esos números, pero no debería copiar una base de 1.3 millones de filas ni tener acceso directo a DuckDB. Una API resuelve eso: expone los resultados para que cualquiera los pida por red.
+| Herramienta | ¿Para qué sirve? | ¿Quién la utiliza principalmente? | ¿Qué recibe? |
+|---|---|---|---|
+| **Notebook** | Explorar, documentar decisiones, comprobar supuestos y experimentar | Una persona analista | Código, tablas, gráficas e interpretaciones |
+| **Dash** | Comunicar resultados mediante un reporte visual e interactivo | Una persona que consulta los hallazgos | Página web, texto, controles y gráficas |
+| **FastAPI** | Permitir que **otros programas** consulten resultados o servicios | Un cliente de software, otro sistema o un notebook | Respuestas por HTTP, normalmente JSON |
 
-Una **API** (*Application Programming Interface*) es un punto de conexión que permite que una aplicación se comunique con otra. No tiene interfaz visual: recibe solicitudes, las procesa y devuelve respuestas, normalmente en formato **JSON**.
-
-Una API es el intermediario que traduce solicitudes y datos entre sistemas. Algunas de sus funciones típicas son:
-
-1. Acceder a datos desde cualquier lugar, por ejemplo, un servicio de clima que responde en tiempo real.
-2. Iniciar sesión con una sola cuenta en varias aplicaciones.
-3. Interactuar con servicios o recursos de un sistema, como una base de datos.
-
-### App, página web y API
-
-| Concepto | Qué es | Ejemplo |
-|---|---|---|
-| **App** | Programa que realiza una tarea específica, con o sin interfaz | Excel, un script que limpia datos |
-| **Página web** | Interfaz visual que se muestra en el navegador (HTML, CSS, JavaScript) | Un dashboard con gráficas |
-| **API** | Canal de comunicación entre aplicaciones, sin interfaz visual | La API de un servicio de clima |
-
-### Tres piezas, tres roles
-
-En este curso distinguimos:
-
-- **Base (DuckDB)**: guarda los datos limpios de m10.
-- **API (FastAPI)**: entrega datos o resultados a quien los pida, en JSON. No muestra gráficas.
-- **App de monitoreo (Dash)**: muestra gráficas a una persona. Es un programa aparte y **no** consume la API en esta unidad.
-
-### REST
-
-Existen varios tipos de API. La más común en servicios web es **REST**, que usa HTTP (el mismo protocolo que usa tu navegador) y es **sin estado**: cada solicitud contiene toda la información que el servidor necesita para procesarla. El servidor no recuerda solicitudes anteriores.
-
-## 2. Endpoints, métodos y respuestas
-
-Un **endpoint** es una URL específica donde se accede a un recurso o se realiza una acción, por ejemplo `https://api.com/users`.
-
-Los **métodos HTTP** indican qué se quiere hacer:
-
-- `GET`: obtener datos.
-- `POST`: crear un recurso o enviar datos.
-- `PUT` / `PATCH`: actualizar datos existentes.
-- `DELETE`: eliminar un recurso.
-
-Los **códigos de estado** indican el resultado de la solicitud:
-
-- `200 OK`: la solicitud fue exitosa.
-- `201 Created`: se creó un recurso.
-- `400 Bad Request`: la solicitud tiene un error, como datos inválidos.
-- `404 Not Found`: el recurso no existe.
-- `422 Unprocessable Entity`: un parámetro no cumple las reglas (por ejemplo, un límite fuera de rango).
-- `500 Internal Server Error`: hubo un error en el servidor.
-
-Los **encabezados** (*headers*) son metadatos que acompañan la solicitud o la respuesta. Por ejemplo, `Content-Type` indica en qué formato viene el cuerpo. El **cuerpo** (*body*) lleva datos en `POST` o `PUT`, generalmente en JSON.
+**No son equivalentes ni compiten entre sí.** Podemos desarrollar el análisis en un notebook, publicarlo localmente como un reporte en Dash y ofrecer algunos resultados por una API. En esta unidad **Dash y FastAPI consultan DuckDB directamente y de manera independiente**. No necesitamos conectar una con la otra para entender sus funciones.
 
 ```text
-┌──────────────────────────────────────────┐
-│              Página web (UI)             │
-│      HTML + CSS + JS (frontend)          │
-│      Ej: botón “Ver retiros”             │
-└──────────────────────────────────────────┘
-                     │
-                     ▼
-          (envía solicitud HTTP GET)
-                     │
-┌──────────────────────────────────────────┐
-│              API (Backend)               │
-│              FastAPI                     │
-│  Ej: recibe /estaciones/1/retiros        │
-│  → devuelve [{"fecha_retiro": ...}]      │
-└──────────────────────────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────────────────┐
-│           App / Lógica interna           │
-│   Consultas SQL sobre la base DuckDB     │
-│   Ej: SELECT ... FROM clean.ecobici      │
-└──────────────────────────────────────────┘
+                         datos de EcoBici
+                               |
+                       DuckDB: raw / clean
+                               |
+                    DuckDB: model (agregados)
+                          /           \
+                         /             \
+                   Notebook          Resultados preparados
+                 explorar / validar       /          \
+                                        Dash        FastAPI
+                                      (personas)   (programas)
 ```
 
-## 3. Práctica: la API de EcoBici
+::: {.callout-important}
+## Primero el significado, después la herramienta
 
-En esta sección pasamos de la idea a la práctica: levantamos la API, la probamos y la usamos desde Python.
+Ni una gráfica interactiva ni un endpoint corrigen una pregunta mal formulada, una tabla mal construida o un sesgo en los datos. Las transformaciones deben ser explicables y reproducibles; la presentación viene después.
+:::
 
-La API del proyecto está en `src/progra/api/main.py`. Expone la tabla `clean.ecobici` que construimos en m10. Las consultas pasan por `myquery` (`src/progra/tools/mydb.py`), la misma función que usas en tus notebooks; los valores van como parámetros (`?`).
+## 2. De los notebooks a un reporte con Dash
 
-| Método | Endpoint | Qué devuelve |
-|---|---|---|
-| `GET` | `/health` | Estado de la API |
-| `GET` | `/resumen` | Total de viajes, fechas y edad promedio |
-| `GET` | `/viajes/por-genero` | Número de viajes por género |
-| `GET` | `/estaciones/{estacion_id}/retiros?limite=10` | Últimos retiros de una estación |
+### 2.1 ¿Qué distingue a un reporte de un dashboard lleno de gráficas?
 
-### Paso 1. Levantar la API
+En el notebook documentamos **cómo llegamos** a los resultados: perfilado, limpieza, decisiones, preguntas y visualizaciones exploratorias. En el reporte nos concentramos en **qué debería entender** alguien que no participó en el análisis.
 
-Necesitas la base `data/db/ecobici.duckdb` creada con el pipeline de m10. Desde la raíz del repositorio:
+Un reporte interactivo debería contener:
 
-```{.sh}
-uv run uvicorn progra.api.main:app --reload --port 13000
+1. **Título, contexto, fuente y periodo**: qué fenómeno analizamos.
+2. **Pregunta central y resumen de hallazgos**: qué queremos comunicar.
+3. **Dos o tres visualizaciones seleccionadas**, cada una con una pregunta e interpretación.
+4. **Interactividad con propósito**: un filtro que permita comparar algo relevante.
+5. **Conclusiones y limitaciones**: qué sabemos y qué no podemos inferir.
+
+**Ejemplo:** un gráfico de retiros por hora acompañado de la pregunta «¿en qué horas se concentra la actividad?», un comentario sobre el patrón observado y una advertencia sobre la cobertura temporal es más informativo que una figura sin explicación.
+
+### 2.2 Antes de Dash: consultar los datos adecuados
+
+La tabla `clean.ecobici` tiene una fila por viaje. Si queremos conocer los retiros por hora, conviene calcular una tabla agregada:
+
+```{.sql}
+SELECT
+    EXTRACT(hour FROM fecha_retiro) AS hora,
+    COUNT(*) AS total_retiros
+FROM clean.ecobici
+WHERE fecha_retiro IS NOT NULL
+GROUP BY 1
+ORDER BY 1;
 ```
 
-No necesitas configurar la ruta de la base: `myquery` la resuelve desde el código y apunta a `data/db/ecobici.duckdb`.
+Observa que:
 
-### Paso 2. Probar con `curl`
+- **La unidad de observación cambia:** un renglón ahora corresponde a una hora (0 a 23), no a un viaje.
+- El `COUNT(*)` cuenta viajes registrados, **no** bicicletas disponibles.
+- Es un ejemplo de lo que podría almacenarse en `model.retiros_por_hora`.
+- Usar `LIMIT 10000` en viajes individuales **no** equivale a extraer una muestra aleatoria: podría sesgar la representación por hora, estación o periodo.
 
-Abre otra terminal:
+En nuestra tarea, cada equipo diseñará la capa `model` a partir de **sus propias** preguntas; no todos tendrán la misma estructura.
 
-```{.sh}
-# Estado de la API
-curl http://localhost:13000/health
+### 2.3 Cómo está organizada una app de Dash
 
-# Resumen de la tabla
-curl http://localhost:13000/resumen
+Dash combina código Python con componentes para construir una página:
 
-# Viajes por género
-curl http://localhost:13000/viajes/por-genero
-
-# Cinco últimos retiros de la estación 1
-curl "http://localhost:13000/estaciones/1/retiros?limite=5"
-```
-
-Prueba los errores a propósito:
-
-```{.sh}
-# Estación sin registros: 404
-curl -i http://localhost:13000/estaciones/99999/retiros
-
-# Límite fuera de rango: 422
-curl -i "http://localhost:13000/estaciones/1/retiros?limite=500"
-```
-
-Observa que `curl -i` muestra el código de estado y los encabezados de la respuesta.
-
-### Paso 3. Documentación interactiva
-
-FastAPI genera documentación automática a partir del código. Abre en tu navegador:
-
-```text
-http://localhost:13000/docs
-```
-
-Desde ahí puedes probar cada endpoint con el botón **Try it out**.
-
-### Paso 4. Consumir la API desde Python
-
-Para un análisis no necesitas `curl`: pandas puede leer la respuesta JSON directamente. Con la API corriendo, en un notebook:
+- `Dash(__name__)`: crea la aplicación; `__name__` es una variable especial de Python que identifica el módulo (cuando ejecutamos el archivo directamente vale `"__main__"`).
+- `app.layout`: describe la **estructura visual** de la página.
+- `html.H1`, `html.P`, `html.Div`: títulos, párrafos y contenedores HTML escritos como componentes de Python.
+- `dcc.Graph`: muestra una figura de Plotly.
+- `dcc.Dropdown`: permite elegir una opción.
+- `id`: identifica un componente para conectarlo con otros.
+- `@app.callback(...)`: registra una función que actualiza una o varias propiedades cuando cambia la entrada.
 
 ```{.python}
-import pandas as pd
-
-viajes_genero = pd.read_json("http://localhost:13000/viajes/por-genero")
-viajes_genero
-```
-
-Compara el resultado con `myquery` usando el mismo SQL de `viajes_por_genero` en `main.py`. Deberían coincidir: la API solo cambia la forma de entregar el resultado.
-
-### Paso 5. Preguntas de análisis
-
-- ¿Qué datos pediría otra persona para su análisis, y qué endpoint los entrega?
-- `/estaciones/{id}/retiros` tiene un límite máximo de 100. ¿Por qué lo pondrías? ¿Qué pasaría con una consulta sin límite sobre 1.3 millones de filas?
-- Si llegan datos de marzo a la base, ¿cambian los números de `/resumen`? ¿Cómo lo comprobarías?
-- `/resumen` muestra una fecha `desde` de 2013, aunque los archivos son de 2014. ¿Qué validación de m10 ayudaría a detectar eso?
-- ¿Qué información de la base no deberías exponer a cualquiera que conozca la URL?
-
-## 4. Dash: una app para ver los datos
-
-La API responde a programas. Para que una persona vea los datos en una página, usamos **Dash**. Dash es un framework de Python para construir **apps web interactivas** con gráficas: la persona elige opciones en un menú y la página se actualiza, sin escribir HTML ni JavaScript. Lo desarrolla Plotly y usa Flask por dentro.
-
-| | API (FastAPI) | App (Dash) |
-|---|---|---|
-| Qué entrega | JSON | Una página web con gráficas |
-| Quién la usa | Programas, notebooks, otros sistemas | Una persona en el navegador |
-| Interactividad | Cada solicitud es independiente | Los controles actualizan las gráficas |
-
-### Tres ideas para leer una app de Dash
-
-1. **Layout**: la estructura de la página. Se arma con componentes de `dash.html` (títulos, divisiones) y `dash.dcc` (menús y gráficas).
-2. **Id**: cada control o gráfica tiene un `id` que lo identifica.
-3. **Callback**: una función que se ejecuta cuando cambia una entrada (`Input`) y actualiza una salida (`Output`).
-
-Esta es una versión simplificada de `src/progra/analysis/app_ecobici.py`:
-
-```{.python}
-import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
 
 app = Dash(__name__)
 
 app.layout = html.Div([
+    html.H1("Reporte de movilidad en bicicleta"),
+    html.P("Pregunta: ¿cómo cambia el uso por hora?"),
     dcc.Dropdown(
-        id="variable",
-        options=[{"label": "Género", "value": "genero"},
-                 {"label": "Edad", "value": "edad"}],
-        value=None,
+        id="grupo",
+        options=[{"label": "Todos", "value": "todos"}],
+        value="todos",
     ),
-    dcc.Graph(id="grafico", figure={}),
+    dcc.Graph(id="retiros-por-hora"),
+    html.P(id="lectura-grafica"),
 ])
 
 @app.callback(
-    Output("grafico", "figure"),
-    Input("variable", "value"),
+    Output("retiros-por-hora", "figure"),
+    Output("lectura-grafica", "children"),
+    Input("grupo", "value"),
 )
-def actualizar_grafico(variable):
-    if not variable:
-        return {}
-    return px.histogram(df, x=variable, color="genero")
+def actualizar_reporte(grupo):
+    # En el archivo de ejemplo esta función sí construye una figura.
+    # Aquí solo mostramos la relación Input → función → Output.
+    ...
 ```
 
-Cuando la persona elige una opción en el menú, Dash llama a `actualizar_grafico` con ese valor y coloca la figura que regresa en el componente `grafico`.
+El callback es una **función de Python**. Su particularidad es que Dash decide cuándo ejecutarla: al cargar la página y cuando cambia el valor de `grupo`. La función debe devolver tantos valores como `Output` se hayan declarado, en el mismo orden.
 
-::: {.callout-tip}
-## Los datos se cargan una vez
-`df` se llena al iniciar la app con `myquery` y no en cada clic. Por eso la app responde rápido, pero también significa que si la base cambia, hay que reiniciar la app. La consulta incluye `limit 10000` para que la app no cargue toda la tabla.
+::: {.callout-note}
+## ¿Por qué no todo necesita un callback?
+
+Si una gráfica no depende de ningún control, podemos construirla una vez y colocarla directamente en `dcc.Graph(figure=fig)`. No necesitamos recalcular la edad promedio por género cada vez que alguien cambia otro filtro sin relación con esa gráfica.
 :::
 
-### Correr la app
+### 2.4 Archivo guía para la clase: `progra/apps/ecobici.py`
 
-Desde la raíz del repositorio:
+Trabajaremos con el archivo adjunto `progra/apps/ecobici.py`. Este ejemplo **no es la solución de la tarea**: presenta un reporte parcial y deja decisiones por tomar. Está pensado para leerse de arriba hacia abajo.
+
+| Bloque del archivo | ¿Qué hace? | ¿Qué debemos observar? |
+|---|---|---|
+| **Imports** | Carga Dash, Plotly y `myquery` | Cada herramienta tiene una responsabilidad |
+| **Consultas SQL** | Pide a DuckDB agregados, no una cantidad arbitraria de viajes | La base realiza el trabajo de agrupación |
+| **Figuras** | Convierte una tabla en una gráfica | Una figura puede ser estática |
+| **`app.layout`** | Define los componentes del reporte | Texto + cifras + gráfica + controles |
+| **`@app.callback`** | Filtra y actualiza una figura y su interpretación | `Input` → función → `Output` |
+| **`if __name__ == "__main__"`** | Ejecuta el servidor local | No publica la app en Internet |
+
+**Recorrido sugerido en vivo:**
+
+1. Identifica la pregunta que responde la figura **estática**. Ubica el SQL que produce sus datos.
+2. Encuentra el `id` del menú y el de la figura **interactiva**. Comprueba que coinciden con los nombres declarados en el callback.
+3. Cambia el valor en el menú. Observa qué dos elementos de la página cambian y cuál permanece igual.
+4. Encuentra la sección «Limitaciones» e identifica por qué los registros de viajes no permiten calcular disponibilidad real de bicicletas.
+5. Revisa `style` en los componentes. El estilo cambia la presentación, **no** el cálculo de los resultados.
+
+#### Ejecutar la app
+
+Guarda el archivo de ejemplo en `src/progra/app/ecobici.py`. Desde la raíz de tu repositorio:
 
 ```{.sh}
-uv run python src/progra/analysis/app_ecobici.py
+uv run python src/progra/app/ecobici.py
 ```
 
-Abre `http://localhost:8050`. Puede correr al mismo tiempo que la API, que usa el puerto 13000.
+Abre `http://127.0.0.1:8050`. Detén el servidor con `Ctrl+C`. Si no están instalados los paquetes, consulta el `pyproject.toml`; por ejemplo, pueden añadirse con `uv add dash plotly pandas duckdb` (solo los que falten).
 
-Prueba: agrega una opción al menú para `estacion_retiro` y observa qué gráfica aparece. ¿Por qué sería útil ver los datos por estación?
+**Nota de entorno:** el archivo utiliza la función `myquery` del repositorio de la clase. Si adaptas el ejemplo a un repositorio propio, deberás ajustar ese import y la conexión a tu base.
 
-## 5. Relación con las unidades anteriores
+### 2.5 Actividad: completar el reporte, no copiar uno
 
-- **m10**: la tabla `clean.ecobici` es el origen de todos los endpoints.
-- **m11**: las consultas usan `myquery`, que lee la base de `data/db/ecobici.duckdb`.
-- **Próximas unidades**: en m12 empaquetaremos el pipeline con Docker; en m13 veremos la integración; en m14 veremos credenciales y cómo proteger la API con un token.
+Trabajen en parejas para **discutir** estas decisiones (no tienen que asignarse tareas fijas):
+
+- ¿Qué pregunta central tendría sentido responder con viajes de Ecobici?
+- ¿Qué visualización debería ser estática y cuál debería depender de un control?
+- ¿Cuál sería una interpretación **correcta** y qué afirmación sería demasiado fuerte?
+- ¿Qué tabla agregada producirían en `model` para alimentar su reporte?
+
+**Mini modificación:** cambia el título, la explicación de una figura y la selección inicial del menú; después observa la app. Si hay tiempo, agrega una sección de fuente o una gráfica estática a partir de un nuevo agregado SQL.
+
+::: {.callout-warning}
+## Ejecutar localmente no significa desplegar públicamente
+
+`http://127.0.0.1:8050` es una dirección de tu propia computadora. Una app accesible por otras personas requiere infraestructura y configuraciones adicionales. No usaremos `host="0.0.0.0"` en la práctica local.
+:::
+
+## 3. Del reporte visual a una API
+
+Dash facilita que una **persona** interprete resultados. ¿Qué sucede si una persona de otro equipo quiere incorporar los retiros por género a **su propio programa**? No tiene sentido obligarla a leer una gráfica ni a copiar y pegar números.
+
+Una **API** (*Application Programming Interface*) define cómo interactúa un programa con otro. Una **API web** suele recibir solicitudes HTTP y devolver respuestas estructuradas, frecuentemente JSON. Una API puede devolver datos, ejecutar una operación o generar predicciones; no necesita mostrar gráficas.
+
+```text
+Personas → navegador → Dash → DuckDB
+Programas → solicitud HTTP → FastAPI → DuckDB → respuesta JSON
+```
+
+En este ejemplo, Dash **no llama** a FastAPI: ambos usan la misma fuente de datos. Es una simplificación intencional para comparar responsabilidades.
+
+### 3.1 Solicitudes y respuestas HTTP
+
+Un **endpoint** es una ruta que ofrece una operación o recurso, por ejemplo `/resumen`.
+
+| Elemento | Ejemplo | Significado |
+|---|---|---|
+| Método | `GET` | Solicitar información |
+| Ruta | `/resumen` | Recurso o acción solicitada |
+| Parámetro | `?limite=5` | Ajusta una consulta |
+| Código de estado | `200`, `404`, `422` | Indica el resultado de la solicitud |
+| Encabezado | `Content-Type: application/json` | Describe el formato del contenido |
+| Cuerpo de respuesta | `{"viajes": 120}` | Información entregada en JSON |
+
+Métodos habituales:
+
+- `GET`: recuperar recursos o resultados sin modificar el estado del servidor.
+- `POST`: enviar datos para crear un recurso o solicitar una operación; **no** significa necesariamente insertar en una tabla.
+- `PUT` / `PATCH`: reemplazar / modificar un recurso.
+- `DELETE`: eliminar un recurso.
+
+Códigos frecuentes: `200 OK`, `201 Created`, `400 Bad Request`, `404 Not Found`, `422 Unprocessable Content` (parámetros inválidos según las reglas del endpoint) y `500 Internal Server Error`.
+
+Las APIs que organizan recursos mediante URLs y utilizan las convenciones de HTTP suelen denominarse **REST**. Por ahora basta reconocer los elementos de una solicitud y una respuesta; no diseñaremos un sistema distribuido completo.
+
+### 3.2 FastAPI: rutas que ejecutan código Python
+
+```{.python}
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/health")
+def health():
+    return {"estado": "ok"}
+```
+
+- `@app.get("/health")` registra una ruta para solicitudes `GET`.
+- La función se ejecuta cuando llega una solicitud a esa ruta.
+- El diccionario se serializa como JSON.
+- A diferencia del callback de Dash, aquí el disparador es **una solicitud HTTP**, no el cambio de un componente visual.
+
+### 3.3 Práctica con la API existente del repositorio
+
+En el proyecto de la clase la API está en `src/progra/api/main.py`. Usa `myquery` para consultar `clean.ecobici`. **Este archivo ya existe en el material de la clase**; los fragmentos anteriores explican su funcionamiento, no pretenden reemplazarlo.
+
+| Método | Endpoint | Contenido |
+|---|---|---|
+| `GET` | `/health` | Estado del servicio |
+| `GET` | `/resumen` | Resumen de viajes y cobertura |
+| `GET` | `/viajes/por-genero` | Conteo de viajes por género |
+| `GET` | `/estaciones/{estacion_id}/retiros?limite=10` | Retiros recientes de una estación |
+
+**Paso 1. Iniciar el servidor** desde la raíz del proyecto:
+
+```{.sh}
+uv run uvicorn progra.api.main:app --reload --host 127.0.0.1 --port 13000
+```
+
+`progra.api.main:app` identifica el módulo de Python y el objeto `app`. La opción `--reload` es para desarrollo local.
+
+**Paso 2. Abrir otra terminal y hacer solicitudes**:
+
+```{.sh}
+curl -i http://127.0.0.1:13000/health
+curl http://127.0.0.1:13000/resumen
+curl http://127.0.0.1:13000/viajes/por-genero
+curl "http://127.0.0.1:13000/estaciones/1/retiros?limite=5"
+```
+
+`-i` incluye los encabezados y el código de estado. Observa la diferencia entre lo que escribes (solicitud) y lo que responde el servidor (JSON).
+
+**Paso 3. Explorar la documentación interactiva**: abre `http://127.0.0.1:13000/docs`, selecciona una ruta, elige *Try it out* y ejecuta una petición.
+
+**Paso 4. Provocar errores controlados**:
+
+```{.sh}
+# Si esa estación no existe en los registros, el endpoint devuelve 404.
+curl -i http://127.0.0.1:13000/estaciones/99999/retiros
+
+# Si la API limita el máximo a 100, este valor produce 422.
+curl -i "http://127.0.0.1:13000/estaciones/1/retiros?limite=500"
+```
+
+**Paso 5. Consumir desde Python**, con la API encendida:
+
+```{.python}
+import pandas as pd
+
+por_genero = pd.read_json("http://127.0.0.1:13000/viajes/por-genero")
+por_genero
+```
+
+Compara el resultado con la consulta SQL correspondiente sobre DuckDB. Deben representar la misma agregación; lo que cambia es **el mecanismo de acceso**. Si la estructura JSON no es tabular, puede requerirse `requests` y conversión explícita a DataFrame.
+
+### 3.4 ¿Una API es automáticamente segura o pública?
+
+No. El ejemplo es **local**. Si se expone en una red, habría que considerar autenticación, autorización, validación, privacidad, límites de uso y despliegue. También importa qué columnas se comparten: un consumidor no necesita acceso indiscriminado a todas las filas para consultar un agregado.
+
+### 3.5 ¿Y una API de predicciones?
+
+En otra aplicación, una ruta como `POST /predict` podría recibir una estación y una hora, cargar un modelo entrenado y devolver una probabilidad en JSON. **No es requisito de la Tarea 4**, porque esa tarea se concentra en transformar datos y presentar hallazgos. Además, agregar datos nuevos a la base **no reentrena automáticamente** un modelo.
+
+## 4. Comparación y cierre
+
+| Pregunta | Notebook | Dash | FastAPI |
+|---|---|---|---|
+| ¿Qué queremos explicar? | Cómo obtuvimos el resultado | Qué significa el resultado | Cómo recuperarlo desde otro programa |
+| ¿Qué se entrega? | Código y análisis | Reporte interactivo | Endpoint y JSON |
+| ¿Es necesario ver el código? | Generalmente sí para reproducirlo | No, para consultar el reporte | No, para consumir el servicio |
+| ¿Qué debe verificarse? | Datos, pasos y conclusiones | Interpretaciones, filtros, consistencia | Parámetros, respuestas, errores |
+
+### Preguntas de discusión
+
+1. Si un resultado necesita actualizarse cada mes, ¿qué parte cambiaría: el notebook, las tablas `model`, la app, la API o varias de ellas?
+2. ¿Por qué una figura que toma las primeras 10,000 filas puede producir conclusiones distintas a una consulta agregada sobre toda la base?
+3. ¿Qué debería mostrar un reporte para que una persona comprenda el hallazgo sin leer el notebook?
+4. ¿Qué información **sí** debe exponer un endpoint de viajes y cuál no?
+5. ¿En qué se parecen los decoradores `@app.callback` y `@app.get`? ¿Qué evento dispara cada uno?
+
+### Relación con la Tarea 4 y con lo que sigue
+
+- **Tarea 4:** construyan su flujo `raw` → `clean` → `model`, documenten la exploración en notebooks y comuniquen resultados en **un reporte analítico de Dash**. La colaboración con Git forma parte de su flujo habitual; no hay división de funciones preasignada.
+- **Siguiente etapa:** Docker permite ejecutar un proyecto con dependencias reproducibles. Las pruebas y GitHub Actions ayudan a verificar cambios antes de integrarlos. No se requiere desplegar públicamente el reporte ni la API para esta unidad.
 
 ## Referencias
 
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [Documentación de HTTP: métodos](https://developer.mozilla.org/es/docs/Web/HTTP/Methods)
-- [Documentación de HTTP: códigos de estado](https://developer.mozilla.org/es/docs/Web/HTTP/Status)
-- [Qué es REST](https://aws.amazon.com/es/what-is/restful-api/)
+- [Dash: layout](https://dash.plotly.com/layout)
+- [Dash: callbacks](https://dash.plotly.com/basic-callbacks)
+- [FastAPI: primeros pasos](https://fastapi.tiangolo.com/tutorial/first-steps/)
+- [MDN: métodos HTTP](https://developer.mozilla.org/es/docs/Web/HTTP/Methods)
+- [MDN: respuestas HTTP](https://developer.mozilla.org/es/docs/Web/HTTP/Status)

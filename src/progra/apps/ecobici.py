@@ -1,97 +1,248 @@
-# app_ecobici_simple.py
-import pandas as pd
-import plotly.express as px
-from dash import Dash, dcc, html, Input, Output
+"""Ejemplo docente para m11: reporte parcial con Dash y DuckDB.
 
-from progra.tools.mydb import myquery
+No es una solución de la Tarea 4. Contiene dos visualizaciones de ejemplo:
+una estática y una interactiva, para discutir su implementación.
 
+Requiere el paquete `progra` del repositorio de la clase y su función
+`progra.tools.mydb.myquery`, además de `data/db/ecobici.duckdb`.
 
-# -------------------------------------------------------
-# Carga de datos desde DuckDB (con myquery)
-# -------------------------------------------------------
-query = """
-select
-    genero,
-    edad,
-    estacion_retiro,
-    estacion_arribo
-from clean.ecobici
-limit 10000;
+Desde la raíz del proyecto:
+    uv run python src/progra/analysis/app_ecobici_guia.py
 """
 
-df = myquery(query)
+import plotly.express as px
+from dash import Dash, Input, Output, dcc, html
+
+from progra.db.mydb import myquery
 
 
-# -------------------------------------------------------
-# Inicialización de la app Dash
-# -------------------------------------------------------
-app = Dash(__name__) # Observa
-# __name__ hace referencia al nombre del archivo actual 
+# ------------------------------------------------------------
+# 1. Presentación: colores y estilos (solo apariencia visual)
+# ------------------------------------------------------------
+COLORS = {
+    "background": "#f5f7fa",
+    "paper": "#ffffff",
+    "ink": "#17324d",
+    "muted": "#52657a",
+    "accent": "#167a76",
+    "border": "#dce4eb",
+}
+
+PAGE_STYLE = {
+    "maxWidth": "960px",
+    "margin": "40px auto",
+    "padding": "0 20px 40px",
+    "fontFamily": "Arial, sans-serif",
+    "color": COLORS["ink"],
+}
+
+CARD_STYLE = {
+    "backgroundColor": COLORS["paper"],
+    "border": f"1px solid {COLORS['border']}",
+    "borderRadius": "12px",
+    "padding": "22px",
+    "marginTop": "18px",
+}
 
 
-# -------------------------------------------------------
-# Definición del layout (estructura visual)
-# -------------------------------------------------------
-app.layout = html.Div([
-    html.H1("Mi primera app"),
-    html.H2("Dashboard Ecobici CDMX"),
-    dcc.Dropdown(
-        id='variable',
-        options=[
-            {'label': 'Género', 'value': 'genero'},
-            {'label': 'Edad', 'value': 'edad'}
-        ],
-        value=None,
-		placeholder="Selecciona una variable",
-        clearable=True
-    ),
-    dcc.Graph(id='grafico', figure={}), # Gráfico vacío al inicio
-    html.Hr(),  # línea divisoria
-    html.H3("Edad promedio por género"),
-    dcc.Graph(id='grafico_promedios')  # segundo gráfico
-
-])
-
-
-# -------------------------------------------------------
-# Definición de los callbacks (interactividad)
-# -------------------------------------------------------
-@app.callback( # Decorador envuelve la función con otra función
-    [Output('grafico', 'figure'),
-    Output('grafico_promedios', 'figure')],
-    Input('variable', 'value')
+# ------------------------------------------------------------
+# 2. Consultas: DuckDB agrupa, Python recibe resultados pequeños
+# ------------------------------------------------------------
+# Primera pregunta: ¿cómo varía el número de retiros por hora?
+# Un renglón del resultado = una hora del día, NO un viaje.
+retiros_hora = myquery(
+    """
+    SELECT
+        EXTRACT(hour FROM fecha_retiro) AS hora,
+        COUNT(*) AS total_retiros
+    FROM clean.ecobici
+    WHERE fecha_retiro IS NOT NULL
+    GROUP BY 1
+    ORDER BY 1;
+    """
 )
-def actualizar_grafico(variable):
-    """Actualiza el gráfico cuando cambia la variable del Dropdown"""
-    if not variable:
-        return {},{}
-    fig1 = px.histogram(
-        df,
-        x=variable,
-        color='genero',
-        title=f"Distribución de {variable}",
-        barmode='group'
-    )
-    # Segundo gráfico: edad promedio por género
-    promedio = df.groupby('genero')['edad'].mean().reset_index()
-    fig2 = px.bar(
-        promedio,
-        x='genero',
-        y='edad',
-        title="Edad promedio por género",
-        text_auto=".2f"
-    )
-    fig1.update_layout(template='plotly_white')
-    fig2.update_layout(template='plotly_white')
-    return fig1, fig2
 
-# En este caso, el decorador app.callback registra actualizar_grafico 
-# como una función que se ejecutará automáticamente 
-# cuando cambie el valor de entrada (Input('variable', 'value')).
+# Segunda pregunta: ¿cómo cambia el patrón por género registrado?
+# Se agregan los datos EN SQL, no se copian las primeras 10,000 filas.
+retiros_hora_genero = myquery(
+    """
+    SELECT
+        EXTRACT(hour FROM fecha_retiro) AS hora,
+        COALESCE(genero, 'Sin dato') AS genero,
+        COUNT(*) AS total_retiros
+    FROM clean.ecobici
+    WHERE fecha_retiro IS NOT NULL
+    GROUP BY 1, 2
+    ORDER BY 1, 2;
+    """
+)
 
-# -------------------------------------------------------
-# Ejecución de la app
-# -------------------------------------------------------
+# Los valores exactos proceden de la base del curso; no se inventan cifras.
+total_viajes = int(retiros_hora["total_retiros"].sum())
+generos = sorted(retiros_hora_genero["genero"].astype(str).unique())
+
+
+# ------------------------------------------------------------
+# 3. Figura estática: no necesita callback
+# ------------------------------------------------------------
+fig_horas = px.bar(
+    retiros_hora,
+    x="hora",
+    y="total_retiros",
+    title="Retiros registrados por hora del día",
+    labels={"hora": "Hora del retiro", "total_retiros": "Número de retiros"},
+)
+fig_horas.update_traces(marker_color=COLORS["accent"])
+fig_horas.update_layout(
+    template="plotly_white",
+    paper_bgcolor=COLORS["paper"],
+    plot_bgcolor=COLORS["paper"],
+    margin={"l": 32, "r": 20, "t": 65, "b": 35},
+    xaxis={"dtick": 2},
+)
+
+
+# ------------------------------------------------------------
+# 4. Layout: un reporte debe tener argumento, contexto y límites
+# ------------------------------------------------------------
+app = Dash(__name__, title="Ecobici | Reporte de ejemplo")
+
+app.layout = html.Div(
+    style={"backgroundColor": COLORS["background"], "minHeight": "100vh"},
+    children=[
+        html.Main(
+            style=PAGE_STYLE,
+            children=[
+                html.P("EJEMPLO DOCENTE · M11", style={"color": COLORS["accent"], "fontWeight": "bold"}),
+                html.H1("¿Cuándo se registran los retiros de Ecobici?"),
+                html.P(
+                    "Un reporte parcial para aprender a combinar consultas SQL, "
+                    "interpretaciones y controles en Dash.",
+                    style={"color": COLORS["muted"], "fontSize": "17px"},
+                ),
+                html.Section(
+                    style=CARD_STYLE,
+                    children=[
+                        html.H2("Contexto y pregunta"),
+                        html.P(
+                            "Partimos de viajes registrados en la base de Ecobici. "
+                            "Nos preguntamos cómo cambia la cantidad de retiros según "
+                            "la hora del día. El conteo de retiros no mide disponibilidad "
+                            "de bicicletas en una estación."
+                        ),
+                        html.P(
+                            f"Registros con hora de retiro válida: {total_viajes:,}.",
+                            style={"fontWeight": "bold", "color": COLORS["accent"]},
+                        ),
+                    ],
+                ),
+                html.Section(
+                    style=CARD_STYLE,
+                    children=[
+                        html.H2("1. Patrones por hora"),
+                        html.P("¿Cómo se distribuyen los retiros registrados a lo largo del día?"),
+                        dcc.Graph(id="grafico-estatico", figure=fig_horas),
+                        html.P(
+                            "Para interpretar la gráfica, identifica las horas de mayor y "
+                            "menor frecuencia. Recuerda que aquí se acumulan retiros "
+                            "de todos los días incluidos en la base.",
+                            style={"color": COLORS["muted"]},
+                        ),
+                    ],
+                ),
+                html.Section(
+                    style=CARD_STYLE,
+                    children=[
+                        html.H2("2. Explorar por género registrado"),
+                        html.P(
+                            "Selecciona una categoría para observar el patrón horario "
+                            "de sus viajes registrados."
+                        ),
+                        dcc.Dropdown(
+                            id="filtro-genero",
+                            options=[{"label": "Todas las categorías", "value": "__todos__"}]
+                            + [{"label": valor, "value": valor} for valor in generos],
+                            value="__todos__",
+                            clearable=False,
+                        ),
+                        dcc.Graph(id="grafico-interactivo"),
+                        html.P(id="texto-interactivo", style={"color": COLORS["muted"]}),
+                    ],
+                ),
+                html.Section(
+                    style=CARD_STYLE,
+                    children=[
+                        html.H2("3. Fuente y limitaciones"),
+                        html.P(
+                            "Fuente: tabla clean.ecobici del proyecto de clase. "
+                            "La cobertura temporal y el origen exacto deben verificarse "
+                            "con los metadatos del dataset antes de publicar un reporte."
+                        ),
+                        html.P(
+                            "Los datos describen viajes registrados, no el inventario "
+                            "de bicicletas. Las diferencias por género no deben "
+                            "interpretarse automáticamente como diferencias de uso "
+                            "de toda la población de la ciudad."
+                        ),
+                    ],
+                ),
+                html.P(
+                    "Actividad: ¿qué otra pregunta relevante añadirías y qué tabla "
+                    "de la capa model construirías para responderla?",
+                    style={"marginTop": "24px", "fontWeight": "bold"},
+                ),
+            ],
+        )
+    ],
+)
+
+
+# ------------------------------------------------------------
+# 5. Callback: control -> filtro -> figura y texto
+# ------------------------------------------------------------
+@app.callback(
+    Output("grafico-interactivo", "figure"),
+    Output("texto-interactivo", "children"),
+    Input("filtro-genero", "value"),
+)
+def actualizar_comparacion(genero_seleccionado):
+    """Ejemplo de una función que devuelve DOS outputs en orden."""
+    if genero_seleccionado == "__todos__":
+        # Evita doble agregación de categorías al agrupar por hora.
+        datos = retiros_hora.copy()
+        etiqueta = "todas las categorías"
+    else:
+        datos = retiros_hora_genero.loc[
+            retiros_hora_genero["genero"] == genero_seleccionado,
+            ["hora", "total_retiros"],
+        ].copy()
+        etiqueta = genero_seleccionado
+
+    figura = px.line(
+        datos,
+        x="hora",
+        y="total_retiros",
+        markers=True,
+        labels={"hora": "Hora del retiro", "total_retiros": "Número de retiros"},
+        title=f"Retiros por hora: {etiqueta}",
+    )
+    figura.update_traces(line_color=COLORS["accent"])
+    figura.update_layout(
+        template="plotly_white", paper_bgcolor=COLORS["paper"],
+        plot_bgcolor=COLORS["paper"], xaxis={"dtick": 2},
+        margin={"l": 32, "r": 20, "t": 65, "b": 35},
+    )
+
+    lectura = (
+        f"Se muestran retiros de {etiqueta}. "
+        "Para comparar grupos de distinto tamaño, podríamos usar "
+        "proporciones por hora en vez de conteos absolutos."
+    )
+    return figura, lectura
+
+
+# ------------------------------------------------------------
+# 6. Ejecución: local (no publicación en Internet)
+# ------------------------------------------------------------
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8050)
-
+    app.run(debug=True, host="127.0.0.1", port=8050)
