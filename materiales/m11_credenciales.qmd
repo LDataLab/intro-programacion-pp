@@ -1,3 +1,17 @@
+---
+title: "Credenciales"
+subtitle: "De archivos CSV de EcoBici a una base local y un notebook de análisis"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    highlight-style: github
+date: today
+execute:
+  eval: false
+---
+
 
 **Documentación complementaria para la siguiente unidad:** conexión remota, autenticación, usuarios, roles y permisos en PostgreSQL. Estos temas son especialmente relevantes en el modelo cliente-servidor, porque el servidor debe controlar quién se conecta y qué puede hacer cada usuario.
 

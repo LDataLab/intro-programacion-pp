@@ -1,248 +1,202 @@
 ---
-title: "Tarea 2: Exploración de datos"
+title: "Docker"
+subtitle: "Empaquetar el pipeline de EcoBici para que corra en cualquier computadora"
 format:
   html:
     toc: true
-    toc-depth: 2
+    toc-depth: 3
     theme: cosmo
     highlight-style: github
 date: today
+execute:
+  eval: false
 ---
 
-## Herramientas para pipeline
+## Objetivos de aprendizaje
 
-Las herramientas que vamos a estudiar en esta siguiente fase del curso pueden aplicarse en diferentes etapas a lo largo del pipeline de un proyecto de ciencia de datos. Conocerlas y entender cómo utilizarlas te facilitará desde la transferencia de datos al inicio de un proyecto hasta el despliegue y la implementación en producción.
+- Instalar Docker desde la terminal en Ubuntu, WSL2 o macOS.
+- Explicar la diferencia entre imagen y contenedor.
+- Construir una imagen a partir de un `Dockerfile` y ejecutarla.
+- Usar `docker compose` para definir cómo corre el pipeline y dónde quedan sus datos.
+- Verificar que el resultado del contenedor es el mismo que el de m10.
 
-![](../imgs/pipeline.png)
+## 1. ¿Qué es Docker?
 
-Estas herramientas incluyen Docker, CI/CD, APIs y conceptos relacionados con el funcionamiento de páginas web. Son tecnologías complementarias que fortalecen tus habilidades técnicas como científico de datos y te permiten abordar proyectos de manera más eficiente y robusta.
+Docker empaqueta una aplicación junto con todo lo que necesita para correr: Python, bibliotecas, el CLI de DuckDB y el código. Ese paquete se llama **contenedor**.
 
-Las tres principales herramientas que estaremos viendo son:
-- CI/CD
-- Docker
-- Construcción de una API
+- **Imagen**: una plantilla inmutable que describe cómo construir el entorno. Se guarda en un registro (por ejemplo, Docker Hub).
+- **Contenedor**: una instancia en ejecución de una imagen. Puedes crear muchos a partir de la misma imagen.
+- **Dockerfile**: el archivo de texto con los pasos para construir la imagen.
+- **docker compose**: el archivo `docker-compose.yaml` describe cómo se ejecuta uno o más contenedores: puertos, volúmenes y dependencias.
 
-Ejemplos de uso: 
+Un contenedor es más ligero que una máquina virtual porque comparte el kernel del sistema operativo anfitrión. Por eso basta con tener Docker instalado para correr el proyecto.
 
-- Construir una API para un modelo de predicción de diabetes.
-- Usar Docker para anonimizar datos de manera segura.
-- Implementar Docker para la transferencia eficiente de datos entre sistemas.
-- Utilizar CI/CD para desplegar proyectos automáticamente y sin interrupciones.
+## 2. Instalación
 
-# Docker
+Recomendación: instala **Docker Engine desde la terminal** en Ubuntu y en WSL2, porque es el mismo flujo de trabajo que usamos en el resto del curso. En macOS usa **Docker Desktop**, que es la forma más directa de tener Docker en Mac.
 
-[<img src="../imgs/docker-logo-blue.png" width="200"/>](https://www.docker.com/)
+### 2.1 Ubuntu (Docker Engine)
 
-
-Docker es una herramienta que te permite, crear, probar e implementar aplicaciones rápidamente. 
-Docker empaqueta software en unidades estadarizadas llamadas contenedores que **incluyen todo lo
-necesario para que el software se ejecute**, incluidas bibliotecas, herramientas de sistema, código 
-y tiempo de ejecución. 
-
-Para correr aplicaciones necesitas hacer uso de una **imagen de Docker**, que es una plantilla que
-contiene el sistema operativo, las bibliotecas y el software necesario para ejecutar una
-aplicación. Piensa que es como un recetario a partir del cual se crean los contenedores. Las
-imágenes son inmutables y se almacenan en un registro (por ejemplo, Docker Hub), desde donde puedes
-descargarlas y usarlas para crear contenedores.
-
-#### Ventajas de Docker 
-
-- **Portabilidad**: Puedes ejecutar la misma aplicación en cualquier sistema operativo
-(Windows, macOS, Linux) sin preocuparte por diferencias de configuración.
-- **Consistencia**: Todos los miembros del equipo trabajan en el mismo entorno, evitando problemas 
-de compatibilidad.
-- **Escalabilidad**: Puedes escalar aplicaciones fácilmente utilizando múltiples contenedores.
-- **Aislamiento**: Cada contenedor es independiente, lo que mejora la seguridad y la gestión de recursos.
-
-#### Uso general 
-
-- Docker proporciona una forma estándar de ejecutar código.
-- Actúa como un sistema operativo para contenedores, de manera similar a las *máquinas virtuales*, pero más ligero y eficiente.
-- Los contenedores son más fáciles de administrar porque solo necesitas Docker instalado y puedes descargar imágenes listas para usar desde el repositorio oficial.
-
-Nota: Con Docker puedes ejecutar aplicaciones complejas solo descargando la imagen adecuada.
-
-
-#### VM vs Contenedores de docker 
-
-
-</div>
-
-<div align="center">
-<img src="https://www.opc-router.com/wp-content/uploads/2021/10/Docker_Vergleich-EN-1200x911.png" width="400">
-</div>
-
-</div>
-
-
-## `Dockerfile`
-
-Debes de tener un `Dockerfile` que describe paso a paso cómo construir una imagen, que luego puedes ejecutar como contenedor.
-
-En el archivo `src/api/Dockerfile` puedes ver cómo se toma una imagen que pone de base Python, copia
-el código que utilizaremos e instala dependiencias. Si **solo** tienes el `Dockerfile` corres la siguiente línea:
+Sigue la instalación oficial desde el repositorio de Docker:
 
 ```{.sh}
-docker build -t <nombre_imagen> .
+# Dependencias y llave del repositorio
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Repositorio de Docker
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Instalación
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-Luego corres las funciones de la imagen en el contenedor corriendo.
+Para usar Docker sin `sudo`, agrega tu usuario al grupo `docker` y reinicia la sesión:
 
 ```{.sh}
-docker run <nombre_imagen>
+sudo usermod -aG docker $USER
 ```
 
-Para construir imagen: `-f` indica donde encontrar el Dockerfile, `-t` asigna el nombre a la imagen que estas construyendo. El `.` especifica el directorio desde donde ejecutarás el comando.
+Prueba la instalación:
 
 ```{.sh}
-# Este corre solo si tienes el Dockerfile y especificas el uso
-docker build -f src/api/Dockerfile -t apiclase .
+docker run hello-world
 ```
 
-Para correr contenedor
+### 2.2 WSL2 (Ubuntu dentro de Windows)
+
+Primero activa **systemd** dentro de tu distribución de Ubuntu en WSL. Edita `/etc/wsl.conf` (con `sudo vim /etc/wsl.conf`) y agrega:
+
+```ini
+[boot]
+systemd=true
+```
+
+Luego, desde PowerShell en Windows, reinicia WSL:
 
 ```{.sh}
-# Este corre solo si tienes el Dockerfile y especificas el uso
-docker run -p 13000:13000 miapiele
+wsl --shutdown
 ```
 
-## `docker-compose.yaml`
+Abre de nuevo Ubuntu y sigue exactamente los pasos de la sección 2.1. Verifica que el servicio esté activo:
 
-También existe otro archivo muy común al momento de utilizar Docker, este se llama `docker-compose.yaml` que define 
-**cómo se ejecutan uno o varios contenedores**, y es que sí, puedes tener uno o más contenedores que se pueden utilizar entre sí. Sobre todo se usa para describir la configuración de ejecución: puertos, volúmenes, redes, dependencias, etc. 
-
-Para correr un `docker-compose.yaml` es el siguiente comando, que levanta los servicios definidos en el mismo archivo. 
-
+```{.sh}
+sudo systemctl status docker
 ```
-# Construir imágenes
+
+::: {.callout-note}
+Si tu versión de WSL no soporta systemd, instala **Docker Desktop** para Windows y activa la integración con tu distribución en *Settings → Resources → WSL Integration*. En ese caso el comando `docker` funciona igual dentro de Ubuntu.
+:::
+
+### 2.3 macOS (Docker Desktop)
+
+1. Descarga Docker Desktop desde [docker.com](https://www.docker.com/products/docker-desktop/) según tu chip (Apple Silicon o Intel).
+2. Instálalo y ábrelo una vez para completar la configuración.
+3. En una terminal:
+
+```{.sh}
+docker run hello-world
+```
+
+## 3. Imágenes y contenedores
+
+El `Dockerfile` del proyecto está en la raíz del repositorio. Léelo de arriba hacia abajo:
+
+- `FROM python:3.12-slim`: la imagen base (Python sobre Debian mínimo).
+- `RUN apt-get ...`: instala `curl` y `unzip`.
+- `RUN curl ... duckdb_cli...`: instala el CLI de DuckDB que usa `pipelines/etl-ecobici.sh`.
+- `COPY --from=ghcr.io/astral-sh/uv ...`: copia `uv` a la imagen.
+- `COPY pyproject.toml uv.lock` y `RUN uv sync`: instala las dependencias **antes** de copiar el código. Así, si solo cambias un script, Docker reutiliza la capa de dependencias y el build es más rápido.
+- `CMD [...]`: el comando que corre al iniciar el contenedor.
+
+Construye la imagen desde la raíz del proyecto:
+
+```{.sh}
 docker compose build
-
-# Servicios del docker-compose
-docker compose up
-
-# Levántalo en segundo plano (te regresa la terminal)
-docker compose up -d
-
-# Reconstruye la imagen antes de levantar el contenedor
-docker compose up --build
 ```
 
+Los archivos que **no** deben entrar a la imagen están en `.dockerignore`: `.venv`, `data/`, `.git` y, sobre todo, credenciales como `.envrc`.
 
-Detener si el contenedor está corriendo:
-```{.sh}
-docker compose stop 
+## 4. Práctica: correr el pipeline en un contenedor
+
+El proyecto tiene tres archivos que trabajan juntos:
+
+```text
+intro-programacion-pp/
+├── Dockerfile              # cómo construir la imagen (entorno + CLI de DuckDB + uv)
+├── .dockerignore           # qué NO copiar a la imagen
+├── docker-compose.yaml     # cómo correr el servicio etl y qué carpeta de datos usa
+├── pipelines/etl-ecobici.sh   # el mismo pipeline de m10
+├── sql/t01_create_clean.sql
+└── data/                   # NO se copia a la imagen: se monta como volumen
+    ├── raw/
+    └── db/ecobici.duckdb
 ```
 
-Reiniciar un servicio
-```{.sh}
-docker compose restart <nombre_servicio>
-```
-
-
-Apagar contenedores
-```{.sh}
-docker compose down
-```
-
-
-
-Apagar contenedores y borrar los volúmenes
+**Paso 1.** Crea la carpeta de datos en tu computadora (si no existe):
 
 ```{.sh}
-docker compose down -v
+mkdir -p data/raw data/db
 ```
 
-Ejecutar un comando dentro del contenedor
+**Paso 2.** Ejecuta el pipeline dentro del contenedor:
 
 ```{.sh}
-docker compose exec <nombre_servicio> bash
+docker compose run --rm etl
 ```
 
-Ver contenedores levantados por compose
-```{.sh}
-docker compose ps
-```
+- `run` crea un contenedor nuevo y ejecuta el `CMD`.
+- `--rm` borra el contenedor al terminar. Los datos no se pierden porque están en `./data`, no dentro del contenedor.
 
-
-### Manejo de docker global 
-
-Para enlistar los contenedores que están en ejecución:
-```{.sh}
-docker ps
-```
-
-Para enlistar los contenedores detenidos:
-```{.sh}
-docker ps -a
-```
-
-Para ver cuáles son las imágenes en el servidor:
+**Paso 3.** Verifica el resultado con el mismo CLI de m10, desde tu computadora:
 
 ```{.sh}
-docker images
+duckdb data/db/ecobici.duckdb -c "SELECT count(*) AS viajes FROM clean.ecobici;"
 ```
 
+Si ves un número mayor que cero, la tabla `clean.ecobici` se creó igual que en m10. Puedes repetir el paso 2 cuando quieras reconstruir la base.
 
+::: {.callout-warning}
+En Linux, el contenedor corre como `root`, así que los archivos que escribe en `./data` pueden quedar con dueño `root`. Si no puedes borrarlos desde tu usuario, usa `sudo chown -R $USER:$USER data/`.
+:::
 
-Para eliminar el contenedor
+## 5. Comandos útiles
+
+Servicios de compose:
+
 ```{.sh}
-docker rm <container_id>
+docker compose build              # construir o reconstruir la imagen
+docker compose run --rm etl       # correr el pipeline una vez
+docker compose ps                 # ver servicios de compose
+docker compose down               # detener y quitar los contenedores del proyecto
 ```
 
-Para eliminar una imagen
+Administración general de Docker:
+
 ```{.sh}
-docker rmi <container_id>
+docker ps                         # contenedores en ejecución
+docker ps -a                      # todos los contenedores, incluidos los detenidos
+docker images                     # imágenes locales
+docker rm <container_id>          # eliminar un contenedor detenido
+docker rmi <image_id>             # eliminar una imagen
+docker ps -s                      # tamaño de los contenedores en ejecución
+docker ps -a -s                   # tamaño de todos los contenedores
 ```
 
-Para ver tamaño de contenedor corriendo 
-```{.sh}
-docker ps -s
-```
+## 6. Relación con el resto del curso
 
-Para ver tamaño de contenedor detenido
-```{.sh}
-docker ps -a -s
-```
+- **m10**: el mismo pipeline, ahora empaquetado. El resultado es idéntico.
+- **m11**: las credenciales nunca van en el `Dockerfile` ni en la imagen; `.dockerignore` las excluye. Más adelante veremos cómo pasarlas al contenedor sin escribirlas en el código.
+- **m13**: agregaremos un servicio `api` a `docker-compose.yaml` que lee la misma base `data/db/ecobici.duckdb`.
 
+## Referencias
 
-```
-                 ┌──────────────────────────────┐
-                 │         Dockerfile           │
-                 │------------------------------│
-                 │  FROM python:3.11-slim       │
-                 │  WORKDIR /app                │
-                 │  RUN pip install fastapi ... │
-                 │  COPY src ./src              │
-                 │  EXPOSE 13000                │
-                 └─────────────┬────────────────┘
-                               │ 
-                               │ cómo construir la imagen
-                               │ (docker build)
-                               ▼
-                        Imagen (apiclase)
-                               │ 
-                               │ cómo ejecutiar uno o más contenedores
-                               │ (docker compose up)
-                               ▼
-                 ┌──────────────────────────────┐
-                 │     docker-compose.yaml      │
-                 │------------------------------│
-                 │  services:                   │
-                 │    api:                      │
-                 │      build: .                │
-                 │      ports: "13000:13000"    │
-                 │      command: uvicorn ...    │
-                 └─────────────┬────────────────┘
-                               │
-                               ▼
-                           Contenedor (instancia viva de esa imagen)
-               (corriendo tu API en localhost:13000)
-
-```
-
-Los contenedores están aislados del sistema operativo host y tienen su propia red interna. Si no mapeas un puerto, la aplicación no será accesible desde el exterior del contenedor.
-
-#### References 
-
-- [Docker-aws](https://aws.amazon.com/es/docker/)
-- [docker](https://www.opc-router.com/what-is-docker/)
+- [Documentación de Docker Engine: instalación en Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Instalar WSL y Docker en Windows](https://learn.microsoft.com/windows/wsl/install)
+- [Referencia de Dockerfile](https://docs.docker.com/reference/dockerfile/)
+- [Docker Compose](https://docs.docker.com/compose/)

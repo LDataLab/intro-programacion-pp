@@ -198,3 +198,6 @@ _site/
 **/*.quarto_ipynb
 
 *.html
+
+# Graphify generated artifacts
+graphify-out/
