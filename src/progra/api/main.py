@@ -1,31 +1,15 @@
-"""API REST de ejemplo sobre la base de EcoBici (m13).
-
-Variables de entorno (ver m11):
-- API_TOKEN: token que deben enviar los clientes en el encabezado Authorization.
+"""API REST de ejemplo sobre la base de EcoBici (m11).
 
 La base DuckDB se consulta con `myquery` (src/progra/tools/mydb.py).
 """
 
-import os
 from typing import Annotated
 
-from fastapi import FastAPI, Header, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query
 
 from progra.tools.mydb import DB_PATH, myquery
 
-API_TOKEN = os.environ.get("API_TOKEN")
-
-# Sin token la API no debe arrancar: es mejor fallar al inicio que aceptar peticiones sin protección.
-if not API_TOKEN:
-    raise RuntimeError("Define API_TOKEN en .envrc o .env antes de iniciar la API.")
-
 app = FastAPI(title="API EcoBici", version="0.1.0")
-
-
-def verificar_token(authorization: Annotated[str | None, Header()] = None) -> None:
-    """Rechaza la petición si el encabezado Authorization no trae el token correcto."""
-    if authorization != f"Bearer {API_TOKEN}":
-        raise HTTPException(status_code=401, detail="Token inválido o ausente")
 
 
 def consultar(sql: str, parametros: list | None = None) -> list[dict]:
@@ -37,13 +21,12 @@ def consultar(sql: str, parametros: list | None = None) -> list[dict]:
 
 @app.get("/health")
 def health() -> dict:
-    """Verifica que la API está viva. No requiere token."""
+    """Verifica que la API está viva."""
     return {"estado": "ok"}
 
 
 @app.get("/resumen")
-def resumen(authorization: Annotated[str | None, Header()] = None) -> dict:
-    verificar_token(authorization)
+def resumen() -> dict:
     filas = consultar(
         """
         SELECT
@@ -58,8 +41,7 @@ def resumen(authorization: Annotated[str | None, Header()] = None) -> dict:
 
 
 @app.get("/viajes/por-genero")
-def viajes_por_genero(authorization: Annotated[str | None, Header()] = None) -> list[dict]:
-    verificar_token(authorization)
+def viajes_por_genero() -> list[dict]:
     return consultar(
         """
         SELECT genero, COUNT(*) AS viajes
@@ -74,9 +56,7 @@ def viajes_por_genero(authorization: Annotated[str | None, Header()] = None) -> 
 def retiros_de_estacion(
     estacion_id: int,
     limite: Annotated[int, Query(ge=1, le=100)] = 10,
-    authorization: Annotated[str | None, Header()] = None,
 ) -> list[dict]:
-    verificar_token(authorization)
     filas = consultar(
         """
         SELECT fecha_retiro, bici, estacion_arribo

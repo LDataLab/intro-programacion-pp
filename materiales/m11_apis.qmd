@@ -16,9 +16,8 @@ execute:
 
 - Explicar qué es una API y en qué se diferencia de una app o de una página web.
 - Identificar endpoints, métodos HTTP, códigos de estado, encabezados y cuerpos de solicitud.
+- Levantar una API con FastAPI y consultar una base DuckDB con `myquery`.
 - Probar una API REST con `curl` y con la documentación interactiva de FastAPI.
-- Proteger un endpoint con un token enviado en el encabezado `Authorization`.
-- Levantar la API con `docker compose` usando las credenciales de m11.
 
 ## 1. ¿Qué es una API?
 
@@ -58,12 +57,11 @@ Los **códigos de estado** indican el resultado de la solicitud:
 - `200 OK`: la solicitud fue exitosa.
 - `201 Created`: se creó un recurso.
 - `400 Bad Request`: la solicitud tiene un error, como datos inválidos.
-- `401 Unauthorized`: falta el token o es incorrecto.
 - `404 Not Found`: el recurso no existe.
 - `422 Unprocessable Entity`: un parámetro no cumple las reglas (por ejemplo, un límite fuera de rango).
 - `500 Internal Server Error`: hubo un error en el servidor.
 
-Los **encabezados** (*headers*) son metadatos que acompañan la solicitud o la respuesta. Por ejemplo, `Authorization` envía un token de autenticación. El **cuerpo** (*body*) lleva datos en `POST` o `PUT`, generalmente en JSON.
+Los **encabezados** (*headers*) son metadatos que acompañan la solicitud o la respuesta. Por ejemplo, `Content-Type` indica en qué formato viene el cuerpo. El **cuerpo** (*body*) lleva datos en `POST` o `PUT`, generalmente en JSON.
 
 ```text
 ┌──────────────────────────────────────────┐
@@ -92,86 +90,56 @@ Los **encabezados** (*headers*) son metadatos que acompañan la solicitud o la r
 
 ## 3. Práctica: la API de EcoBici
 
-La API del proyecto está en `src/progra/api/main.py`. Expone la tabla `clean.ecobici` que construimos en m10 y empaquetamos en m12. Las consultas pasan por `myquery` (`src/progra/tools/mydb.py`), la misma función que usas en tus notebooks; los valores van como parámetros (`?`):
+La API del proyecto está en `src/progra/api/main.py`. Expone la tabla `clean.ecobici` que construimos en m10. Las consultas pasan por `myquery` (`src/progra/tools/mydb.py`), la misma función que usas en tus notebooks; los valores van como parámetros (`?`).
 
-| Método | Endpoint | ¿Requiere token? | Qué devuelve |
-|---|---|---|---|
-| `GET` | `/health` | No | Estado de la API |
-| `GET` | `/resumen` | Sí | Total de viajes, fechas y edad promedio |
-| `GET` | `/viajes/por-genero` | Sí | Número de viajes por género |
-| `GET` | `/estaciones/{estacion_id}/retiros?limite=10` | Sí | Últimos retiros de una estación |
+| Método | Endpoint | Qué devuelve |
+|---|---|---|
+| `GET` | `/health` | Estado de la API |
+| `GET` | `/resumen` | Total de viajes, fechas y edad promedio |
+| `GET` | `/viajes/por-genero` | Número de viajes por género |
+| `GET` | `/estaciones/{estacion_id}/retiros?limite=10` | Últimos retiros de una estación |
 
-### Paso 1. Crear el token
+### Paso 1. Levantar la API
 
-El token es un secreto de m11: no lo escribas en el código ni en este documento. Genera uno con Python:
-
-```{.sh}
-uv run python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-Guárdalo en `.envrc`, junto a las demás variables, y recarga el entorno:
-
-```{.sh filename=".envrc"}
-export API_TOKEN="pega-aqui-el-token-generado"
-```
-
-```{.sh}
-direnv allow
-```
-
-### Paso 2. Levantar la API
-
-Necesitas la base `data/db/ecobici.duckdb` creada con el pipeline de m12 o m10.
-
-Con Docker:
-
-```{.sh}
-docker compose up api
-```
-
-O sin Docker, desde la raíz del repositorio (con `API_TOKEN` cargado por direnv):
+Necesitas la base `data/db/ecobici.duckdb` creada con el pipeline de m10. Desde la raíz del repositorio:
 
 ```{.sh}
 uv run uvicorn progra.api.main:app --reload --port 13000
 ```
 
-Sin Docker no necesitas configurar la ruta de la base: `myquery` la resuelve desde el código y apunta a `data/db/ecobici.duckdb`.
+No necesitas configurar la ruta de la base: `myquery` la resuelve desde el código y apunta a `data/db/ecobici.duckdb`.
 
-::: {.callout-note}
-Si `API_TOKEN` no está definido, la API **no arranca** y muestra `Define API_TOKEN en .envrc o .env`. Es intencional: una API sin token no debe quedar expuesta.
-:::
+### Paso 2. Probar con `curl`
 
-### Paso 3. Probar con `curl`
-
-Abre otra terminal, en la misma carpeta del proyecto para que direnv cargue `API_TOKEN`:
+Abre otra terminal:
 
 ```{.sh}
-# Sin token: debe responder 401
-curl -i http://localhost:13000/resumen
+# Estado de la API
+curl http://localhost:13000/health
 
-# Con token: debe responder 200 y un JSON
-curl -H "Authorization: Bearer $API_TOKEN" http://localhost:13000/resumen
+# Resumen de la tabla
+curl http://localhost:13000/resumen
 
 # Viajes por género
-curl -H "Authorization: Bearer $API_TOKEN" http://localhost:13000/viajes/por-genero
+curl http://localhost:13000/viajes/por-genero
 
 # Cinco últimos retiros de la estación 1
-curl -H "Authorization: Bearer $API_TOKEN" "http://localhost:13000/estaciones/1/retiros?limite=5"
+curl "http://localhost:13000/estaciones/1/retiros?limite=5"
 ```
 
 Prueba los errores a propósito:
 
 ```{.sh}
 # Estación sin registros: 404
-curl -i -H "Authorization: Bearer $API_TOKEN" http://localhost:13000/estaciones/99999/retiros
+curl -i http://localhost:13000/estaciones/99999/retiros
 
 # Límite fuera de rango: 422
-curl -i -H "Authorization: Bearer $API_TOKEN" "http://localhost:13000/estaciones/1/retiros?limite=500"
+curl -i "http://localhost:13000/estaciones/1/retiros?limite=500"
 ```
 
 Observa que `curl -i` muestra el código de estado y los encabezados de la respuesta.
 
-### Paso 4. Documentación interactiva
+### Paso 3. Documentación interactiva
 
 FastAPI genera documentación automática a partir del código. Abre en tu navegador:
 
@@ -179,20 +147,21 @@ FastAPI genera documentación automática a partir del código. Abre en tu naveg
 http://localhost:13000/docs
 ```
 
-Desde ahí puedes probar cada endpoint. Para usar el token, presiona **Authorize** e ingresa el valor de `API_TOKEN`.
+Desde ahí puedes probar cada endpoint con el botón **Try it out**.
 
-### Paso 5. Preguntas de cierre
+### Paso 4. Preguntas de cierre
 
-- ¿Por qué `/health` no requiere token, pero `/resumen` sí? ¿Qué riesgo tendría dejarlo abierto?
-- ¿Por qué la API abre la base con `read_only=True` y el volumen del compose es `:ro`?
+- ¿Qué devuelve `/resumen` y qué parte del código hace la consulta?
+- ¿Por qué la API abre la base con `read_only=True`? ¿Qué podría pasar si no lo hiciera?
 - La consulta de `/estaciones/{id}/retiros` usa `?` en lugar de concatenar el número en el texto SQL. ¿Qué podría pasar si un cliente envía un texto malicioso como estación?
 - `/resumen` muestra una fecha `desde` de 2013, aunque los archivos son de 2014. ¿Qué validación de m10 ayudaría a detectar eso?
+- Hoy cualquiera que conozca la URL puede consultar la API. ¿Qué cambiaría si la expusieras en internet?
 
 ## 4. Relación con las unidades anteriores
 
 - **m10**: la tabla `clean.ecobici` es el origen de todos los endpoints.
-- **m11**: `API_TOKEN` es una variable de entorno; el token nunca se escribe en el código. Las consultas usan `myquery`, que lee la base de `data/db/ecobici.duckdb`.
-- **m12**: el servicio `api` del compose usa la misma imagen que el pipeline.
+- **m11**: las consultas usan `myquery`, que lee la base de `data/db/ecobici.duckdb`.
+- **Próximas unidades**: en m12 empaquetaremos el pipeline con Docker; en m13 veremos la integración; en m14 veremos credenciales y cómo proteger la API con un token.
 
 ## Referencias
 
