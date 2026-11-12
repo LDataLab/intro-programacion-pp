@@ -31,8 +31,8 @@ website:
             href: docs/d01_csvkit.html
           - text: "Instalación Python"
             href: docs/d03_instalacion_python.html
-          - text: "Quarto"
-            href: docs/d04_quarto.html
+          - text: "Ejemplo reporte"
+            href: reports/reporte_ecobici_quarto.html
 
 html:
   theme: minty

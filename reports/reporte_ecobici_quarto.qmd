@@ -1,0 +1,121 @@
+---
+title: "¿A qué hora se registran más retiros de Ecobici?"
+subtitle: "Ejemplo docente: de DuckDB a un reporte HTML interactivo"
+author: "Material de clase · m11"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    code-summary: "Ver código Python"
+    code-copy: true
+    embed-resources: true
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+---
+
+## Pregunta y fuente de información
+
+Este ejemplo muestra cómo **publicar un análisis** sin construir una aplicación web. Partimos de la tabla `clean.ecobici` de DuckDB, con una fila por viaje registrado, y preguntamos **cómo se distribuyen los retiros según la hora del día**.
+
+El reporte incluye un gráfico de Plotly que permite consultar valores, ampliar y ocultar elementos. **Abrir el HTML no vuelve a ejecutar Python ni DuckDB**; para actualizar los resultados hay que volver a renderizar el `.qmd`.
+
+```{python}
+#| label: setup
+#| include: false
+from pathlib import Path
+import os
+import plotly.express as px
+
+# La función de acceso a la base del repositorio de la clase.
+from progra.db.mydb import myquery
+
+# DuckDB se abre con una ruta relativa desde myquery.
+# Encontramos la raíz del repositorio sin asumir que el .qmd está allí.
+candidates = [Path.cwd(), *Path.cwd().parents]
+root = next((p for p in candidates if (p / "pyproject.toml").exists() and
+             (p / "data/db/ecobici.duckdb").exists()), None)
+if root is None:
+    raise FileNotFoundError(
+        "No encuentro pyproject.toml y data/db/ecobici.duckdb. "
+        "Ejecuta desde el repositorio de la clase y crea primero la base."
+    )
+os.chdir(root)
+```
+
+## Resultado principal
+
+```{python}
+#| label: fig-retiros-hora
+#| fig-cap: "Cantidad de retiros registrados por hora del día (acumulada en el periodo disponible)."
+#| echo: true
+retiros_hora = myquery("""
+    SELECT
+        CAST(EXTRACT(HOUR FROM fecha_retiro) AS INTEGER) AS hora,
+        COUNT(*) AS total_retiros
+    FROM clean.ecobici
+    WHERE fecha_retiro IS NOT NULL
+    GROUP BY 1
+    ORDER BY 1
+""")
+
+fig = px.bar(
+    retiros_hora,
+    x="hora",
+    y="total_retiros",
+    title="Retiros registrados según la hora del día",
+    labels={"hora": "Hora (0–23)", "total_retiros": "Número de retiros"},
+    template="plotly_white",
+)
+fig.update_layout(xaxis=dict(dtick=2), margin=dict(l=20, r=20, t=60, b=20))
+fig.show()
+```
+
+La figura resume todos los días disponibles en la base. **No representa la disponibilidad de bicicletas** ni permite concluir por sí sola qué estación se queda sin unidades.
+
+## Comparación por género registrado
+
+La misma pregunta puede desagregarse por una variable categórica. El objetivo es ilustrar cómo **la consulta SQL prepara los datos** y Plotly los presenta.
+
+```{python}
+#| label: fig-genero
+#| fig-cap: "Retiros por hora y categoría de género registrada."
+por_genero = myquery("""
+    SELECT
+        CAST(EXTRACT(HOUR FROM fecha_retiro) AS INTEGER) AS hora,
+        COALESCE(genero, 'Sin dato') AS genero,
+        COUNT(*) AS total_retiros
+    FROM clean.ecobici
+    WHERE fecha_retiro IS NOT NULL
+    GROUP BY 1, 2
+    ORDER BY 1, 2
+""")
+
+fig_genero = px.line(
+    por_genero,
+    x="hora", y="total_retiros", color="genero",
+    markers=True,
+    title="Patrones de retiro por hora y género registrado",
+    labels={"hora": "Hora", "total_retiros": "Número de retiros", "genero": "Género"},
+    template="plotly_white",
+)
+fig_genero.update_layout(xaxis=dict(dtick=2))
+fig_genero.show()
+```
+
+**¿Qué puede hacer la persona que lee el HTML?** Consultar valores al pasar el cursor, ampliar una zona y ocultar o mostrar series en la leyenda. No puede pedirle a Python que consulte otra vez DuckDB desde este HTML.
+
+## Interpretación y límites
+
+Este es deliberadamente un **reporte corto de demostración**, no un análisis terminado. En una entrega sustantiva faltaría contextualizar la cobertura temporal, explicar patrones observados con valores reales, decidir si hay comparaciones válidas y documentar limitaciones.
+
+Para la Tarea 4 deben elegir **sus propias preguntas, preparar sus agregaciones y redactar interpretaciones basadas en los resultados**. No basta con adaptar los títulos de estas dos figuras.
+
+::: {.callout-note}
+## Cómo actualizar este reporte
+
+Si se modifica la base o las consultas, ejecutar nuevamente `quarto render` genera un nuevo HTML. El documento HTML publicado no contiene un servidor Python ejecutando consultas en cada interacción.
+:::

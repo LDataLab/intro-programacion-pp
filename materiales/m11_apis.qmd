@@ -1,6 +1,6 @@
 ---
-title: "Del notebook al reporte interactivo y a una API"
-subtitle: "DuckDB, Dash y FastAPI: tres formas de utilizar un mismo producto de datos"
+title: "m11: Del notebook al reporte y al servicio"
+subtitle: "Quarto, Dash y FastAPI sobre la misma base DuckDB"
 format:
   html:
     toc: true
@@ -13,115 +13,200 @@ execute:
   eval: false
 ---
 
-## Retomemos: ¿para qué hemos aprendido estas herramientas?
+## Retomemos: ¿qué hemos construido hasta ahora?
 
-En las unidades anteriores trabajamos con la terminal, Git/GitHub, Python, `uv` y DuckDB. Ahora nos preguntaremos: **una vez que tenemos datos limpios y un análisis reproducible, ¿cómo entregamos sus resultados a otras personas o sistemas?**
+Hemos trabajado con CLI, Git/GitHub, Python, `uv` y DuckDB. Ya podemos consultar, transformar y explorar datos. Ahora surge una nueva pregunta: **¿cómo entregamos los resultados a otra persona o aplicación?**
 
-Retomemos:
+El código y los datos son parte del proceso reproducible; **el HTML es un producto generado**, no la fuente original del análisis. Un agente puede ayudarnos a escribir código, pero debemos poder inspeccionar, ejecutar y volver a producir ese resultado.
 
+### Objetivos
 
-### Objetivos de aprendizaje
-
-Al finalizar podrás:
-
-- Distinguir qué problema resuelven un **notebook**, un **reporte interactivo con Dash** y una **API con FastAPI**.
-- Leer y modificar una app de Dash: `layout`, componentes, `id`, `Input`, `Output` y `callback`.
-- Reconocer por qué **los datos para presentar** se preparan con SQL, preferentemente en la capa `model`, y no se extraen arbitrariamente con `LIMIT`.
-- Entender una solicitud HTTP, un endpoint y una respuesta JSON; probar una API con `curl` y `/docs`.
-- Recuperar resultados de una API en Python y explicar cuándo conviene consultar DuckDB directamente.
+- Diferenciar el propósito de un **notebook**, un **reporte Quarto**, una **app Dash** y una **API FastAPI**.
+- Crear un HTML reproducible con Markdown, YAML y bloques de Python dentro de un `.qmd`.
+- Incorporar una gráfica de Plotly que conserve interactividad en el navegador.
+- Explicar la diferencia entre **interactividad en el navegador** y **ejecución de Python en un servidor**.
+- Identificar `layout`, `id` y `callback` en un ejemplo breve de Dash.
+- Probar endpoints de FastAPI con `curl` y `/docs`, y consumir JSON desde Python.
 
 ### Ruta de la sesión
 
-1. **Notebook → reporte**: quién consume el trabajo y cómo se comunican hallazgos.
-2. **Dash**: leer un ejemplo de app y modificar su interactividad.
-3. **Reporte → servicio**: qué cambia cuando el consumidor es otro programa.
-4. **FastAPI**: levantar y probar una API que consulta la misma base de EcoBici.
-5. **Cierre**: qué versión de los resultados conviene entregar en cada situación.
+1. Notebook → reporte analítico.
+2. Quarto: escribir, ejecutar y generar un HTML con gráficos interactivos.
+3. Dash: qué cambia cuando la interacción debe ejecutar Python y consultar DuckDB.
+4. FastAPI: exponer datos a otros programas mediante HTTP y JSON.
+5. Comparación y ejercicio de cierre.
 
-**Antes de empezar:** necesitamos `data/db/ecobici.duckdb`, creada en la unidad de DuckDB, y dependencias sincronizadas con `uv sync`. Esta lección supone que ya existe `progra.db.mydb.myquery`; la función permite consultar la base y devuelve resultados que podemos usar como DataFrame.
+**Preparación:** tener el repositorio sincronizado (`uv sync`) y la base `data/db/ecobici.duckdb` creada. Los ejemplos de la clase reutilizan `myquery` desde `progra.db.mydb`.
 
-## 1. Un mismo análisis, tres productos distintos
+## 1. Cuatro herramientas, cuatro propósitos
 
-Imaginemos que nuestra pregunta es **¿cómo varía el número de retiros de Ecobici según la hora?** Primero debemos resolver correctamente la pregunta con datos; después debemos decidir cómo compartir el resultado.
-
-| Herramienta | ¿Para qué sirve? | ¿Quién la utiliza principalmente? | ¿Qué recibe? |
+| Herramienta | ¿Para quién? | ¿Qué produce? | ¿Cuándo se ejecuta Python? |
 |---|---|---|---|
-| **Notebook** | Explorar, documentar decisiones, comprobar supuestos y experimentar | Una persona analista | Código, tablas, gráficas e interpretaciones |
-| **Dash** | Comunicar resultados mediante un reporte visual e interactivo | Una persona que consulta los hallazgos | Página web, texto, controles y gráficas |
-| **FastAPI** | Permitir que **otros programas** consulten resultados o servicios | Un cliente de software, otro sistema o un notebook | Respuestas por HTTP, normalmente JSON |
+| **Notebook** | Quien realiza el análisis | Código, resultados y exploración | Durante la ejecución de celdas |
+| **Quarto** | Quien lee resultados y conclusiones | Un reporte HTML/PDF/etc. | Normalmente **al renderizar** el documento |
+| **Dash** | Quien interactúa con una app web | Página con controles y visualizaciones | Al iniciar la app y en los callbacks que lo requieran |
+| **FastAPI** | Otro programa o sistema | Respuestas HTTP, a menudo JSON | Cuando el servidor recibe una solicitud |
 
-**No son equivalentes ni compiten entre sí.** Podemos desarrollar el análisis en un notebook, publicarlo localmente como un reporte en Dash y ofrecer algunos resultados por una API. En esta unidad **Dash y FastAPI consultan DuckDB directamente y de manera independiente**. No necesitamos conectar una con la otra para entender sus funciones.
+Una misma base puede alimentar estos cuatro productos. **No necesitamos hacer que Dash consuma FastAPI en esta clase**; ambos pueden consultar DuckDB por separado.
 
 ```text
-                         datos de EcoBici
-                               |
-                       DuckDB: raw / clean
-                               |
-                    DuckDB: model (agregados)
-                          /           \
-                         /             \
-                   Notebook          Resultados preparados
-                 explorar / validar       /          \
-                                        Dash        FastAPI
-                                      (personas)   (programas)
+                        CSV originales
+                              |
+                   DuckDB: raw → clean → model
+                              |
+               +--------------+---------------+
+               |              |               |
+           Notebook         Quarto         Python en servidor
+         explorar/validar   reporte.html      /          \
+          (analista)       (lectores)       Dash       FastAPI
+                                            |             |
+                                       personas      programas
 ```
 
 ::: {.callout-important}
-## Primero el significado, después la herramienta
+## La pregunta y los datos van primero
 
-Ni una gráfica interactiva ni un endpoint corrigen una pregunta mal formulada, una tabla mal construida o un sesgo en los datos. Las transformaciones deben ser explicables y reproducibles; la presentación viene después.
+Una visualización, un HTML o una API no corrigen una tabla mal construida. Antes de publicar resultados debemos decidir cuál es la unidad de observación, qué calidad tienen los datos, qué agregación responde la pregunta y qué límites tiene la interpretación.
 :::
 
-## 2. De los notebooks a un reporte con Dash
+## 2. Quarto: del análisis reproducible al HTML
 
-### 2.1 ¿Qué distingue a un reporte de un dashboard lleno de gráficas?
+### 2.1 ¿Qué es Quarto?
 
-En el notebook documentamos **cómo llegamos** a los resultados: perfilado, limpieza, decisiones, preguntas y visualizaciones exploratorias. En el reporte nos concentramos en **qué debería entender** alguien que no participó en el análisis.
+[Quarto](https://quarto.org/) es un sistema abierto de publicación técnica y científica. Puede producir documentos HTML, PDF, Word, sitios, libros y dashboards. Para esta clase lo utilizaremos para crear **un reporte analítico HTML con texto, código, figuras y conclusiones**.
 
-Un reporte interactivo debería contener:
+En un `.qmd` combinamos:
 
-1. **Título, contexto, fuente y periodo**: qué fenómeno analizamos.
-2. **Pregunta central y resumen de hallazgos**: qué queremos comunicar.
-3. **Dos o tres visualizaciones seleccionadas**, cada una con una pregunta e interpretación.
-4. **Interactividad con propósito**: un filtro que permita comparar algo relevante.
-5. **Conclusiones y limitaciones**: qué sabemos y qué no podemos inferir.
+1. **YAML**: configuración del documento (entre líneas `---`).
+2. **Markdown**: títulos, párrafos, listas, tablas y referencias.
+3. **Python ejecutable**: bloques como `` ```{python} `` que generan tablas y figuras.
 
-**Ejemplo:** un gráfico de retiros por hora acompañado de la pregunta «¿en qué horas se concentra la actividad?», un comentario sobre el patrón observado y una advertencia sobre la cobertura temporal es más informativo que una figura sin explicación.
+Al ejecutar `quarto render`, Quarto procesa el código mediante Jupyter y construye el documento final usando su sistema de publicación. Los resultados calculados se incorporan al HTML. **Abrir ese HTML más adelante no vuelve a ejecutar Python.**
 
-### 2.2 Antes de Dash: consultar los datos adecuados
+Documentación: [Quarto con Python](https://quarto.org/docs/computations/python) · [gráficas interactivas](https://quarto.org/docs/interactive/widgets/jupyter.html).
 
-La tabla `clean.ecobici` tiene una fila por viaje. Si queremos conocer los retiros por hora, conviene calcular una tabla agregada:
+### 2.2 YAML y Markdown
 
-```{.sql}
-SELECT
-    EXTRACT(hour FROM fecha_retiro) AS hora,
-    COUNT(*) AS total_retiros
-FROM clean.ecobici
-WHERE fecha_retiro IS NOT NULL
-GROUP BY 1
-ORDER BY 1;
+El YAML es un formato de configuración basado en indentación. No usa tabuladores y los `:` y espacios importan.
+
+````{.markdown}
+---
+title: "Mi reporte de datos"
+format:
+  html:
+    toc: true
+    theme: cosmo
+    code-fold: true
+jupyter: python3
+---
+
+# Una pregunta de análisis
+
+Este párrafo explica el fenómeno y la fuente.
+
+## Resultados
+
+Aquí irán una figura y su interpretación.
+````
+
+`_quarto.yml` permite configurar un proyecto entero, pero **no hace falta** crear uno para empezar con un único reporte.
+
+### 2.3 Código Python dentro del reporte
+
+El código con `{python}` se ejecuta durante el render; el código con `{.python}` **solo se muestra** como texto, sin ejecutarse. Esto último es lo que hacemos en los materiales de clase para mostrar ejemplos sin ejecutar consultas.
+
+````{.markdown}
+```{python}
+#| echo: true
+import plotly.express as px
+
+fig = px.bar(
+    x=["Lunes", "Martes", "Miércoles"],
+    y=[12, 15, 10],
+    labels={"x": "Día", "y": "Ejemplo de viajes"},
+)
+fig.show()
+```
+````
+
+El gráfico de Plotly conserva interactividad **en el navegador**: consultar valores, hacer zoom y ocultar series. Los números del ejemplo anterior son ficticios y solo ilustran sintaxis; para un reporte real deben venir de los datos.
+
+Quarto también ofrece un formato de [dashboard](https://quarto.org/docs/dashboards/), con paneles e indicadores. **Un Quarto dashboard puede ser estático en términos de ejecución Python y, a la vez, visualmente interactivo.** No significa automáticamente disponer de un servidor de datos en vivo.
+
+### 2.4 Ejemplo del repositorio: `reporte_ecobici.qmd`
+
+Guarda el ejemplo suministrado en la **raíz del repositorio** como `reports/reporte_ecobici.qmd` y verifica que exista la base `data/db/ecobici.duckdb`.
+
+```{.sh}
+mkdir -p reports
+# Guarda o mueve el archivo de ejemplo a reports/reporte_ecobici.qmd
+uv sync
+uv add plotly ipykernel jupyter
 ```
 
-Observa que:
+Si esos paquetes ya figuran en `pyproject.toml`, no vuelvas a agregarlos. **Quarto CLI es una instalación independiente** y debe estar disponible como comando `quarto`. Para que Quarto utilice el Python de `.venv` administrado por `uv`, ejecuta desde la raíz del repositorio:
 
-- **La unidad de observación cambia:** un renglón ahora corresponde a una hora (0 a 23), no a un viaje.
-- El `COUNT(*)` cuenta viajes registrados, **no** bicicletas disponibles.
-- Es un ejemplo de lo que podría almacenarse en `model.retiros_por_hora`.
-- Usar `LIMIT 10000` en viajes individuales **no** equivale a extraer una muestra aleatoria: podría sesgar la representación por hora, estación o periodo.
+```{.sh}
+QUARTO_PYTHON="$PWD/.venv/bin/python" quarto render reports/reporte_ecobici.qmd
+```
 
-En nuestra tarea, cada equipo diseñará la capa `model` a partir de **sus propias** preguntas; no todos tendrán la misma estructura.
+Para visualizar cambios durante la edición:
 
-### 2.3 Cómo está organizada una app de Dash
+```{.sh}
+QUARTO_PYTHON="$PWD/.venv/bin/python" quarto preview reports/reporte_ecobici.qmd --no-browser
+```
 
-Dash combina código Python con componentes para construir una página:
+Los comandos asumen un entorno macOS/Linux/WSL y ejecución desde la raíz del repositorio. El HTML generado se encontrará junto al `.qmd`, salvo que el proyecto configure otra carpeta de salida.
 
-- `Dash(__name__)`: crea la aplicación; `__name__` es una variable especial de Python que identifica el módulo (cuando ejecutamos el archivo directamente vale `"__main__"`).
-- `app.layout`: describe la **estructura visual** de la página.
-- `html.H1`, `html.P`, `html.Div`: títulos, párrafos y contenedores HTML escritos como componentes de Python.
-- `dcc.Graph`: muestra una figura de Plotly.
-- `dcc.Dropdown`: permite elegir una opción.
-- `id`: identifica un componente para conectarlo con otros.
-- `@app.callback(...)`: registra una función que actualiza una o varias propiedades cuando cambia la entrada.
+### 2.5 Leer el ejemplo de EcoBici: ¿qué hace cada pieza?
+
+| Elemento en `reporte_ecobici.qmd` | Qué significa |
+|---|---|
+| `format: html` | Genera una página HTML |
+| `jupyter: python3` | Ejecuta bloques Python con Jupyter |
+| `code-fold: true` | Permite mostrar u ocultar el código para que el reporte sea legible |
+| `from progra.db.mydb import myquery` | Reutiliza el acceso a DuckDB existente en la clase |
+| `SELECT ... GROUP BY` | Prepara resultados agregados; no copia las primeras 10,000 filas |
+| `fig.show()` | Inserta una figura Plotly interactiva en el HTML |
+| Párrafos posteriores a las figuras | Presentan una interpretación y advertencias, no solo gráficas |
+
+La unidad de observación de `clean.ecobici` es un viaje. Tras `GROUP BY hora`, cada fila representa **una hora del día agregada sobre los registros**, no una bicicleta o una estación.
+
+El ejemplo usa una búsqueda de la raíz del repositorio para ejecutar `myquery` con la ruta correcta de DuckDB, incluso cuando el `.qmd` esté dentro de `reports/`. Esta adaptación responde a que, en un proyecto Quarto, el directorio de ejecución puede ser el directorio del documento.
+
+::: {.callout-warning}
+## No confundir los resultados del HTML con los datos vivos
+
+Si se agregan viajes a DuckDB, el HTML anterior **no cambia solo**. Hay que ejecutar de nuevo `quarto render` para producir una nueva versión. Puedes automatizar ese proceso más adelante, pero abrir el HTML no genera una nueva consulta SQL.
+:::
+
+### 2.6 Práctica breve
+
+1. Renderiza el reporte e identifica la sección donde aparece el gráfico interactivo.
+2. Haz zoom, pasa el cursor sobre una barra y prueba ocultar una línea usando la leyenda.
+3. Cambia un título o una interpretación en el `.qmd` y vuelve a renderizar.
+4. Encuentra qué consulta SQL produce cada figura y por qué no usamos `LIMIT 10000`.
+5. Discute: ¿qué debe añadirse para que sea un reporte completo y no solo una demostración?
+
+## 3. Dash: cuando la interacción ejecuta Python
+
+Quarto es adecuado para **publicar resultados preparados**. ¿Y si necesitamos que cada selección de una estación ejecute **otra consulta** a DuckDB y actualice la pantalla sin volver a renderizar un archivo?
+
+Ahí una app web como **Dash** tiene sentido. La aplicación permanece corriendo; un evento en la interfaz puede desencadenar una función Python del servidor.
+
+```text
+Quarto: archivo .qmd → render (Python + DuckDB) → reporte.html → navegador
+
+Dash: navegador → cambio de selección → callback Python → DuckDB → figura actualizada
+```
+
+### 3.1 Tres conceptos en el archivo existente de Dash
+
+En la app `src/progra/apps/ecobici.py` (si reorganizaste las carpetas) o en la ubicación anterior, identifica:
+
+- **`app.layout`**: contenido y orden de los elementos visuales; títulos, texto, gráficos.
+- **`id`**: identificador de un control o visualización.
+- **`@app.callback`**: conecta un cambio en un `Input` con uno o varios `Output`.
 
 ```{.python}
 from dash import Dash, dcc, html, Input, Output
@@ -129,124 +214,64 @@ from dash import Dash, dcc, html, Input, Output
 app = Dash(__name__)
 
 app.layout = html.Div([
-    html.H1("Reporte de movilidad en bicicleta"),
-    html.P("Pregunta: ¿cómo cambia el uso por hora?"),
-    dcc.Dropdown(
-        id="grupo",
-        options=[{"label": "Todos", "value": "todos"}],
-        value="todos",
-    ),
-    dcc.Graph(id="retiros-por-hora"),
-    html.P(id="lectura-grafica"),
+    html.H1("Consulta de viajes"),
+    dcc.Dropdown(id="estacion", options=[]),
+    dcc.Graph(id="grafico"),
 ])
 
-@app.callback(
-    Output("retiros-por-hora", "figure"),
-    Output("lectura-grafica", "children"),
-    Input("grupo", "value"),
-)
-def actualizar_reporte(grupo):
-    # En el archivo de ejemplo esta función sí construye una figura.
-    # Aquí solo mostramos la relación Input → función → Output.
+@app.callback(Output("grafico", "figure"), Input("estacion", "value"))
+def actualizar(estacion):
+    # Aquí el código real puede consultar DuckDB con la estación seleccionada.
     ...
 ```
 
-El callback es una **función de Python**. Su particularidad es que Dash decide cuándo ejecutarla: al cargar la página y cuando cambia el valor de `grupo`. La función debe devolver tantos valores como `Output` se hayan declarado, en el mismo orden.
+**Este fragmento es conceptual:** no es una app lista para ejecutar. En el ejemplo docente de Dash, abre el archivo completo y observa las consultas, el `layout` y el callback que actualiza la gráfica.
 
-::: {.callout-note}
-## ¿Por qué no todo necesita un callback?
+En tu ejemplo anterior los agregados se cargaban al iniciar Dash y un callback filtraba datos ya cargados; eso **no significa** que se consultara la base en cada clic. Dash permite ambas estrategias. Para consultar DuckDB cada vez, la llamada a `myquery` debe ejecutarse dentro del callback.
 
-Si una gráfica no depende de ningún control, podemos construirla una vez y colocarla directamente en `dcc.Graph(figure=fig)`. No necesitamos recalcular la edad promedio por género cada vez que alguien cambia otro filtro sin relación con esa gráfica.
-:::
+### 3.2 ¿Cuándo usaría Dash en lugar de Quarto?
 
-### 2.4 Archivo guía para la clase: `progra/apps/ecobici.py`
+| Necesidad | Herramienta razonable |
+|---|---|
+| Reporte de investigación con resultados interpretados | Quarto |
+| HTML que se publica sin servidor Python | Quarto |
+| Gráficos Plotly con zoom y leyendas | Quarto o Dash |
+| Consulta SQL al cambiar un filtro | Dash, con callback que ejecuta SQL |
+| Introducir datos y pedir predicciones a un modelo en ejecución | Dash para la interfaz, quizá FastAPI para ofrecer la predicción a otros sistemas |
 
-Trabajaremos con el archivo adjunto `progra/apps/ecobici.py`. Este ejemplo **no es la solución de la tarea**: presenta un reporte parcial y deja decisiones por tomar. Está pensado para leerse de arriba hacia abajo.
+Para **la Tarea 4 elegimos Quarto**: así el foco está en organizar bien la base, analizar y comunicar resultados. Dash queda como ejemplo de otro tipo de producto, no como requisito.
 
-| Bloque del archivo | ¿Qué hace? | ¿Qué debemos observar? |
-|---|---|---|
-| **Imports** | Carga Dash, Plotly y `myquery` | Cada herramienta tiene una responsabilidad |
-| **Consultas SQL** | Pide a DuckDB agregados, no una cantidad arbitraria de viajes | La base realiza el trabajo de agrupación |
-| **Figuras** | Convierte una tabla en una gráfica | Una figura puede ser estática |
-| **`app.layout`** | Define los componentes del reporte | Texto + cifras + gráfica + controles |
-| **`@app.callback`** | Filtra y actualiza una figura y su interpretación | `Input` → función → `Output` |
-| **`if __name__ == "__main__"`** | Ejecuta el servidor local | No publica la app en Internet |
+## 4. FastAPI: cuando el consumidor es otro programa
 
-**Recorrido sugerido en vivo:**
-
-1. Identifica la pregunta que responde la figura **estática**. Ubica el SQL que produce sus datos.
-2. Encuentra el `id` del menú y el de la figura **interactiva**. Comprueba que coinciden con los nombres declarados en el callback.
-3. Cambia el valor en el menú. Observa qué dos elementos de la página cambian y cuál permanece igual.
-4. Encuentra la sección «Limitaciones» e identifica por qué los registros de viajes no permiten calcular disponibilidad real de bicicletas.
-5. Revisa `style` en los componentes. El estilo cambia la presentación, **no** el cálculo de los resultados.
-
-#### Ejecutar la app
-
-Guarda el archivo de ejemplo en `src/progra/app/ecobici.py`. Desde la raíz de tu repositorio:
-
-```{.sh}
-uv run python src/progra/app/ecobici.py
-```
-
-Abre `http://127.0.0.1:8050`. Detén el servidor con `Ctrl+C`. Si no están instalados los paquetes, consulta el `pyproject.toml`; por ejemplo, pueden añadirse con `uv add dash plotly pandas duckdb` (solo los que falten).
-
-**Nota de entorno:** el archivo utiliza la función `myquery` del repositorio de la clase. Si adaptas el ejemplo a un repositorio propio, deberás ajustar ese import y la conexión a tu base.
-
-### 2.5 Actividad: completar el reporte, no copiar uno
-
-Trabajen en parejas para **discutir** estas decisiones (no tienen que asignarse tareas fijas):
-
-- ¿Qué pregunta central tendría sentido responder con viajes de Ecobici?
-- ¿Qué visualización debería ser estática y cuál debería depender de un control?
-- ¿Cuál sería una interpretación **correcta** y qué afirmación sería demasiado fuerte?
-- ¿Qué tabla agregada producirían en `model` para alimentar su reporte?
-
-**Mini modificación:** cambia el título, la explicación de una figura y la selección inicial del menú; después observa la app. Si hay tiempo, agrega una sección de fuente o una gráfica estática a partir de un nuevo agregado SQL.
-
-::: {.callout-warning}
-## Ejecutar localmente no significa desplegar públicamente
-
-`http://127.0.0.1:8050` es una dirección de tu propia computadora. Una app accesible por otras personas requiere infraestructura y configuraciones adicionales. No usaremos `host="0.0.0.0"` en la práctica local.
-:::
-
-## 3. Del reporte visual a una API
-
-Dash facilita que una **persona** interprete resultados. ¿Qué sucede si una persona de otro equipo quiere incorporar los retiros por género a **su propio programa**? No tiene sentido obligarla a leer una gráfica ni a copiar y pegar números.
-
-Una **API** (*Application Programming Interface*) define cómo interactúa un programa con otro. Una **API web** suele recibir solicitudes HTTP y devolver respuestas estructuradas, frecuentemente JSON. Una API puede devolver datos, ejecutar una operación o generar predicciones; no necesita mostrar gráficas.
+Una **API web** permite a otro programa solicitar datos o ejecutar una operación. Usualmente intercambia solicitudes HTTP y respuestas JSON. A diferencia de Quarto, un servidor FastAPI **ejecuta código cuando recibe solicitudes**; a diferencia de Dash, no necesita presentar un reporte visual.
 
 ```text
-Personas → navegador → Dash → DuckDB
-Programas → solicitud HTTP → FastAPI → DuckDB → respuesta JSON
+Persona → Quarto HTML: consulta resultados ya renderizados
+Persona → Dash web: interactúa con una app ejecutándose
+Programa → FastAPI: envía GET/POST y recibe JSON
 ```
 
-En este ejemplo, Dash **no llama** a FastAPI: ambos usan la misma fuente de datos. Es una simplificación intencional para comparar responsabilidades.
+### 4.1 HTTP y endpoints
 
-### 3.1 Solicitudes y respuestas HTTP
-
-Un **endpoint** es una ruta que ofrece una operación o recurso, por ejemplo `/resumen`.
+Un **endpoint** es una ruta específica, por ejemplo `/resumen`.
 
 | Elemento | Ejemplo | Significado |
 |---|---|---|
-| Método | `GET` | Solicitar información |
-| Ruta | `/resumen` | Recurso o acción solicitada |
-| Parámetro | `?limite=5` | Ajusta una consulta |
-| Código de estado | `200`, `404`, `422` | Indica el resultado de la solicitud |
-| Encabezado | `Content-Type: application/json` | Describe el formato del contenido |
-| Cuerpo de respuesta | `{"viajes": 120}` | Información entregada en JSON |
+| Método | `GET` | Recuperar información |
+| URL | `/resumen` | Ruta del servicio |
+| Parámetro | `?limite=5` | Ajuste de una consulta |
+| Encabezado | `Content-Type: application/json` | Formato del contenido |
+| Código | `200`, `404`, `422` | Resultado de la solicitud |
+| Cuerpo | `{"viajes": 120}` | Respuesta JSON |
 
-Métodos habituales:
+- `GET`: consultar un recurso.
+- `POST`: enviar datos, para crear algo o solicitar un cálculo; no implica necesariamente guardar datos.
+- `PUT` / `PATCH`: modificar recursos.
+- `DELETE`: eliminarlos.
 
-- `GET`: recuperar recursos o resultados sin modificar el estado del servidor.
-- `POST`: enviar datos para crear un recurso o solicitar una operación; **no** significa necesariamente insertar en una tabla.
-- `PUT` / `PATCH`: reemplazar / modificar un recurso.
-- `DELETE`: eliminar un recurso.
+`200 OK` significa éxito; `404` que el recurso no existe; `422` puede indicar que una entrada no cumple las validaciones; `500` indica un error inesperado del servidor.
 
-Códigos frecuentes: `200 OK`, `201 Created`, `400 Bad Request`, `404 Not Found`, `422 Unprocessable Content` (parámetros inválidos según las reglas del endpoint) y `500 Internal Server Error`.
-
-Las APIs que organizan recursos mediante URLs y utilizan las convenciones de HTTP suelen denominarse **REST**. Por ahora basta reconocer los elementos de una solicitud y una respuesta; no diseñaremos un sistema distribuido completo.
-
-### 3.2 FastAPI: rutas que ejecutan código Python
+### 4.2 Un endpoint en Python
 
 ```{.python}
 from fastapi import FastAPI
@@ -258,31 +283,26 @@ def health():
     return {"estado": "ok"}
 ```
 
-- `@app.get("/health")` registra una ruta para solicitudes `GET`.
-- La función se ejecuta cuando llega una solicitud a esa ruta.
-- El diccionario se serializa como JSON.
-- A diferencia del callback de Dash, aquí el disparador es **una solicitud HTTP**, no el cambio de un componente visual.
+El decorador registra una ruta. El diccionario se convierte en JSON cuando llega una solicitud `GET /health`.
 
-### 3.3 Práctica con la API existente del repositorio
+### 4.3 Práctica con la API del repositorio
 
-En el proyecto de la clase la API está en `src/progra/api/main.py`. Usa `myquery` para consultar `clean.ecobici`. **Este archivo ya existe en el material de la clase**; los fragmentos anteriores explican su funcionamiento, no pretenden reemplazarlo.
+El código está en `src/progra/api/main.py`, usando `myquery` para consultas sobre `clean.ecobici`.
 
-| Método | Endpoint | Contenido |
+| Método | Endpoint | Resultado |
 |---|---|---|
 | `GET` | `/health` | Estado del servicio |
-| `GET` | `/resumen` | Resumen de viajes y cobertura |
-| `GET` | `/viajes/por-genero` | Conteo de viajes por género |
-| `GET` | `/estaciones/{estacion_id}/retiros?limite=10` | Retiros recientes de una estación |
+| `GET` | `/resumen` | Resumen de registros |
+| `GET` | `/viajes/por-genero` | Recuentos por género registrado |
+| `GET` | `/estaciones/{estacion_id}/retiros?limite=10` | Retiros de una estación |
 
-**Paso 1. Iniciar el servidor** desde la raíz del proyecto:
+Desde la raíz del repo, en una terminal:
 
 ```{.sh}
 uv run uvicorn progra.api.main:app --reload --host 127.0.0.1 --port 13000
 ```
 
-`progra.api.main:app` identifica el módulo de Python y el objeto `app`. La opción `--reload` es para desarrollo local.
-
-**Paso 2. Abrir otra terminal y hacer solicitudes**:
+En otra terminal:
 
 ```{.sh}
 curl -i http://127.0.0.1:13000/health
@@ -291,21 +311,19 @@ curl http://127.0.0.1:13000/viajes/por-genero
 curl "http://127.0.0.1:13000/estaciones/1/retiros?limite=5"
 ```
 
-`-i` incluye los encabezados y el código de estado. Observa la diferencia entre lo que escribes (solicitud) y lo que responde el servidor (JSON).
+Abre `http://127.0.0.1:13000/docs` para ver la documentación automática y probar endpoints desde el navegador.
 
-**Paso 3. Explorar la documentación interactiva**: abre `http://127.0.0.1:13000/docs`, selecciona una ruta, elige *Try it out* y ejecuta una petición.
-
-**Paso 4. Provocar errores controlados**:
+Experimenta con validaciones:
 
 ```{.sh}
-# Si esa estación no existe en los registros, el endpoint devuelve 404.
+# Espera 404 si la estación no tiene registros:
 curl -i http://127.0.0.1:13000/estaciones/99999/retiros
 
-# Si la API limita el máximo a 100, este valor produce 422.
+# Espera 422 si el límite del endpoint es como máximo 100:
 curl -i "http://127.0.0.1:13000/estaciones/1/retiros?limite=500"
 ```
 
-**Paso 5. Consumir desde Python**, con la API encendida:
+### 4.4 Consumir una API desde Python
 
 ```{.python}
 import pandas as pd
@@ -314,42 +332,41 @@ por_genero = pd.read_json("http://127.0.0.1:13000/viajes/por-genero")
 por_genero
 ```
 
-Compara el resultado con la consulta SQL correspondiente sobre DuckDB. Deben representar la misma agregación; lo que cambia es **el mecanismo de acceso**. Si la estructura JSON no es tabular, puede requerirse `requests` y conversión explícita a DataFrame.
+Esto solicita el resultado **por HTTP**. Compáralo con consultar DuckDB usando `myquery`: pueden entregar los mismos números, aunque uno requiere acceso a la base y el otro acceso al servicio.
 
-### 3.4 ¿Una API es automáticamente segura o pública?
+**Importante:** una API local no es automáticamente pública ni segura. Publicarla exige considerar autenticación, permisos, validaciones, privacidad y operación del servidor.
 
-No. El ejemplo es **local**. Si se expone en una red, habría que considerar autenticación, autorización, validación, privacidad, límites de uso y despliegue. También importa qué columnas se comparten: un consumidor no necesita acceso indiscriminado a todas las filas para consultar un agregado.
+## 5. Discusión y cierre
 
-### 3.5 ¿Y una API de predicciones?
+| Pregunta | Notebook | Quarto | Dash | FastAPI |
+|---|---|---|---|---|
+| ¿Quién lo utiliza? | Analista | Lector del reporte | Persona que usa la app | Otro programa |
+| ¿Qué se entrega? | Análisis ejecutable | HTML con resultados | Aplicación web | Endpoint y JSON |
+| ¿Python debe seguir ejecutándose para consultarlo? | Para volver a ejecutar | No, para el HTML estático | Sí | Sí |
+| ¿Puede actualizar datos al abrir o hacer clic? | Se reejecutan celdas | No, salvo integrar otra tecnología | Sí, si se programa | Sí, al recibir solicitudes |
 
-En otra aplicación, una ruta como `POST /predict` podría recibir una estación y una hora, cargar un modelo entrenado y devolver una probabilidad en JSON. **No es requisito de la Tarea 4**, porque esa tarea se concentra en transformar datos y presentar hallazgos. Además, agregar datos nuevos a la base **no reentrena automáticamente** un modelo.
+**Preguntas para discutir:**
 
-## 4. Comparación y cierre
+1. Si mañana se incorporan datos nuevos a `clean.ecobici`, ¿qué sucede con un HTML Quarto publicado ayer? ¿Y con Dash?
+2. Si una app móvil necesita consultar los retiros registrados por estación, ¿le entregarías un HTML o un endpoint?
+3. ¿Por qué una visualización puede ser interactiva sin que Python esté ejecutándose?
+4. ¿Por qué `GROUP BY` puede ser más adecuado que `LIMIT 10000` para preparar datos del reporte?
+5. ¿Qué revisaría una persona responsable antes de publicar los resultados generados con ayuda de un agente?
 
-| Pregunta | Notebook | Dash | FastAPI |
-|---|---|---|---|
-| ¿Qué queremos explicar? | Cómo obtuvimos el resultado | Qué significa el resultado | Cómo recuperarlo desde otro programa |
-| ¿Qué se entrega? | Código y análisis | Reporte interactivo | Endpoint y JSON |
-| ¿Es necesario ver el código? | Generalmente sí para reproducirlo | No, para consultar el reporte | No, para consumir el servicio |
-| ¿Qué debe verificarse? | Datos, pasos y conclusiones | Interpretaciones, filtros, consistencia | Parámetros, respuestas, errores |
+### Relación con la Tarea 4
 
-### Preguntas de discusión
+La entrega es un **reporte Quarto** respaldado por scripts SQL y notebooks reproducibles. Ustedes deciden cómo colaborar mediante Git y Pull Requests: **no hay asignación de actividades por integrante**. El foco está en el producto integrado, la claridad de las preguntas y la calidad de las conclusiones. **Dash y FastAPI no son requisitos de esta tarea.**
 
-1. Si un resultado necesita actualizarse cada mes, ¿qué parte cambiaría: el notebook, las tablas `model`, la app, la API o varias de ellas?
-2. ¿Por qué una figura que toma las primeras 10,000 filas puede producir conclusiones distintas a una consulta agregada sobre toda la base?
-3. ¿Qué debería mostrar un reporte para que una persona comprenda el hallazgo sin leer el notebook?
-4. ¿Qué información **sí** debe exponer un endpoint de viajes y cuál no?
-5. ¿En qué se parecen los decoradores `@app.callback` y `@app.get`? ¿Qué evento dispara cada uno?
+### Próximas clases
 
-### Relación con la Tarea 4 y con lo que sigue
-
-- **Tarea 4:** construyan su flujo `raw` → `clean` → `model`, documenten la exploración en notebooks y comuniquen resultados en **un reporte analítico de Dash**. La colaboración con Git forma parte de su flujo habitual; no hay división de funciones preasignada.
-- **Siguiente etapa:** Docker permite ejecutar un proyecto con dependencias reproducibles. Las pruebas y GitHub Actions ayudan a verificar cambios antes de integrarlos. No se requiere desplegar públicamente el reporte ni la API para esta unidad.
+Docker y las pruebas con GitHub Actions permiten empaquetar y verificar proyectos de software, incluyendo una API. No hace falta desplegar públicamente el reporte de Quarto ni el servicio FastAPI en esta clase.
 
 ## Referencias
 
-- [Dash: layout](https://dash.plotly.com/layout)
+- [Quarto: documentación general](https://quarto.org/)
+- [Quarto con Python](https://quarto.org/docs/computations/python)
+- [Interactividad con Plotly](https://quarto.org/docs/interactive/widgets/jupyter.html)
+- [Quarto Dashboards](https://quarto.org/docs/dashboards/)
 - [Dash: callbacks](https://dash.plotly.com/basic-callbacks)
 - [FastAPI: primeros pasos](https://fastapi.tiangolo.com/tutorial/first-steps/)
 - [MDN: métodos HTTP](https://developer.mozilla.org/es/docs/Web/HTTP/Methods)
-- [MDN: respuestas HTTP](https://developer.mozilla.org/es/docs/Web/HTTP/Status)

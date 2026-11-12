@@ -1,5 +1,5 @@
 ---
-title: "Tarea 4: Base de datos, DuckDB, análisis exploratorio y app"
+title: "Tarea 4: De datos crudos a un reporte analítico interactivo"
 format:
   html:
     toc: true
@@ -10,274 +10,291 @@ format:
 date: today
 ---
 
-El objetivo de esta tarea es recorrer el flujo completo de un proyecto de datos: elegir una base, cargarla en DuckDB, organizarla en capas, explorarla en notebooks y comunicar los hallazgos en una app.
+El objetivo de esta tarea es recorrer el flujo de un **producto de datos descriptivo**: seleccionar una fuente abierta, construir una base reproducible en DuckDB, explorar sus características y comunicar los hallazgos mediante un **reporte HTML reproducible en Quarto con figuras interactivas de Plotly**.
 
-Trabajarán en **equipo** y deberán practicar cómo:
-
-- elegir una base de datos abierta y documentar su origen;
-- cargar datos crudos en DuckDB sin modificarlos;
-- limpiar y tipar los datos en una capa separada;
-- diseñar una capa de modelado pensada para el análisis que quieren hacer;
-- hacer análisis exploratorio reproducible en notebooks;
-- comunicar los resultados más importantes con una app de Dash.
+Trabajarán en equipo y utilizarán el flujo de Git/GitHub practicado en la Tarea 3. **Ustedes decidirán cómo organizar el trabajo**: no se asignarán notebooks, apartados o responsabilidades por integrante. La evaluación se centrará en la calidad, coherencia y reproducibilidad del producto integrado, no en una división artificial de actividades.
 
 ::: {.callout-important}
-## Producto final
+## Producto que deben entregar
 
-Al terminar, el equipo deberá entregar:
+- Scripts SQL que construyen tres capas: `raw`, `clean` y `model`.
+- **Dos notebooks complementarios**: perfilado de los datos y análisis con preguntas y visualizaciones.
+- **Un reporte analítico en Quarto** (`.qmd` y HTML renderizado) que comunique hallazgos seleccionados mediante Plotly.
+- Un `README.md` que documente fuente, decisiones y pasos para reproducir el proyecto.
 
-- un repositorio con estructura SQL para las tres capas (`raw`, `clean` y `modelado`);
-- al menos un notebook de análisis exploratorio;
-- una app de Dash con gráficos selectos;
-- un `README.md` que explique cómo reproducir todo.
+**No se pide entrenar un modelo predictivo, construir una API, utilizar Dash ni publicar un servicio web.**
 :::
 
-# 1. Equipo y repositorio
+## 1. Equipo y repositorio
 
-Cada equipo deberá definir:
+Continúen trabajando en el **mismo repositorio de la Tarea 3**: `progra-<nombre-equipo>`. Mantengan el trabajo colaborativo con ramas, commits y Pull Requests; revisen los cambios antes de integrarlos a `main`. No es necesario volver a provocar conflictos intencionales.
 
-- nombre del equipo;
-- integrantes.
+Estructura sugerida (conserven las carpetas previas y agreguen las que falten):
 
-Trabajen en **el mismo repositorio de la tarea 3** (`progra-<nombre-equipo>`), que ya tiene la estructura inicial. Agreguen las carpetas que falten. La estructura mínima es:
-
-```markdown
+```text
 .
 ├── data/
-│   ├── raw/
-│   └── db/
+│   ├── raw/              # archivos descargados; no versionados
+│   └── db/               # archivo DuckDB; no versionado
 ├── sql/
+│   ├── 01_raw.sql
+│   ├── 02_clean.sql
+│   └── 03_model.sql
 ├── notebooks/
-├── src/
+│   ├── nb01_estructura_perfilado.ipynb
+│   └── nb02_preguntas_visualizaciones.ipynb
+├── reports/
+│   └── reporte.qmd
+├── docs/                  # materiales previos, si ya existen
 ├── .gitignore
+├── pyproject.toml
+├── uv.lock
 └── README.md
 ```
 
-Pueden agregar otras carpetas si lo necesitan.
+Pueden utilizar otra organización si la explican y mantienen comandos reproducibles. Los archivos `pyproject.toml` y `uv.lock` documentan el entorno; no suban `.venv/`.
 
 ::: {.callout-warning}
 ## No suban datos ni credenciales
-Los CSV y la base `.duckdb` no se suben al repositorio. Cada persona los descarga y los crea de manera local. No suban contraseñas, tokens ni archivos `.env`.
+
+Ignoren los CSV descargados, los archivos `*.duckdb` y los secretos. Los datos se obtendrán de nuevo siguiendo su `README.md`. No suban contraseñas, tokens, llaves privadas ni archivos `.env` con credenciales.
 :::
 
-# 2. Elegir la base de datos
+## 2. Seleccionar y documentar la fuente
 
-Elijan **una** base de datos abierta que pueda descargarse como CSV. Pueden buscar en portales de datos abiertos de gobiernos, organismos internacionales o instituciones de investigación.
+Elijan **una base de datos abierta, descargable como CSV**, de un portal gubernamental, organismo internacional u otra institución confiable.
 
-La base debe cumplir con lo siguiente:
+La base debe:
 
-- tener suficientes filas para que consultar y agregar datos tenga sentido;
-- tener al menos una variable de tiempo o una variable geográfica;
-- tener variables categóricas y numéricas;
-- permitirles responder preguntas que les interesen.
+- Tener un volumen y una estructura que justifiquen consultas y agregaciones.
+- Contener alguna dimensión temporal o geográfica, cuando sea pertinente para las preguntas.
+- Incluir variables que permitan comparar categorías o resumir cantidades.
+- Tener documentación suficiente para interpretar las columnas.
 
-Antes de descargarla, documenten en el `README.md`:
+Antes de descargar, registren en el `README.md`: nombre, fuente y enlace, condiciones de uso (si están publicadas), cobertura, significado de las variables principales y **pregunta central** del análisis.
 
-- nombre de la base;
-- fuente y enlace;
-- licencia o condiciones de uso, si aparecen en el portal;
-- descripción breve de cada columna que vayan a usar;
-- pregunta o preguntas de análisis que les interesan.
+Descarguen usando CLI:
 
-Descarguen los datos con la terminal:
-
-```bash
+```{.sh}
+mkdir -p data/raw data/db
 curl -L "<URL>" -o data/raw/<nombre>.csv
 ```
 
-# 3. Tres capas en DuckDB
+Documenten el comando real con el enlace de descarga. Si la base requiere pasos adicionales, expliquen cómo reproducirlos.
 
-Organizarán la base en tres esquemas. Cada uno tiene un propósito distinto.
+## 3. Construir tres capas en DuckDB
 
-| Esquema | Qué contiene | Qué se permite hacer |
+| Esquema | Propósito | Ejemplos |
 |---|---|---|
-| `raw` | Los datos tal como vienen del CSV | Solo cargarlos, sin cambios |
-| `clean` | Datos con tipos correctos, nombres consistentes y nulos o duplicados tratados | Renombrar, convertir tipos, filtrar registros inválidos |
-| `model` | Tablas o vistas pensadas para responder sus preguntas de análisis | Agregar, unir y calcular variables derivadas |
+| `raw` | Registrar los datos como se importaron, sin limpieza analítica | Todas las columnas inicialmente como texto |
+| `clean` | Estandarizar nombres, tipos y reglas de calidad | Conversión de fechas; tratamiento documentado de faltantes |
+| `model` | Preparar tablas o vistas para responder preguntas concretas | Conteos por periodo, resumen por región, métricas para gráficas |
 
-## 3.1 Capa `raw`
+### 3.1 Capa `raw`
 
-Carguen el CSV sin transformarlo:
-
-```sql
+```{.sql}
 CREATE SCHEMA IF NOT EXISTS raw;
 
 CREATE OR REPLACE TABLE raw.<nombre> AS
-SELECT * FROM read_csv('data/raw/<nombre>.csv', all_varchar = true);
+SELECT *
+FROM read_csv('data/raw/<nombre>.csv', all_varchar = true);
 ```
 
-::: {.callout-tip}
-## ¿Por qué `all_varchar`?
-Si todas las columnas entran como texto, la capa `raw` conserva los valores originales. Los problemas de formato aparecerán después, en `clean`, y podrán documentarlos.
-:::
+`all_varchar = true` evita inferir tipos numéricos o temporales de manera automática; **no** significa que DuckDB almacene el CSV byte a byte. Conserven el original descargado en `data/raw/` como referencia local. Si encuentran problemas de interpretación del formato CSV, documenten qué parámetros de importación necesitaron.
 
-## 3.2 Capa `clean`
+### 3.2 Capa `clean`
 
-Creen tablas con tipos correctos y nombres consistentes. Por ejemplo:
-
-```sql
+```{.sql}
 CREATE SCHEMA IF NOT EXISTS clean;
 
 CREATE OR REPLACE TABLE clean.<nombre> AS
 SELECT
+    -- columnas renombradas y transformadas
     ...
-FROM raw.<nombre>
-WHERE ...;
+FROM raw.<nombre>;
 ```
 
-En el `README.md` documenten cada decisión de limpieza: qué columnas convirtieron, qué registros eliminaron y por qué.
+Conviertan los datos a tipos adecuados (`INTEGER`, `DOUBLE`, `DATE`, `TIMESTAMP`, etc., cuando corresponda), estandaricen nombres y decidan cómo manejar valores faltantes, inconsistencias y duplicados.
 
-## 3.3 Capa `modelado`
+**No eliminen registros solo porque son extremos o parecen repetidos.** Primero determinen qué representa cada fila y expliquen por qué un valor es incorrecto, irrelevante o válido.
 
-Diseñen esta capa **a partir del análisis que quieren hacer**. Piensen qué tablas necesitan para responder sus preguntas: agregados por fecha, por región, por categoría o una tabla ancha con las variables que van a graficar.
+### 3.3 Capa `model`
 
-```sql
+Definan las tablas o vistas **a partir de sus preguntas**, no al revés. Para cada tabla respondan: «¿qué representa una fila y para qué pregunta sirve?».
+
+```{.sql}
 CREATE SCHEMA IF NOT EXISTS model;
 
 CREATE OR REPLACE TABLE model.<nombre> AS
 SELECT
+    -- dimensiones y métricas necesarias
     ...
 FROM clean.<nombre>
 GROUP BY ...;
 ```
 
-::: {.callout-note}
-## Proyecten el análisis antes de construir el modelo
-En el `README.md` escriban una lista corta: "Para responder X necesito una tabla con Y". Después construyan la capa `model` para cumplir esa lista.
-:::
+No todas las tablas de `model` necesitan `GROUP BY`: algunas pueden ser vistas con variables derivadas o combinaciones útiles de tablas. La transformación debe tener una justificación analítica.
 
-## Scripts reproducibles
+### 3.4 Scripts reproducibles
 
-Guarden cada capa en un archivo SQL dentro de `sql/`, por ejemplo:
+Guarden las instrucciones en `sql/01_raw.sql`, `sql/02_clean.sql` y `sql/03_model.sql`. Desde la raíz del repositorio:
 
-```text
-sql/01_raw.sql
-sql/02_clean.sql
-sql/03_model.sql
-```
-
-Después, pueden construir la base completa con la terminal:
-
-```bash
+```{.sh}
 duckdb data/db/<nombre>.duckdb -f sql/01_raw.sql
 duckdb data/db/<nombre>.duckdb -f sql/02_clean.sql
 duckdb data/db/<nombre>.duckdb -f sql/03_model.sql
 ```
 
-Antes de continuar, revisen las tablas y el número de filas de cada capa:
+Verifiquen la existencia de tablas y vistas:
 
-```bash
+```{.sh}
 duckdb data/db/<nombre>.duckdb -c "SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema IN ('raw', 'clean', 'model');"
 ```
 
-# 4. Análisis exploratorio en notebooks
+Documenten conteos de filas por capa y expliquen cualquier cambio relevante en los registros. Los scripts deben poder ejecutarse **en ese orden** partiendo de una base vacía.
 
-Hagan el análisis exploratorio en notebooks dentro de `notebooks/`. Tomen de referencia la función del repositorio de la clase que consume la información de la base. 
+## 4. Análisis exploratorio en dos notebooks
 
-Cada notebook deberá:
+Los dos notebooks se construyen **en equipo**, sin asignar responsables. Deben leerse como capítulos complementarios de un mismo análisis: el primero caracteriza la fuente y sus limitaciones; el segundo responde preguntas con visualizaciones.
 
-- describir la base y la pregunta que responde;
-- revisar distribuciones, valores faltantes y valores atípicos;
-- incluir al menos **tres preguntas de análisis**, cada una con su gráfica y su interpretación;
-- ejecutarse de principio a fin sin errores.
+### 4.1 `nb01_estructura_perfilado.ipynb`: comprender los datos
+
+**Contexto y estructura**
+
+- ¿Qué fenómeno registra la base? ¿Quién la produjo y para qué?
+- ¿Cuántas filas y columnas contiene? ¿Cuál es su cobertura temporal/geográfica?
+- ¿Qué representa exactamente **una fila** (unidad de observación)?
+- ¿Qué entidades, eventos e identificadores existen? ¿Un identificador repetido representa necesariamente un error?
+
+**Calidad y decisiones de limpieza**
+
+- Tipos de datos, faltantes y posibles valores inválidos.
+- Conversión de fechas y números; códigos y categorías inconsistentes.
+- Posibles duplicados y reglas para tratarlos, **cuando corresponda**.
+- Evidencia de las decisiones aplicadas en `sql/02_clean.sql`.
+
+**Perfilado según el tipo de variable**
+
+- Categóricas: categorías, frecuencias y faltantes.
+- Numéricas: medidas descriptivas, dispersión y valores extremos.
+- Temporales: fechas mínima/máxima, granularidad y cobertura.
+- Geográficas: cobertura y consistencia, si existen coordenadas o regiones.
+
+Cierren con **dos o tres implicaciones para el análisis**: qué preguntas son viables, qué sesgos de cobertura podrían existir y qué precauciones se deben tomar al interpretar los resultados.
+
+### 4.2 `nb02_preguntas_visualizaciones.ipynb`: analizar e interpretar
+
+Comiencen con un párrafo que retome hallazgos y decisiones del primer notebook. Planteen **cinco preguntas** que realmente puedan responder con la fuente:
+
+- **Dos preguntas descriptivas** (composición, distribución, frecuencias).
+- **Dos de comparación o relación** (entre grupos, entre periodos o entre variables).
+- **Una integradora**, que vincule varios hallazgos.
+
+Para **cada pregunta**, incluyan:
+
+1. Formulación clara y unidad de análisis.
+2. Consulta SQL o transformación reproducible.
+3. **Una gráfica** con título, ejes, unidades y leyenda si es necesaria.
+4. **Interpretación** escrita debajo de la figura (no solo descripción visual).
+5. **Limitación** o precaución, cuando sea pertinente.
+
+Al final, seleccionen **dos o tres hallazgos** para el reporte interactivo y expliquen por qué son los más importantes para su audiencia.
 
 ::: {.callout-important}
-## Notebook reproducible
-Antes de entregar, reinicien el kernel y ejecuten todas las celdas. Si un resultado depende de una celda que ya no existe, el análisis no es reproducible.
+## No hagan limpieza manual escondida en los notebooks
+
+Las reglas centrales de limpieza deben vivir en `sql/02_clean.sql` y las tablas que alimentan el reporte, en `model` o `clean`. Un notebook debe poder ejecutarse de principio a fin al reiniciar el kernel, sin depender de pasos omitidos ni de archivos que no hayan explicado cómo obtener.
 :::
 
-Si necesitan paquetes nuevos, agréguenlos con `uv add`:
+## 5. Publicar un reporte analítico en Quarto
 
-```bash
-uv add <paquete>
+El objetivo es entregar **un reporte reproducible con interpretación**, no una página con gráficas aisladas. Otra persona debe poder comprender el fenómeno y los hallazgos sin abrir los notebooks.
+
+### 5.1 Estructura mínima del reporte
+
+**A. Introducción y contexto:** título sustantivo, pregunta central, fenómeno estudiado, fuente, cobertura temporal o geográfica y audiencia.
+
+**B. Resumen ejecutivo:** dos o tres hallazgos principales en lenguaje claro, sustentados en los datos.
+
+**C. Resultados:** **tres visualizaciones seleccionadas**, cada una asociada con una pregunta, un título, una explicación e interpretación. Al menos **una visualización debe ser interactiva con Plotly** (por ejemplo, consulta de valores con el cursor, zoom o control de series mediante la leyenda).
+
+**D. Conclusiones y limitaciones:** qué indican los datos, qué no permiten afirmar y cómo podría mejorarse el análisis.
+
+### 5.2 Requisitos técnicos
+
+- Escriban el reporte en **`reports/reporte.qmd`**, con encabezado YAML, texto Markdown y bloques ejecutables de Python.
+- Alimenten las figuras con datos consultados desde DuckDB, preferentemente desde la capa `model`; pueden usar tablas de `clean` cuando esté justificado.
+- Hagan las agregaciones en SQL cuando corresponda, en lugar de graficar un `LIMIT` arbitrario de registros.
+- Incluyan al menos **una figura interactiva de Plotly** y tres figuras seleccionadas en total. Las demás pueden ser interactivas o estáticas según el argumento del reporte.
+- El `.qmd` debe poder **renderizarse de nuevo** para incorporar datos actualizados; el HTML resultante no necesita un servidor Python para leerse.
+- No es necesario implementar callbacks, construir una API ni desplegar la página en Internet.
+
+Desde la raíz del repositorio, después de instalar Quarto y sincronizar las dependencias del proyecto:
+
+```{.sh}
+uv sync
+QUARTO_PYTHON="$PWD/.venv/bin/python" quarto render reports/reporte.qmd
 ```
 
-# 5. App con Dash
+Para revisar los cambios durante la edición:
 
-Con los hallazgos más importantes, construyan una app de Dash en `src/`. La app debe mostrar **gráficos selectos**, no todos los del notebook.
-
-Requisitos mínimos:
-
-- entre tres y cuatro gráficas;
-- al menos un control interactivo (un menú desplegable o un control deslizante);
-- una lectura de datos desde la capa `model` o `clean` de su base;
-- un título y una breve explicación de cada gráfica.
-
-Consulten la sección de Dash de m11 para la estructura de la app: el layout, los componentes con `id` y los callbacks.
-
-Para correr la app desde la raíz del repositorio:
-
-```bash
-uv run python src/<nombre-app>.py
+```{.sh}
+QUARTO_PYTHON="$PWD/.venv/bin/python" quarto preview reports/reporte.qmd --no-browser
 ```
 
-Documenten en el `README.md` la URL y el puerto que usa la app.
+Los comandos indican explícitamente a Quarto qué Python usar. Ejecuten desde la raíz del repositorio en macOS, Linux o WSL. **Documenten en el README desde qué directorio se debe renderizar** y cómo se resuelven las rutas de la base de datos.
+
+Entreguen **ambos archivos**, `reports/reporte.qmd` y `reports/reporte.html`. El archivo `.qmd` es la fuente reproducible; el HTML es el resultado que leerá otra persona.
 
 ::: {.callout-tip}
-## Elijan bien qué mostrar
-Una app útil responde una o dos preguntas claras. Si una gráfica no aporta a la conclusión, quítenla de la app aunque esté en el notebook.
+## Ejemplo, no respuesta para copiar
+
+El ejemplo `reporte_ecobici_quarto.qmd` de m11 muestra cómo leer agregados de DuckDB, crear gráficas Plotly y escribir una explicación. **No es un reporte completo ni sustituye sus preguntas, sus tablas y sus interpretaciones.**
 :::
 
-# 6. Documentación y reflexión
+## 6. README y reproducibilidad
 
-El `README.md` deberá incluir:
+El `README.md` debe permitir que una persona que clone el proyecto entienda y reproduzca el trabajo:
 
-- nombre del equipo e integrantes;
-- descripción de la base, su fuente y las columnas que usan;
-- lista de preguntas de análisis;
-- explicación de cada capa (`raw`, `clean` y `model`) y de las decisiones de limpieza;
-- orden para construir la base con los scripts de `sql/`;
-- ubicación de los notebooks;
-- instrucciones para correr la app;
-- una reflexión breve del equipo: ¿qué fue lo más difícil de limpiar?, ¿qué cambiaría en la capa `model` si tuvieran más tiempo?, ¿qué hallazgo les pareció más sólido y cuál más frágil?
+- Equipo, fuente, enlace de descarga y condiciones de uso disponibles.
+- Pregunta central, alcance y principales columnas utilizadas.
+- Unidad de observación y descripción de las capas `raw`, `clean`, `model`.
+- Decisiones importantes de limpieza y advertencias sobre calidad.
+- Cómo recuperar el CSV original usando CLI.
+- Cómo instalar dependencias (`uv sync`) y construir DuckDB con los SQL, desde una base vacía.
+- Cómo ejecutar ambos notebooks y renderizar `reports/reporte.qmd`; dónde se obtiene el HTML.
+- Audiencia, preguntas e interpretaciones principales del reporte, y qué partes de sus figuras son interactivas.
+- Breve reflexión: ¿qué fue lo más difícil?, ¿qué hallazgo es más sólido y cuál más frágil?, ¿qué cambiarían con más tiempo?
 
-# Entrega
+## 7. Entrega y criterios de revisión
 
-La entrega es el enlace al repositorio del equipo, con:
+Entreguen **un enlace al repositorio** en Canvas. Revisaré el producto final integrado en `main`, los scripts, los notebooks, el `.qmd`, su HTML y el README. El uso de ramas y Pull Requests seguirá siendo parte del flujo de colaboración, pero **no voy a calificar una división específica del trabajo por integrante**.
 
-- scripts SQL de las tres capas en `sql/`;
-- al menos un notebook con análisis exploratorio ejecutado de principio a fin;
-- la app de Dash en `src/`;
-- un `README.md` completo;
-- ningún dato ni credencial dentro del repositorio.
+| Criterio | Evidencia observable |
+|---|---|
+| **Datos y calidad** | Fuente clara, unidades bien identificadas, tres capas coherentes, limpieza justificada |
+| **Reproducibilidad** | SQL ejecutable, dependencias declaradas, instrucciones suficientes |
+| **Análisis** | Cinco preguntas, cinco gráficas pertinentes, interpretación y limitaciones |
+| **Comunicación** | Reporte Quarto legible con pregunta central, tres gráficas seleccionadas, texto y conclusiones |
+| **Interactividad** | Al menos una visualización Plotly interactiva, que funcione al abrir el HTML |
+| **Integración** | Archivos consistentes entre sí y repositorio funcional en `main` |
 
-Antes de entregar, revisen:
+### Checklist final
 
-```bash
+- [ ] La fuente y su descarga están documentadas.
+- [ ] Los scripts reconstruyen `raw`, `clean` y `model` desde cero.
+- [ ] Los dos notebooks son reproducibles y están conectados entre sí.
+- [ ] Hay cinco preguntas, cinco gráficas e interpretaciones.
+- [ ] El HTML es un **reporte**: contexto, hallazgos, tres gráficas, interactividad y límites.
+- [ ] El `.qmd` usa datos preparados de DuckDB y se renderiza sin errores.
+- [ ] El `README.md` explica cómo reproducir el proyecto con `uv`, DuckDB y Quarto.
+- [ ] Se respetó el flujo de colaboración con Git y no se subieron datos ni secretos.
+- [ ] El repositorio está integrado en `main` y se entregó el enlace en Canvas.
+
+Comprueben antes de entregar:
+
+```{.sh}
 git status
 ```
 
-Idealmente deberán ver:
-
-```text
-nothing to commit, working tree clean
-```
-
-# Checklist
-
-## Base y capas
-
-- [ ] Elegimos una base abierta y documentamos su fuente.
-- [ ] Cargamos los datos en `raw` sin transformarlos.
-- [ ] Creamos `clean` con tipos y nombres consistentes.
-- [ ] Documentamos las decisiones de limpieza.
-- [ ] Diseñamos `model` a partir de nuestras preguntas.
-- [ ] Guardamos cada capa en un script dentro de `sql/`.
-
-## Notebooks
-
-- [ ] Hicimos el análisis exploratorio en notebooks.
-- [ ] Cada notebook responde al menos tres preguntas con gráfica e interpretación.
-- [ ] El notebook se ejecuta de principio a fin tras reiniciar el kernel.
-
-## App
-
-- [ ] La app muestra entre tres y cuatro gráficas selectas.
-- [ ] Incluye al menos un control interactivo.
-- [ ] Corre con `uv run python src/<nombre-app>.py`.
-
-## Entrega
-
-- [ ] El `README.md` está completo.
-- [ ] El repositorio no contiene datos ni credenciales.
-- [ ] El enlace al repositorio está en Canvas.
+Lo esperado es un árbol de trabajo limpio y los archivos finales integrados en `main`.
