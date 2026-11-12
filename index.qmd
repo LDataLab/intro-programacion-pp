@@ -81,30 +81,39 @@ bibliography: references.bib
 - Práctica de bases de datos
     - [Material 10](materiales/m10_practica_db.html) 
 
-- Variables de entorno y credenciales
-    - [Material 11](materiales/m11_credenciales.html) 
-
 :::
 
-
 ::: {.callout-tip collapse="false"}
-### 07. Docker y ambientes reproducibles
-
-- Introducción a docker
-    - [Material 12](materiales/m12_docker.html) 
-:::
-
-
-::: {.callout-tip collapse="false"}
-### 08. APIS y pipelines reproducibles
+### 07. APIS
 
 - APIS
-    - [Material 13](materiales/m13_apis.html) 
-
-- Pipelines
-    - [Material 14](materiales/m14_pipeline.html) 
+    - [Material 11](materiales/m11_apis.html) 
 
 :::
+
+
+
+::: {.callout-tip collapse="false"}
+### 08. Docker y ambientes reproducibles
+
+- Introducción a docker
+    - [Material 13](materiales/m13_docker.html) 
+
+
+:::
+
+::: {.callout-tip collapse="false"}
+### 07. Pipelines reproducibles
+
+- Pipelines
+    - [Material 12](materiales/m12_pipeline.html) 
+
+- Variables de entorno, consideraciones de seguridad y credenciales
+    - [Material 14](materiales/m14_credenciales.html) 
+
+
+:::
+
 
 
 ## Calendario
