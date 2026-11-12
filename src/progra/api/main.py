@@ -6,13 +6,12 @@ Variables de entorno (ver m11):
 """
 
 import os
-from pathlib import Path
 from typing import Annotated
 
-import duckdb
 from fastapi import FastAPI, Header, HTTPException, Query
 
-DB_PATH = Path(os.environ.get("ECOBICI_DB_PATH", "data/db/ecobici.duckdb"))
+from progra.tools.mydb import DB_PATH, myquery
+
 API_TOKEN = os.environ.get("API_TOKEN")
 
 # Sin token la API no debe arrancar: es mejor fallar al inicio que aceptar peticiones sin protección.
@@ -29,16 +28,10 @@ def verificar_token(authorization: Annotated[str | None, Header()] = None) -> No
 
 
 def consultar(sql: str, parametros: list | None = None) -> list[dict]:
-    """Ejecuta SQL con parámetros y devuelve filas como diccionarios.
-
-    Los valores van como parámetros (?), nunca concatenados al texto SQL.
-    """
+    """Ejecuta SQL con myquery y devuelve filas como diccionarios."""
     if not DB_PATH.exists():
         raise HTTPException(status_code=500, detail=f"No existe la base: {DB_PATH}")
-    with duckdb.connect(str(DB_PATH), read_only=True) as con:
-        cursor = con.execute(sql, parametros or [])
-        columnas = [c[0] for c in cursor.description]
-        return [dict(zip(columnas, fila)) for fila in cursor.fetchall()]
+    return myquery(sql, parametros).to_dict(orient="records")
 
 
 @app.get("/health")
