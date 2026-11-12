@@ -2,7 +2,8 @@
 
 Variables de entorno (ver m11):
 - API_TOKEN: token que deben enviar los clientes en el encabezado Authorization.
-- ECOBICI_DB_PATH: ruta a la base DuckDB (por omisión, data/db/ecobici.duckdb).
+
+La base DuckDB se consulta con `myquery` (src/progra/tools/mydb.py).
 """
 
 import os

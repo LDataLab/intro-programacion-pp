@@ -92,7 +92,7 @@ Los **encabezados** (*headers*) son metadatos que acompañan la solicitud o la r
 
 ## 3. Práctica: la API de EcoBici
 
-La API del proyecto está en `src/progra/api/main.py`. Expone la tabla `clean.ecobici` que construimos en m10 y empaquetamos en m12:
+La API del proyecto está en `src/progra/api/main.py`. Expone la tabla `clean.ecobici` que construimos en m10 y empaquetamos en m12. Las consultas pasan por `myquery` (`src/progra/tools/mydb.py`), la misma función que usas en tus notebooks; los valores van como parámetros (`?`):
 
 | Método | Endpoint | ¿Requiere token? | Qué devuelve |
 |---|---|---|---|
@@ -129,11 +129,13 @@ Con Docker:
 docker compose up api
 ```
 
-O sin Docker, desde la raíz del repositorio:
+O sin Docker, desde la raíz del repositorio (con `API_TOKEN` cargado por direnv):
 
 ```{.sh}
 uv run uvicorn progra.api.main:app --reload --port 13000
 ```
+
+Sin Docker no necesitas configurar la ruta de la base: `myquery` la resuelve desde el código y apunta a `data/db/ecobici.duckdb`.
 
 ::: {.callout-note}
 Si `API_TOKEN` no está definido, la API **no arranca** y muestra `Define API_TOKEN en .envrc o .env`. Es intencional: una API sin token no debe quedar expuesta.
@@ -189,7 +191,7 @@ Desde ahí puedes probar cada endpoint. Para usar el token, presiona **Authorize
 ## 4. Relación con las unidades anteriores
 
 - **m10**: la tabla `clean.ecobici` es el origen de todos los endpoints.
-- **m11**: `API_TOKEN` y `ECOBICI_DB_PATH` son variables de entorno; el token nunca se escribe en el código.
+- **m11**: `API_TOKEN` es una variable de entorno; el token nunca se escribe en el código. Las consultas usan `myquery`, que lee la base de `data/db/ecobici.duckdb`.
 - **m12**: el servicio `api` del compose usa la misma imagen que el pipeline.
 
 ## Referencias
