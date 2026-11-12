@@ -1,0 +1,292 @@
+---
+title: "Tarea 4: Base de datos, DuckDB, análisis exploratorio y app"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+    code-copy: true
+date: today
+---
+
+El objetivo de esta tarea es recorrer el flujo completo de un proyecto de datos: elegir una base, cargarla en DuckDB, organizarla en capas, explorarla en notebooks y comunicar los hallazgos en una app.
+
+Trabajarán en **equipo** y deberán practicar cómo:
+
+- elegir una base de datos abierta y documentar su origen;
+- cargar datos crudos en DuckDB sin modificarlos;
+- limpiar y tipar los datos en una capa separada;
+- diseñar una capa de modelado pensada para el análisis que quieren hacer;
+- hacer análisis exploratorio reproducible en notebooks;
+- comunicar los resultados más importantes con una app de Dash.
+
+::: {.callout-important}
+## Producto final
+
+Al terminar, el equipo deberá entregar:
+
+- un repositorio con scripts SQL para las tres capas (`raw`, `clean` y `model`);
+- al menos un notebook de análisis exploratorio;
+- una app de Dash con gráficos selectos;
+- un `README.md` que explique cómo reproducir todo.
+:::
+
+# 1. Equipo y repositorio
+
+Cada equipo deberá definir:
+
+- nombre del equipo;
+- integrantes.
+
+Trabajen en **el mismo repositorio de la tarea 3** (`progra-<nombre-equipo>`), que ya tiene la estructura inicial. Agreguen las carpetas que falten. La estructura mínima es:
+
+```text
+.
+├── data/
+│   ├── raw/
+│   └── db/
+├── sql/
+├── notebooks/
+├── src/
+├── .gitignore
+└── README.md
+```
+
+Pueden agregar otras carpetas si lo necesitan.
+
+::: {.callout-warning}
+## No suban datos ni credenciales
+Los CSV y la base `.duckdb` no se suben al repositorio. Cada persona los descarga y los crea de manera local. No suban contraseñas, tokens ni archivos `.env`.
+:::
+
+# 2. Elegir la base de datos
+
+Elijan **una** base de datos abierta que pueda descargarse como CSV. Pueden buscar en portales de datos abiertos de gobiernos, organismos internacionales o instituciones de investigación.
+
+La base debe cumplir con lo siguiente:
+
+- tener suficientes filas para que consultar y agregar datos tenga sentido;
+- tener al menos una variable de tiempo o una variable geográfica;
+- tener variables categóricas y numéricas;
+- permitirles responder preguntas que les interesen.
+
+Antes de descargarla, documenten en el `README.md`:
+
+- nombre de la base;
+- fuente y enlace;
+- licencia o condiciones de uso, si aparecen en el portal;
+- descripción breve de cada columna que vayan a usar;
+- pregunta o preguntas de análisis que les interesan.
+
+Descarguen los datos con la terminal:
+
+```bash
+curl -L "<URL>" -o data/raw/<nombre>.csv
+```
+
+# 3. Tres capas en DuckDB
+
+Organizarán la base en tres esquemas. Cada uno tiene un propósito distinto.
+
+| Esquema | Qué contiene | Qué se permite hacer |
+|---|---|---|
+| `raw` | Los datos tal como vienen del CSV | Solo cargarlos, sin cambios |
+| `clean` | Datos con tipos correctos, nombres consistentes y nulos o duplicados tratados | Renombrar, convertir tipos, filtrar registros inválidos |
+| `model` | Tablas o vistas pensadas para responder sus preguntas de análisis | Agregar, unir y calcular variables derivadas |
+
+## 3.1 Capa `raw`
+
+Carguen el CSV sin transformarlo:
+
+```sql
+CREATE SCHEMA IF NOT EXISTS raw;
+
+CREATE OR REPLACE TABLE raw.<nombre> AS
+SELECT * FROM read_csv('data/raw/<nombre>.csv', all_varchar = true);
+```
+
+::: {.callout-tip}
+## ¿Por qué `all_varchar`?
+Si todas las columnas entran como texto, la capa `raw` conserva los valores originales. Los problemas de formato aparecerán después, en `clean`, y podrán documentarlos.
+:::
+
+## 3.2 Capa `clean`
+
+Creen tablas con tipos correctos y nombres consistentes. Por ejemplo:
+
+```sql
+CREATE SCHEMA IF NOT EXISTS clean;
+
+CREATE OR REPLACE TABLE clean.<nombre> AS
+SELECT
+    ...
+FROM raw.<nombre>
+WHERE ...;
+```
+
+En el `README.md` documenten cada decisión de limpieza: qué columnas convirtieron, qué registros eliminaron y por qué.
+
+## 3.3 Capa `model`
+
+Diseñen esta capa **a partir del análisis que quieren hacer**. Piensen qué tablas necesitan para responder sus preguntas: agregados por fecha, por región, por categoría o una tabla ancha con las variables que van a graficar.
+
+```sql
+CREATE SCHEMA IF NOT EXISTS model;
+
+CREATE OR REPLACE TABLE model.<nombre> AS
+SELECT
+    ...
+FROM clean.<nombre>
+GROUP BY ...;
+```
+
+::: {.callout-note}
+## Proyecten el análisis antes de construir el modelo
+En el `README.md` escriban una lista corta: "Para responder X necesito una tabla con Y". Después construyan la capa `model` para cumplir esa lista.
+:::
+
+## Scripts reproducibles
+
+Guarden cada capa en un archivo SQL dentro de `sql/`, por ejemplo:
+
+```text
+sql/01_raw.sql
+sql/02_clean.sql
+sql/03_model.sql
+```
+
+Después, pueden construir la base completa con la terminal:
+
+```bash
+duckdb data/db/<nombre>.duckdb -f sql/01_raw.sql
+duckdb data/db/<nombre>.duckdb -f sql/02_clean.sql
+duckdb data/db/<nombre>.duckdb -f sql/03_model.sql
+```
+
+Antes de continuar, revisen las tablas y el número de filas de cada capa:
+
+```bash
+duckdb data/db/<nombre>.duckdb -c "SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema IN ('raw', 'clean', 'model');"
+```
+
+# 4. Análisis exploratorio en notebooks
+
+Hagan el análisis exploratorio en notebooks dentro de `notebooks/`.
+
+Conéctense a su base directamente con DuckDB, en modo solo lectura:
+
+```python
+import duckdb
+
+con = duckdb.connect("data/db/<nombre>.duckdb", read_only=True)
+con.sql("SELECT * FROM model.<nombre> LIMIT 5").df()
+```
+
+Cada notebook deberá:
+
+- describir la base y la pregunta que responde;
+- revisar distribuciones, valores faltantes y valores atípicos;
+- incluir al menos **tres preguntas de análisis**, cada una con su gráfica y su interpretación;
+- ejecutarse de principio a fin sin errores.
+
+::: {.callout-important}
+## Notebook reproducible
+Antes de entregar, reinicien el kernel y ejecuten todas las celdas. Si un resultado depende de una celda que ya no existe, el análisis no es reproducible.
+:::
+
+Si necesitan paquetes nuevos, agréguenlos con `uv add`:
+
+```bash
+uv add <paquete>
+```
+
+# 5. App con Dash
+
+Con los hallazgos más importantes, construyan una app de Dash en `src/`. La app debe mostrar **gráficos selectos**, no todos los del notebook.
+
+Requisitos mínimos:
+
+- entre tres y cuatro gráficas;
+- al menos un control interactivo (un menú desplegable o un control deslizante);
+- una lectura de datos desde la capa `model` o `clean` de su base;
+- un título y una breve explicación de cada gráfica.
+
+Consulten la sección de Dash de m11 para la estructura de la app: el layout, los componentes con `id` y los callbacks.
+
+Para correr la app desde la raíz del repositorio:
+
+```bash
+uv run python src/<nombre-app>.py
+```
+
+Documenten en el `README.md` la URL y el puerto que usa la app.
+
+::: {.callout-tip}
+## Elijan bien qué mostrar
+Una app útil responde una o dos preguntas claras. Si una gráfica no aporta a la conclusión, quítenla de la app aunque esté en el notebook.
+:::
+
+# 6. Documentación y reflexión
+
+El `README.md` deberá incluir:
+
+- nombre del equipo e integrantes;
+- descripción de la base, su fuente y las columnas que usan;
+- lista de preguntas de análisis;
+- explicación de cada capa (`raw`, `clean` y `model`) y de las decisiones de limpieza;
+- orden para construir la base con los scripts de `sql/`;
+- ubicación de los notebooks;
+- instrucciones para correr la app;
+- una reflexión breve del equipo: ¿qué fue lo más difícil de limpiar?, ¿qué cambiaría en la capa `model` si tuvieran más tiempo?, ¿qué hallazgo les pareció más sólido y cuál más frágil?
+
+# Entrega
+
+La entrega es el enlace al repositorio del equipo, con:
+
+- scripts SQL de las tres capas en `sql/`;
+- al menos un notebook con análisis exploratorio ejecutado de principio a fin;
+- la app de Dash en `src/`;
+- un `README.md` completo;
+- ningún dato ni credencial dentro del repositorio.
+
+Antes de entregar, revisen:
+
+```bash
+git status
+```
+
+Idealmente deberán ver:
+
+```text
+nothing to commit, working tree clean
+```
+
+# Checklist
+
+## Base y capas
+
+- [ ] Elegimos una base abierta y documentamos su fuente.
+- [ ] Cargamos los datos en `raw` sin transformarlos.
+- [ ] Creamos `clean` con tipos y nombres consistentes.
+- [ ] Documentamos las decisiones de limpieza.
+- [ ] Diseñamos `model` a partir de nuestras preguntas.
+- [ ] Guardamos cada capa en un script dentro de `sql/`.
+
+## Notebooks
+
+- [ ] Hicimos el análisis exploratorio en notebooks.
+- [ ] Cada notebook responde al menos tres preguntas con gráfica e interpretación.
+- [ ] El notebook se ejecuta de principio a fin tras reiniciar el kernel.
+
+## App
+
+- [ ] La app muestra entre tres y cuatro gráficas selectas.
+- [ ] Incluye al menos un control interactivo.
+- [ ] Corre con `uv run python src/<nombre-app>.py`.
+
+## Entrega
+
+- [ ] El `README.md` está completo.
+- [ ] El repositorio no contiene datos ni credenciales.
+- [ ] El enlace al repositorio está en Canvas.

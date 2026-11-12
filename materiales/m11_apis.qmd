@@ -20,6 +20,17 @@ execute:
 - Probar una API REST con `curl` y con la documentación interactiva de FastAPI.
 - Consumir una API desde Python con pandas para usar sus resultados en un análisis.
 
+## Cómo vamos a aprender esta unidad
+
+La unidad va de lo conceptual a lo visible:
+
+1. **Concepto (secciones 1 y 2):** qué es una API, qué es un endpoint y qué significan los códigos de estado. Lo vemos con diagramas y ejemplos, sin programar.
+2. **API en la terminal (sección 3, pasos 1 a 3):** levantamos la API y la probamos con `curl` y con la documentación de FastAPI.
+3. **API en un notebook (sección 3, paso 4):** consumimos la misma API con pandas y comparamos el resultado con `myquery`.
+4. **App de monitoreo (sección 4):** leemos una app de Dash y la corremos para ver los datos en una página.
+
+Antes de empezar necesitas la base `data/db/ecobici.duckdb` creada en m10 y el proyecto sincronizado con `uv sync`.
+
 ## 1. ¿Qué es una API?
 
 Imagina que ya tienes el resumen de viajes en tu notebook, con `myquery`. Ahora otra persona necesita esos números, pero no debería copiar una base de 1.3 millones de filas ni tener acceso directo a DuckDB. Una API resuelve eso: expone los resultados para que cualquiera los pida por red.
@@ -101,6 +112,8 @@ Los **encabezados** (*headers*) son metadatos que acompañan la solicitud o la r
 
 ## 3. Práctica: la API de EcoBici
 
+En esta sección pasamos de la idea a la práctica: levantamos la API, la probamos y la usamos desde Python.
+
 La API del proyecto está en `src/progra/api/main.py`. Expone la tabla `clean.ecobici` que construimos en m10. Las consultas pasan por `myquery` (`src/progra/tools/mydb.py`), la misma función que usas en tus notebooks; los valores van como parámetros (`?`).
 
 | Método | Endpoint | Qué devuelve |
@@ -181,7 +194,70 @@ Compara el resultado con `myquery` usando el mismo SQL de `viajes_por_genero` en
 - `/resumen` muestra una fecha `desde` de 2013, aunque los archivos son de 2014. ¿Qué validación de m10 ayudaría a detectar eso?
 - ¿Qué información de la base no deberías exponer a cualquiera que conozca la URL?
 
-## 4. Relación con las unidades anteriores
+## 4. Dash: una app para ver los datos
+
+La API responde a programas. Para que una persona vea los datos en una página, usamos **Dash**. Dash es un framework de Python para construir **apps web interactivas** con gráficas: la persona elige opciones en un menú y la página se actualiza, sin escribir HTML ni JavaScript. Lo desarrolla Plotly y usa Flask por dentro.
+
+| | API (FastAPI) | App (Dash) |
+|---|---|---|
+| Qué entrega | JSON | Una página web con gráficas |
+| Quién la usa | Programas, notebooks, otros sistemas | Una persona en el navegador |
+| Interactividad | Cada solicitud es independiente | Los controles actualizan las gráficas |
+
+### Tres ideas para leer una app de Dash
+
+1. **Layout**: la estructura de la página. Se arma con componentes de `dash.html` (títulos, divisiones) y `dash.dcc` (menús y gráficas).
+2. **Id**: cada control o gráfica tiene un `id` que lo identifica.
+3. **Callback**: una función que se ejecuta cuando cambia una entrada (`Input`) y actualiza una salida (`Output`).
+
+Esta es una versión simplificada de `src/progra/analysis/app_ecobici.py`:
+
+```{.python}
+import plotly.express as px
+from dash import Dash, dcc, html, Input, Output
+
+app = Dash(__name__)
+
+app.layout = html.Div([
+    dcc.Dropdown(
+        id="variable",
+        options=[{"label": "Género", "value": "genero"},
+                 {"label": "Edad", "value": "edad"}],
+        value=None,
+    ),
+    dcc.Graph(id="grafico", figure={}),
+])
+
+@app.callback(
+    Output("grafico", "figure"),
+    Input("variable", "value"),
+)
+def actualizar_grafico(variable):
+    if not variable:
+        return {}
+    return px.histogram(df, x=variable, color="genero")
+```
+
+Cuando la persona elige una opción en el menú, Dash llama a `actualizar_grafico` con ese valor y coloca la figura que regresa en el componente `grafico`.
+
+::: {.callout-tip}
+## Los datos se cargan una vez
+`df` se llena al iniciar la app con `myquery` y no en cada clic. Por eso la app responde rápido, pero también significa que si la base cambia, hay que reiniciar la app. La consulta incluye `limit 10000` para que la app no cargue toda la tabla.
+:::
+
+### Correr la app
+
+Desde la raíz del repositorio:
+
+```{.sh}
+uv run python src/progra/analysis/app_ecobici.py
+```
+
+Abre `http://localhost:8050`. Puede correr al mismo tiempo que la API, que usa el puerto 13000.
+
+Prueba: agrega una opción al menú para `estacion_retiro` y observa qué gráfica aparece. ¿Por qué sería útil ver los datos por estación?
+
+## 5. Relación con las unidades anteriores
 
 - **m10**: la tabla `clean.ecobici` es el origen de todos los endpoints.
 - **m11**: las consultas usan `myquery`, que lee la base de `data/db/ecobici.duckdb`.
