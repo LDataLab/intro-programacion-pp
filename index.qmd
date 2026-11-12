@@ -84,8 +84,8 @@ bibliography: references.bib
 :::
 
 ::: {.callout-tip collapse="false"}
-### 07. APIS
-- APIS
+### 07. Herramientas para despliegue y monitoreo
+- APIs y apps
     - [Material 11](materiales/m11_apis.html) 
 :::
 

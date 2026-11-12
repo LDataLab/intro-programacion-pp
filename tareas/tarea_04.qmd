@@ -26,7 +26,7 @@ Trabajarán en **equipo** y deberán practicar cómo:
 
 Al terminar, el equipo deberá entregar:
 
-- un repositorio con scripts SQL para las tres capas (`raw`, `clean` y `model`);
+- un repositorio con estructura SQL para las tres capas (`raw`, `clean` y `modelado`);
 - al menos un notebook de análisis exploratorio;
 - una app de Dash con gráficos selectos;
 - un `README.md` que explique cómo reproducir todo.
@@ -41,7 +41,7 @@ Cada equipo deberá definir:
 
 Trabajen en **el mismo repositorio de la tarea 3** (`progra-<nombre-equipo>`), que ya tiene la estructura inicial. Agreguen las carpetas que falten. La estructura mínima es:
 
-```text
+```markdown
 .
 ├── data/
 │   ├── raw/
@@ -127,7 +127,7 @@ WHERE ...;
 
 En el `README.md` documenten cada decisión de limpieza: qué columnas convirtieron, qué registros eliminaron y por qué.
 
-## 3.3 Capa `model`
+## 3.3 Capa `modelado`
 
 Diseñen esta capa **a partir del análisis que quieren hacer**. Piensen qué tablas necesitan para responder sus preguntas: agregados por fecha, por región, por categoría o una tabla ancha con las variables que van a graficar.
 
@@ -172,16 +172,7 @@ duckdb data/db/<nombre>.duckdb -c "SELECT table_schema, table_name FROM informat
 
 # 4. Análisis exploratorio en notebooks
 
-Hagan el análisis exploratorio en notebooks dentro de `notebooks/`.
-
-Conéctense a su base directamente con DuckDB, en modo solo lectura:
-
-```python
-import duckdb
-
-con = duckdb.connect("data/db/<nombre>.duckdb", read_only=True)
-con.sql("SELECT * FROM model.<nombre> LIMIT 5").df()
-```
+Hagan el análisis exploratorio en notebooks dentro de `notebooks/`. Tomen de referencia la función del repositorio de la clase que consume la información de la base. 
 
 Cada notebook deberá:
 

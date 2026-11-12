@@ -12,15 +12,21 @@ execute:
   eval: false
 ---
 
-## Objetivos de aprendizaje
+### Retomemos:
 
-- Explicar qué es una API y en qué se diferencia de una app o de una página web.
+![](../imgs/pipeline.png)
+
+
+
+### Lo que vamos a aprender:
+
+- Qué es una API y en qué se diferencia de una app o de una página web.
 - Identificar endpoints, métodos HTTP, códigos de estado, encabezados y cuerpos de solicitud.
 - Levantar una API con FastAPI y consultar una base DuckDB con `myquery`.
 - Probar una API REST con `curl` y con la documentación interactiva de FastAPI.
 - Consumir una API desde Python con pandas para usar sus resultados en un análisis.
 
-## Cómo vamos a aprender esta unidad
+### Cómo lo vamos a aprender
 
 La unidad va de lo conceptual a lo visible:
 
@@ -29,7 +35,7 @@ La unidad va de lo conceptual a lo visible:
 3. **API en un notebook (sección 3, paso 4):** consumimos la misma API con pandas y comparamos el resultado con `myquery`.
 4. **App de monitoreo (sección 4):** leemos una app de Dash y la corremos para ver los datos en una página.
 
-Antes de empezar necesitas la base `data/db/ecobici.duckdb` creada en m10 y el proyecto sincronizado con `uv sync`.
+Antes de empezar necesitas la base `data/db/ecobici.duckdb` creada y el proyecto sincronizado con `uv sync`.
 
 ## 1. ¿Qué es una API?
 

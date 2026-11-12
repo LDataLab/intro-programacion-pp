@@ -19,6 +19,8 @@ website:
             href: tareas/tarea_02.html
           - text: "3. Práctica cli y git"
             href: tareas/tarea_03.html
+          - text: "4. Bases de datos y GEDA"
+            href: tareas/tarea_04.html
       - section: "**Documentos**"
         contents:
           - text: "Temario detallado"
