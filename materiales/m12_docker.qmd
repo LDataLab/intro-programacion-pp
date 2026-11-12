@@ -107,7 +107,7 @@ docker run hello-world
 El `Dockerfile` del proyecto está en la raíz del repositorio. Léelo de arriba hacia abajo:
 
 - `FROM python:3.12-slim`: la imagen base (Python sobre Debian mínimo).
-- `RUN apt-get ...`: instala `curl` y `unzip`.
+- `RUN apt-get ...`: instala `curl`, que se usa para descargar los CSV y el CLI de DuckDB.
 - `RUN curl ... duckdb_cli...`: instala el CLI de DuckDB que usa `pipelines/etl-ecobici.sh`.
 - `COPY --from=ghcr.io/astral-sh/uv ...`: copia `uv` a la imagen.
 - `COPY pyproject.toml uv.lock` y `RUN uv sync`: instala las dependencias **antes** de copiar el código. Así, si solo cambias un script, Docker reutiliza la capa de dependencias y el build es más rápido.

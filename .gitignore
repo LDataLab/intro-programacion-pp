@@ -150,6 +150,10 @@ dmypy.json
 .idea/
 
 credentials.*
+
+# variables de entorno y credenciales locales (ver m11)
+.envrc
+.env.*
 # Jupyter Notebook
 .ipynb_checkpoints
 *only_local*.ipynb

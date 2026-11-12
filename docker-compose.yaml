@@ -1,0 +1,11 @@
+# Define cómo se ejecuta el pipeline en un contenedor (m12).
+# Más servicios (por ejemplo, la API de m13) se agregan aquí.
+
+services:
+  etl:
+    build: .
+    # Los datos viven en tu computadora, no dentro del contenedor:
+    # el contenedor escribe en ./data y la base queda disponible para DuckDB y para Python.
+    volumes:
+      - ./data:/app/data
+    # Se ejecuta una vez y termina: úsalo con `docker compose run --rm etl`

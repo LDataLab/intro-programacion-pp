@@ -1,6 +1,6 @@
 ---
-title: "Credenciales"
-subtitle: "De archivos CSV de EcoBici a una base local y un notebook de análisis"
+title: "Variables de entorno y credenciales"
+subtitle: "Cómo configurar un proyecto sin escribir contraseñas en el código"
 format:
   html:
     toc: true
@@ -12,8 +12,227 @@ execute:
   eval: false
 ---
 
+## Objetivos de aprendizaje
 
-**Documentación complementaria para la siguiente unidad:** conexión remota, autenticación, usuarios, roles y permisos en PostgreSQL. Estos temas son especialmente relevantes en el modelo cliente-servidor, porque el servidor debe controlar quién se conecta y qué puede hacer cada usuario.
+- Explicar qué es una variable de entorno y cómo se lee desde Python, Bash y Docker.
+- Configurar el proyecto con `.envrc` y `direnv` sin exponer valores.
+- Mantener credenciales fuera del repositorio, de los commits y de la imagen de Docker.
+- Aplicar reglas de seguridad al trabajar con agentes de programación.
+- Revisar qué se va a subir a Git antes de hacer un commit.
 
+## 1. Variables de entorno
 
+Una **variable de entorno** es un par `NOMBRE=valor` que el sistema operativo entrega a los programas que se ejecutan en una sesión. Sirve para configurar un programa sin cambiar su código: la ruta a una base de datos, el nombre de un usuario o una contraseña.
 
+```{.sh}
+export DB_USUARIO="analista"        # solo existe en esta terminal
+echo "$DB_USUARIO"                  # imprime: analista
+```
+
+Desde Python se leen con `os.environ`:
+
+```{.python}
+import os
+
+usuario = os.environ["DB_USUARIO"]         # falla si no existe
+puerto = os.environ.get("DB_PUERTO", "5432")  # valor por omisión
+```
+
+::: {.callout-important}
+## Nunca imprimas los valores de las credenciales
+
+Al compartir una terminal, pegar un log o trabajar con un agente, **no** imprimas los valores. Para revisar que una variable existe, muestra solo su nombre:
+
+```{.sh}
+env | cut -d= -f1 | sort | grep -i db_
+```
+:::
+
+## 2. Configurar el proyecto con `.envrc` y direnv
+
+Los valores del proyecto se guardan en un archivo `.envrc` en la raíz del repositorio. **direnv** carga esas variables automáticamente cuando entras a la carpeta y las quita al salir.
+
+Instala direnv:
+
+```{.sh}
+# Ubuntu y WSL2
+sudo apt-get install -y direnv
+```
+
+```{.sh}
+# macOS
+brew install direnv
+```
+
+Agrega el hook a tu shell (una sola vez). En bash, en `~/.bashrc`; en zsh, en `~/.zshrc`:
+
+```{.sh}
+eval "$(direnv hook bash)"    # o: eval "$(direnv hook zsh)"
+```
+
+Crea `.envrc` con la forma siguiente, reemplazando los valores por los tuyos:
+
+```{.sh filename=".envrc"}
+export DB_USUARIO="analista"
+export DB_HOST="localhost"
+export DB_PUERTO="5432"
+export DB_CONTRASENA="cambia-esto"
+```
+
+Autoriza el archivo la primera vez y cada vez que lo cambies:
+
+```{.sh}
+direnv allow
+```
+
+::: {.callout-warning}
+## `.envrc` nunca se sube a Git
+
+El `.gitignore` del proyecto ignora `.envrc` y `.env.*`. Antes de cada commit revisa que no aparezcan:
+
+```{.sh}
+git status --short
+git diff --cached --stat
+```
+
+Si ves `.envrc` o un archivo `.env` en la lista de cambios, **no** hagas `git add`.
+:::
+
+## 3. Dónde viven las credenciales
+
+| Ubicación | ¿Se sube a Git? | Uso recomendado |
+|---|---|---|
+| `.envrc` o `.env` en la raíz | No (ignorado) | Valores del proyecto en tu computadora |
+| `~/.config/<proyecto>/` | No (fuera del repositorio) | Credenciales que usas en varios proyectos |
+| Código fuente, notebooks, SQL, README | **Sí** | Nunca: no escribas contraseñas ahí |
+| Imagen de Docker | Sí, si la construyes | Nunca: se queda dentro de la imagen |
+
+Para credenciales que no deben estar cerca del código, guárdalas fuera del repositorio con permisos restringidos:
+
+```{.sh}
+mkdir -p ~/.config/progra
+touch ~/.config/progra/db.env
+chmod 600 ~/.config/progra/db.env   # solo tu usuario puede leerlo
+```
+
+Y en `.envrc` cárgalas así:
+
+```{.sh filename=".envrc"}
+source_env_if_exists ~/.config/progra/db.env
+```
+
+::: {.callout-note}
+## Si una credencial se subió por error
+
+Borrar la línea en un commit nuevo **no** la elimina del historial de Git, y GitHub puede tenerla en caché. Si una contraseña o token llegó a un repositorio:
+
+1. Revócala o cámbiala en el servicio correspondiente.
+2. Crea una nueva y guárdala fuera del repositorio.
+3. Reescribir el historial es posible, pero siempre debes asumir que la credencial anterior ya fue vista.
+:::
+
+## 4. Credenciales y agentes de programación
+
+Un agente de programación puede leer archivos, ejecutar comandos y proponer cambios. Por eso necesita reglas claras sobre qué información puede ver:
+
+- **Nunca pegues credenciales en el chat** ni en instrucciones (por ejemplo, `CLAUDE.md`) ni en memorias del agente. Todo lo que se escribe ahí puede quedar guardado.
+- **Dale solo lo que necesita.** Para consultar la base, crea un usuario de PostgreSQL con permisos de solo lectura, no uses tu usuario administrador.
+- **Bloquea la lectura de archivos sensibles.** En proyectos que usan Claude Code, las reglas de permisos en `.claude/settings.json` pueden impedir que el agente lea archivos como `.envrc` o `.env`:
+
+```{.json filename=".claude/settings.json"}
+{
+  "permissions": {
+    "deny": [
+      "Read(./.envrc)",
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  }
+}
+```
+
+- **Revisa antes de aceptar.** Usa `git diff` para ver cada cambio del agente antes de agregarlo con `git add`. Así detectas si incluyó un valor sensible en el código.
+- **Si el agente necesita una variable,** pídele que use `os.environ` o `${NOMBRE}`, nunca que escriba el valor.
+
+## 5. Credenciales y Docker
+
+El `Dockerfile` **no** debe contener credenciales: lo que se escribe ahí queda guardado en la imagen. El proyecto lo protege con `.dockerignore`, que excluye `.envrc`, `.env` y `credentials.*`.
+
+Para pasar valores al contenedor, Docker Compose puede leerlos del entorno de tu computadora o de un archivo `.env`:
+
+```{.yaml filename="docker-compose.yaml"}
+services:
+  etl:
+    build: .
+    environment:
+      DB_USUARIO: ${DB_USUARIO}
+      DB_CONTRASENA: ${DB_CONTRASENA}
+```
+
+- `${DB_CONTRASENA}` se toma de tu terminal (cargada por direnv) o de un archivo `.env` en la raíz.
+- El valor entra al contenedor en tiempo de ejecución; no queda en la imagen.
+
+Verifica que la variable llegó sin mostrar su valor:
+
+```{.sh}
+docker compose run --rm etl bash -c 'test -n "$DB_CONTRASENA" && echo "DB_CONTRASENA: presente"'
+```
+
+## 6. Práctica
+
+Vamos a leer una conexión a PostgreSQL sin escribir la contraseña en el código.
+
+**Paso 1.** Crea `.envrc` con valores **de ejemplo** (no tus credenciales reales):
+
+```{.sh filename=".envrc"}
+export DB_USUARIO="analista"
+export DB_HOST="localhost"
+export DB_PUERTO="5432"
+export DB_NOMBRE="ecobici"
+export DB_CONTRASENA="ejemplo-no-real"
+```
+
+**Paso 2.** Autoriza el archivo y comprueba que las variables existen, sin mostrar la contraseña:
+
+```{.sh}
+direnv allow
+env | cut -d= -f1 | grep '^DB_' | sort
+```
+
+**Paso 3.** Construye la cadena de conexión en Python:
+
+```{.python}
+import os
+
+def cadena_conexion() -> str:
+    usuario = os.environ["DB_USUARIO"]
+    contrasena = os.environ["DB_CONTRASENA"]
+    host = os.environ.get("DB_HOST", "localhost")
+    puerto = os.environ.get("DB_PUERTO", "5432")
+    nombre = os.environ["DB_NOMBRE"]
+    return f"postgresql://{usuario}:{contrasena}@{host}:{puerto}/{nombre}"
+```
+
+**Paso 4.** Responde y comenta con tu equipo:
+
+- ¿Qué pasa si `DB_CONTRASENA` no existe? ¿Conviene un error o un valor por omisión? ¿Por qué?
+- ¿Por qué la función devuelve la cadena en lugar de imprimirla?
+- ¿Dónde quedaría la contraseña si la escribieras directamente en `notebooks/nb02_exploracion_ecobici.ipynb`?
+
+## 7. Lista de revisión antes de un commit
+
+- [ ] `git status` no muestra `.envrc`, `.env*` ni `credentials.*`.
+- [ ] `git diff` no contiene contraseñas, tokens ni cadenas de conexión con contraseña.
+- [ ] Los notebooks no tienen salidas con valores de credenciales.
+- [ ] El `Dockerfile` no tiene `ENV` ni `COPY` con credenciales.
+
+## Siguiente unidad
+
+Conexión remota, autenticación, usuarios, roles y permisos en PostgreSQL: el servidor decide quién se conecta y qué puede hacer cada usuario. Ese tema es la base para crear usuarios de solo lectura como el de la sección 4.
+
+## Referencias
+
+- direnv: <https://direnv.net/>
+- Variables de entorno en Docker Compose: <https://docs.docker.com/compose/how-tos/environment-variables/>
+- Permisos en Claude Code: <https://docs.claude.com/en/docs/claude-code/settings>
+- PostgreSQL, roles y autenticación: <https://www.postgresql.org/docs/current/user-manag.html>
