@@ -1,6 +1,5 @@
 ---
-title: "DuckDB, SQL y análisis desde Python"
-subtitle: "De archivos CSV de EcoBici a una base local y un notebook de análisis"
+title: "Práctica: DuckDB, SQL y análisis desde Python"
 format:
   html:
     toc: true
@@ -12,25 +11,13 @@ execute:
   eval: false
 ---
 
-Instalar DuckDB (CLI):
+## 1. Estructura de trabajo 
 
-```
-curl https://install.duckdb.org | bash
-```
+En este material diseñaremos una estructura de trabajo que hace uso de 
+una base de datos en duckdb, desde su creación hasta su uso en Python.
 
-## Objetivos de aprendizaje
 
-- Construir una base de datos local con DuckDB a partir de archivos CSV.
-- Ejecutar un pipeline completo desde la terminal, sin Python.
-- Distinguir archivos, tablas persistentes y la base `.duckdb` que las contiene.
-- Aplicar transformaciones de limpieza con SQL y validar los resultados.
-- Consultar la base desde Python con una función reutilizable (`myquery`) y producir gráficas.
-
-## 1. El proyecto que construiremos
-
-**Flujo:** archivos CSV mensuales de EcoBici → `data/raw/` → base DuckDB en `data/db/` → tabla limpia `clean.ecobici` → consultas SQL → DataFrame de pandas → gráficas en el notebook.
-
-```text
+```markdown
 intro-programacion-pp/
 ├── data/
 │   ├── raw/                          # CSV descargados (ecobici-2014-01.csv, ...)
@@ -50,30 +37,38 @@ intro-programacion-pp/
 └── uv.lock
 ```
 
-### ¿Qué se sube a Git?
+#### ¿Qué se sube a Git?
 
 - Scripts (`infra/`, `pipelines/`), SQL (`sql/`), código Python (`src/`), notebooks, `pyproject.toml` y `uv.lock`.
 - **No subir** `data/**`: el `.gitignore` del proyecto ya ignora esa carpeta, incluidos los CSV y el archivo `.duckdb`. Solo se conservan los `.gitkeep`.
 - Para reconstruir la base en otra computadora basta con ejecutar el pipeline; por eso no es necesario compartir el archivo `.duckdb`.
 
-## 2. Preparar el ambiente
+## 2. Preparar espacio de trabajo
 
-Desde la raíz del repositorio:
+#### Primero instala DuckDB (CLI):
+
+Esto lo puedes realizar desde tu home:
+
+```.bash
+curl https://install.duckdb.org | bash
+```
+
+
+Ahora, ve al repo y actualiza la última versión de tu repo y actualiza las dependencias de Python:
 
 ```{.sh}
 uv sync
 ```
 
-`uv sync` instala las dependencias de `pyproject.toml` (entre ellas `duckdb`, `pandas`, `matplotlib`, `seaborn` y `jupyter`) en `.venv/`. El paquete `progra` del repositorio también queda instalado, por eso `from progra.tools.mydb import myquery` funciona desde el notebook.
+## 3. DuckDB
 
-## 3. Cómo se corre sin Python
-
-Antes de usar Python, conviene ver el proceso completo desde la terminal. Todos los comandos se ejecutan **desde la raíz del repositorio**, porque las rutas son relativas a ella.
+Para esta práctica comenzaremos con el uso de duckdb desde la línea de
+comandos, por lo que todos los comandos se ejecutan **desde la raíz del 
+repositorio**, porque las rutas son relativas a ella.
 
 **Paso 1. Descargar un mes de datos:**
 
 ```{.sh}
-mkdir -p data/raw
 curl https://ecobici.cdmx.gob.mx/wp-content/uploads/2022/08/2014-01.csv > data/raw/ecobici-2014-01.csv
 ```
 
@@ -89,19 +84,67 @@ head -3 data/raw/ecobici-2014-01.csv
 duckdb data/db/ecobici.duckdb
 ```
 
+Observa como cambia la terminal.
+```
+show all tables;
+```
+
 Dentro de la CLI, los archivos CSV se pueden consultar sin cargarlos antes:
 
 ```{.sql}
 DESCRIBE SELECT * FROM read_csv('data/raw/ecobici-2014-01.csv');
 SELECT COUNT(*) FROM read_csv('data/raw/ecobici-2014-01.csv');
+```
+
+Para salirte de la base:
+
+```
 .quit
 ```
+
 
 **Paso 4. Crear la tabla limpia** desde la misma terminal, con el archivo SQL del proyecto:
 
 ```{.sh}
 duckdb data/db/ecobici.duckdb -f sql/t01_create_clean.sql
 ```
+
+- Observa el archivo `sql/t01_create_clean.sql`
+
+```{.sql filename="sql/t01_create_clean.sql"}
+CREATE SCHEMA IF NOT EXISTS clean;
+
+CREATE OR REPLACE TABLE clean.ecobici AS
+SELECT
+    Genero_Usuario::VARCHAR AS genero,
+    Edad_Usuario::SMALLINT AS edad,
+    Bici::INTEGER AS bici,
+    Ciclo_Estacion_Retiro::SMALLINT AS estacion_retiro,
+    (Fecha_Retiro::DATE + Hora_Retiro::TIME) AS fecha_retiro,
+    Ciclo_Estacion_Arribo::SMALLINT AS estacion_arribo,
+    (Fecha_Arribo::DATE + Hora_Arribo::TIME) AS fecha_arribo
+FROM read_csv('data/raw/ecobici-2014-*.csv');
+```
+
+- Qué hace cada parte
+
+    - **`read_csv('data/raw/ecobici-2014-*.csv')`**: lee todos los CSV que coincidan con el patrón (un *glob*). Así, agregar otro mes solo requiere descargarlo a `data/raw/`.
+    - **Renombrado:** los nombres originales (`Genero_Usuario`, `Ciclo_Estacion_Retiro`, ...) se cambian a nombres cortos en minúsculas (`genero`, `estacion_retiro`, ...).
+    - **Casts (`::`):** convierten cada columna al tipo adecuado. Por ejemplo, `Edad_Usuario::SMALLINT` guarda la edad como número entero pequeño.
+    - **Fecha y hora:** el CSV separa la fecha (`Fecha_Retiro`) de la hora (`Hora_Retiro`). `Fecha_Retiro::DATE + Hora_Retiro::TIME` las combina en un solo valor `TIMESTAMP`.
+    - **`CREATE OR REPLACE TABLE ... AS`:** materializa el resultado dentro de la base. Volver a ejecutar el script reemplaza la tabla, sin duplicar datos.
+
+::: {.callout-important}
+## Validar antes de asumir que la limpieza fue correcta
+
+Cada transformación debe responder a un problema encontrado en los datos y acompañarse de una validación: conteos, valores nulos creados por conversiones, rangos razonables y, cuando aplique, unicidad de identificadores. Preguntas útiles:
+
+- ¿Cuántos viajes hay en el CSV y cuántos en `clean.ecobici`?
+- ¿Hay fechas de arribo anteriores a la de retiro?
+- ¿Qué edades aparecen? ¿Son razonables?
+:::
+
+
 
 **Paso 5. Verificar la tabla:**
 
@@ -111,13 +154,9 @@ duckdb data/db/ecobici.duckdb -c "SELECT COUNT(*) AS viajes FROM clean.ecobici;"
 
 **Idea clave:** DuckDB es un motor **embebido**: no hay servidor que iniciar. La base es un archivo (`data/db/ecobici.duckdb`) y cualquier herramienta que use DuckDB puede abrirlo, desde la CLI o desde Python.
 
-## 4. El script `infra/create-duckdb.sh`
+## 4. Script `infra/create-duckdb.sh`
 
 ```{.bash filename="infra/create-duckdb.sh"}
-## Para instalar duckdb
-#curl https://install.duckdb.org | bash
-
-
 ## Para crear base de datos
 duckdb data/db/ecobici.duckdb
 ```
@@ -158,45 +197,7 @@ Se corre desde la raíz del repositorio:
 ```{.sh}
 bash pipelines/etl-ecobici.sh
 ```
-
-## 6. El SQL `sql/t01_create_clean.sql`
-
-```{.sql filename="sql/t01_create_clean.sql"}
-CREATE SCHEMA IF NOT EXISTS clean;
-
-CREATE SCHEMA IF NOT EXISTS clean;
-
-CREATE OR REPLACE TABLE clean.ecobici AS
-SELECT
-    Genero_Usuario::VARCHAR AS genero,
-    Edad_Usuario::SMALLINT AS edad,
-    Bici::INTEGER AS bici,
-    Ciclo_Estacion_Retiro::SMALLINT AS estacion_retiro,
-    (Fecha_Retiro::DATE + Hora_Retiro::TIME) AS fecha_retiro,
-    Ciclo_Estacion_Arribo::SMALLINT AS estacion_arribo,
-    (Fecha_Arribo::DATE + Hora_Arribo::TIME) AS fecha_arribo
-FROM read_csv('data/raw/ecobici-2014-*.csv');
-```
-
-### 6.1 Qué hace cada parte
-
-- **`read_csv('data/raw/ecobici-2014-*.csv')`**: lee todos los CSV que coincidan con el patrón (un *glob*). Así, agregar otro mes solo requiere descargarlo a `data/raw/`.
-- **Renombrado:** los nombres originales (`Genero_Usuario`, `Ciclo_Estacion_Retiro`, ...) se cambian a nombres cortos en minúsculas (`genero`, `estacion_retiro`, ...).
-- **Casts (`::`):** convierten cada columna al tipo adecuado. Por ejemplo, `Edad_Usuario::SMALLINT` guarda la edad como número entero pequeño.
-- **Fecha y hora:** el CSV separa la fecha (`Fecha_Retiro`) de la hora (`Hora_Retiro`). `Fecha_Retiro::DATE + Hora_Retiro::TIME` las combina en un solo valor `TIMESTAMP`.
-- **`CREATE OR REPLACE TABLE ... AS`:** materializa el resultado dentro de la base. Volver a ejecutar el script reemplaza la tabla, sin duplicar datos.
-
-::: {.callout-important}
-## Validar antes de asumir que la limpieza fue correcta
-
-Cada transformación debe responder a un problema encontrado en los datos y acompañarse de una validación: conteos, valores nulos creados por conversiones, rangos razonables y, cuando aplique, unicidad de identificadores. Preguntas útiles:
-
-- ¿Cuántos viajes hay en el CSV y cuántos en `clean.ecobici`?
-- ¿Hay fechas de arribo anteriores a la de retiro?
-- ¿Qué edades aparecen? ¿Son razonables?
-:::
-
-### 6.2 Verificaciones
+## 6. Verificaciones
 
 Desde la CLI, o desde el notebook con `myquery`:
 
@@ -209,7 +210,7 @@ FROM clean.ecobici
 WHERE fecha_arribo < fecha_retiro;
 ```
 
-## 7. Consultar desde Python: `myquery`
+## 7. Desde Python Duckdb con función propia: `myquery`
 
 El archivo `src/progra/tools/mydb.py` encapsula la conexión en una función:
 
@@ -244,57 +245,6 @@ from progra.tools.mydb import myquery
 df = myquery("SELECT * FROM clean.ecobici LIMIT 10")
 df.head()
 ```
-
-**¿Qué pasa si el nombre no coincide?** Si una celda importa `query` en lugar de `myquery`:
-
-```{.python}
-from progra.tools.mydb import query
-```
-
-Python responde con un error, y ninguna celda posterior que use la función puede ejecutarse:
-
-```text
-ImportError: cannot import name 'query' from 'progra.tools.mydb'
-```
-
-La solución es usar el nombre que define el módulo: `myquery`. Leer el mensaje de error completo ayuda a encontrar el problema: indica el archivo y el nombre que falta.
-
-### 7.2 Gráficas bivariadas
-
-El notebook termina con tres gráficas. Cada una agrega en SQL antes de graficar:
-
-1. **Heatmap de viajes por día de la semana y hora.** Muestra cuándo se concentran los retiros.
-2. **Edad vs. duración del viaje, por género.** Un mapa de densidad bivariado muestra dónde se concentran las observaciones.
-3. **Heatmap de origen-destino** entre las 15 estaciones con más retiros.
-
-**Idea central:** agregar y filtrar con SQL, y llevar a pandas solo lo que se va a graficar. Con 1.3 millones de viajes, esto evita cargar toda la tabla en memoria.
-
-## 8. Ejercicios
-
-Con `myquery`, responder en el notebook:
-
-1. ¿Cuántos viajes hizo cada género y cuál es la edad promedio de cada grupo?
-2. ¿Cuáles son las 10 estaciones de retiro más usadas?
-3. ¿A qué hora del día hay más viajes? ¿Cambia entre semana y fin de semana?
-4. Proponer una consulta bivariada (dos variables a la vez) y justificar qué pregunta responde.
-
-## 9. Cómo se puede mejorar
-
-Algunas mejoras posibles para el proyecto, sin implementarlas en esta práctica:
-
-- **`etl-ecobici.sh`:** agregar `set -e` para que el script se detenga si falla una descarga, y `mkdir -p data/raw data/db` para crear las carpetas si no existen.
-- **Descarga idempotente:** si el CSV ya existe, no volver a descargarlo.
-- **Parametrizar meses:** en lugar de URLs fijas, recibir el año y mes como argumentos.
-- **`create-duckdb.sh`:** agregar `#!/bin/bash` al inicio para que sea un script ejecutable por sí mismo.
-- **SQL más modular:** separar en archivos `t00_schemas.sql`, `t01_raw.sql` y `t02_clean.sql`. Una vista `raw.ecobici` sobre los CSV separaría la lectura de la limpieza.
-- **Limpieza de `t01_create_clean.sql`:** la línea `CREATE SCHEMA IF NOT EXISTS clean;` aparece dos veces.
-- **Validaciones automáticas:** consultas de control (conteos, nulos, rangos) que el pipeline ejecute y que fallen si algo no cuadra.
-- **Punto de entrada único:** un `Makefile` o `uv run` que ejecute el pipeline completo, para no depender de recordar el orden de los comandos.
-- **Portabilidad:** un script en Python (`build_db.py`) en lugar de `.sh` facilitaría ejecutar el proyecto en Windows.
-
-## 10. Entregable y reflexión
-
-**Entregable:** un notebook que consulte `clean.ecobici` con `myquery`, responda al menos una pregunta concreta y produzca una gráfica bivariada con su interpretación.
 
 Preguntas de cierre:
 

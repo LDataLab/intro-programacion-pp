@@ -77,9 +77,11 @@ En PostgreSQL y DuckDB, los **esquemas** agrupan lógicamente objetos de una bas
 - `clean`: datos estandarizados y validados.
 - `modelado`: entidades, eventos u otras tablas estructuradas para análisis posteriores.
 
+:::{.callout-note}
 Estos nombres son convenciones del proyecto, **no** esquemas obligatorios ni capacidades idénticas en todos los motores.
 
-En la práctica con ecobici, `raw` corresponde a los archivos CSV originales y `clean.ecobici` es la tabla ya estandarizada (ver [m10](m10_practica_db.qmd)).
+- En la práctica con ecobici, `raw` corresponde a los archivos CSV originales y `clean.ecobici` es la tabla ya estandarizada (ver [m10](m10_practica_db.qmd)).
+:::
 
 #### Unidad de observación, entidades y eventos
 
@@ -123,9 +125,20 @@ LIMIT 10;                     -- Limitar
 | `ORDER BY` | Ordenar resultados |
 | `LIMIT` | Restringir número de filas devueltas |
 
-**Orden lógico simplificado:** 
 
-`FROM/JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT`.
+#### Orden lógico de ejecución de una consulta SQL
+
+Aunque escribimos una consulta comenzando con `SELECT`, SQL la procesa conceptualmente en el siguiente orden:
+
+1. **`FROM / JOIN`**: identifica las tablas y combina los datos.
+2. **`WHERE`**: filtra filas individuales.
+3. **`GROUP BY`**: agrupa las filas restantes.
+4. **`HAVING`**: filtra los grupos resultantes.
+5. **`SELECT`**: calcula y selecciona las columnas de salida.
+6. **`ORDER BY`**: ordena los resultados.
+7. **`LIMIT`**: devuelve solo el número solicitado de filas.
+
+**Importante:** este es el orden lógico, no necesariamente el orden físico de ejecución. El optimizador del motor de SQL puede reorganizar las operaciones para mejorar el rendimiento.
 
 #### Operadores, agregaciones y nulos
 
@@ -136,21 +149,64 @@ LIMIT 10;                     -- Limitar
 - `COUNT(*)` cuenta filas; `COUNT(columna)` cuenta valores no nulos.
 - Atención a la diferencia entre `WHERE` y `HAVING`.
 
+
+
 #### Valores faltantes: `NULL`
 
-- `NULL` significa ausencia o desconocimiento del valor, no equivale a cero ni a cadena vacía.
-- Usar `IS NULL` / `IS NOT NULL` (no `= NULL`).
-- En agregaciones, considerar cuándo los valores faltantes se excluyen del cálculo.
+En SQL, `NULL` representa un valor faltante o desconocido (similar a `NA` en pandas). No equivale a cero ni a una cadena vacía.
+
+- `IS NULL`: identifica valores faltantes.
+- `IS NOT NULL`: identifica valores presentes.
+- `COUNT(*)`: cuenta todas las filas.
+- `COUNT(columna)`: cuenta solo los valores no nulos.
 
 ```{.sql}
+SELECT *
+FROM entregas
+WHERE monto IS NULL;
+
 SELECT
-    COUNT(*)      AS filas,          -- cuenta todas las filas
-    COUNT(monto)  AS montos_validos  -- cuenta solo los montos no nulos
+    COUNT(*) AS total_filas,
+    COUNT(monto) AS montos_validos
 FROM entregas;
 ```
 
-**Conversión de tipos:** `CAST(monto AS DOUBLE)` o `monto::DOUBLE` cambian el tipo de una columna. Con `CAST`, un valor que no se puede convertir produce error; `TRY_CAST` lo convierte en `NULL`.
+#### Tipos de datos y conversión: `CAST()`
 
+Las columnas de una base de datos tienen un tipo de dato que determina qué valores pueden almacenar.
+
+| Tipo | Descripción | Ejemplo |
+|---|---|---|
+| `INTEGER` | Número entero | `25` |
+| `DOUBLE` | Número decimal de punto flotante | `15.75` |
+| `DECIMAL(10,2)` | Número decimal de precisión fija | `150.50` |
+| `VARCHAR` | Cadena de texto | `'México'` |
+| `BOOLEAN` | Valor lógico | `TRUE`, `FALSE` |
+| `DATE` | Fecha | `'2025-01-15'` |
+| `TIMESTAMP` | Fecha y hora | `'2025-01-15 10:30:00'` |
+
+Para convertir entre tipos usamos `CAST()` o la sintaxis abreviada `::` (ambas funcionan en DuckDB y PostgreSQL).
+
+```{.sql}
+SELECT
+    CAST('150.50' AS DOUBLE) AS monto,
+    '2025-01-15'::DATE AS fecha;
+```
+
+Si una conversión no es válida, `CAST()` produce un error. DuckDB también permite utilizar `TRY_CAST()`, que devuelve `NULL` cuando la conversión falla.
+
+
+::: {.callout-caution}
+**¿Por qué es importante definir correctamente los tipos de datos?**
+
+Elegir el tipo adecuado para cada columna es importante porque:
+
+- **Uso de memoria y almacenamiento:** algunos tipos requieren menos espacio que otros. Por ejemplo, un entero pequeño puede ocupar menos espacio que un número de punto flotante.
+- **Rendimiento:** los tipos adecuados pueden mejorar la eficiencia de las consultas, comparaciones y operaciones.
+- **Integridad de los datos:** permiten validar qué valores puede contener una columna y evitar operaciones incorrectas.
+- **Precisión:** tipos como `DECIMAL` permiten representar cantidades monetarias sin los errores de aproximación característicos de los números de punto flotante.
+
+:::
 
 #### Relacionar tablas mediante `JOIN`
 
