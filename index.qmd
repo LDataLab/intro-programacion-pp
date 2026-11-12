@@ -87,7 +87,7 @@ bibliography: references.bib
 :::
 
 
-::: {.callout-caution collapse="true"}
+::: {.callout-tip collapse="false"}
 ### 07. Docker y ambientes reproducibles
 
 - Introducción a docker
@@ -95,14 +95,15 @@ bibliography: references.bib
 :::
 
 
-::: {.callout-caution collapse="true"}
-### 08. Docker y ambientes reproducibles
+::: {.callout-tip collapse="false"}
+### 08. APIS y pipelines reproducibles
 
-- Introducción a docker
+- APIS
     - [Material 13](materiales/m13_apis.html) 
+
+- Pipelines
     - [Material 14](materiales/m14_pipeline.html) 
 
-Material bien
 :::
 
 
@@ -117,12 +118,12 @@ Material bien
 | 02    | Bash y CLI; Infraestructura               | T2            | [2026-09-24 Thu] |
 | 03    | Git/Github                                | T3            | [2026-10-01 Thu] |
 | 04    | Ambientes virtuales Python                |               | [2026-10-08 Thu] |
-| 05    | Funcionamiento de Python                  | T4            | [2026-10-15 Thu] |
+| 05    | Funcionamiento de Python                  |               | [2026-10-15 Thu] |
 | 06    | Datos, SQL y bases de datos               |               | [2026-10-22 Thu] |
 | 07    | Intro infra (local y en la nube)          | Midterm       | [2026-10-29 Thu] |
-| 08    | Funcionamiento sql y bases de datos       |               | [2026-11-05 Thu] |
-| 09    | Docker y ambientes reproducibles          | T5            | [2026-11-12 Thu] |
-| 10    | APIS, automatización y verificación       | T6*           | [2026-11-19 Thu] |
+| 08    | Funcionamiento sql y bases de datos       | T4            | [2026-11-05 Thu] |
+| 09    | Docker y ambientes reproducibles          |              | [2026-11-12 Thu] |
+| 10    | APIS, automatización y verificación       | T5           | [2026-11-19 Thu] |
 | 11    | Agentes de programación                   |               | [2026-11-26 Thu] |
 | 12    | Evaluación                                | Final         | [2026-12-03 Thu] |
 

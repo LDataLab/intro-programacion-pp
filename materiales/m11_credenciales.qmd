@@ -158,24 +158,25 @@ Un agente de programación puede leer archivos, ejecutar comandos y proponer cam
 
 El `Dockerfile` **no** debe contener credenciales: lo que se escribe ahí queda guardado en la imagen. El proyecto lo protege con `.dockerignore`, que excluye `.envrc`, `.env` y `credentials.*`.
 
-Para pasar valores al contenedor, Docker Compose puede leerlos del entorno de tu computadora o de un archivo `.env`:
+Para pasar valores al contenedor, Docker Compose puede leerlos del entorno de tu computadora o de un archivo `.env`. Así lo hace el servicio `api` del proyecto (m13):
 
 ```{.yaml filename="docker-compose.yaml"}
 services:
-  etl:
+  api:
     build: .
     environment:
-      DB_USUARIO: ${DB_USUARIO}
-      DB_CONTRASENA: ${DB_CONTRASENA}
+      ECOBICI_DB_PATH: /app/data/db/ecobici.duckdb
+      API_TOKEN: ${API_TOKEN}
 ```
 
-- `${DB_CONTRASENA}` se toma de tu terminal (cargada por direnv) o de un archivo `.env` en la raíz.
+- `${API_TOKEN}` se toma de tu terminal (cargada por direnv) o de un archivo `.env` en la raíz.
 - El valor entra al contenedor en tiempo de ejecución; no queda en la imagen.
+- Si la variable no está definida, la API no arranca y muestra un error claro en lugar de quedar sin protección.
 
-Verifica que la variable llegó sin mostrar su valor:
+Verifica que la variable llegó al contenedor sin mostrar su valor:
 
 ```{.sh}
-docker compose run --rm etl bash -c 'test -n "$DB_CONTRASENA" && echo "DB_CONTRASENA: presente"'
+docker compose run --rm api bash -c 'test -n "$API_TOKEN" && echo "API_TOKEN: presente"'
 ```
 
 ## 6. Práctica
