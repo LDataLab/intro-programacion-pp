@@ -2,14 +2,13 @@
 import pandas as pd
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
-from sqlalchemy import create_engine
+
+from progra.tools.mydb import myquery
 
 
 # -------------------------------------------------------
-# Conexión a la base de datos y carga de datos
+# Carga de datos desde DuckDB (con myquery)
 # -------------------------------------------------------
-engine = create_engine("postgresql+psycopg2://")
-
 query = """
 select
     genero,
@@ -20,7 +19,7 @@ from clean.ecobici
 limit 10000;
 """
 
-df = pd.read_sql(query, engine)
+df = myquery(query)
 
 
 # -------------------------------------------------------
@@ -94,5 +93,5 @@ def actualizar_grafico(variable):
 # Ejecución de la app
 # -------------------------------------------------------
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=13000)
+    app.run(debug=True, host="0.0.0.0", port=8050)
 

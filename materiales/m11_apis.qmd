@@ -18,8 +18,11 @@ execute:
 - Identificar endpoints, métodos HTTP, códigos de estado, encabezados y cuerpos de solicitud.
 - Levantar una API con FastAPI y consultar una base DuckDB con `myquery`.
 - Probar una API REST con `curl` y con la documentación interactiva de FastAPI.
+- Consumir una API desde Python con pandas para usar sus resultados en un análisis.
 
 ## 1. ¿Qué es una API?
+
+Imagina que ya tienes el resumen de viajes en tu notebook, con `myquery`. Ahora otra persona necesita esos números, pero no debería copiar una base de 1.3 millones de filas ni tener acceso directo a DuckDB. Una API resuelve eso: expone los resultados para que cualquiera los pida por red.
 
 Una **API** (*Application Programming Interface*) es un punto de conexión que permite que una aplicación se comunique con otra. No tiene interfaz visual: recibe solicitudes, las procesa y devuelve respuestas, normalmente en formato **JSON**.
 
@@ -36,6 +39,14 @@ Una API es el intermediario que traduce solicitudes y datos entre sistemas. Algu
 | **App** | Programa que realiza una tarea específica, con o sin interfaz | Excel, un script que limpia datos |
 | **Página web** | Interfaz visual que se muestra en el navegador (HTML, CSS, JavaScript) | Un dashboard con gráficas |
 | **API** | Canal de comunicación entre aplicaciones, sin interfaz visual | La API de un servicio de clima |
+
+### Tres piezas, tres roles
+
+En este curso distinguimos:
+
+- **Base (DuckDB)**: guarda los datos limpios de m10.
+- **API (FastAPI)**: entrega datos o resultados a quien los pida, en JSON. No muestra gráficas.
+- **App de monitoreo (Dash)**: muestra gráficas a una persona. Es un programa aparte y **no** consume la API en esta unidad.
 
 ### REST
 
@@ -149,13 +160,26 @@ http://localhost:13000/docs
 
 Desde ahí puedes probar cada endpoint con el botón **Try it out**.
 
-### Paso 4. Preguntas de cierre
+### Paso 4. Consumir la API desde Python
 
-- ¿Qué devuelve `/resumen` y qué parte del código hace la consulta?
-- ¿Por qué la API abre la base con `read_only=True`? ¿Qué podría pasar si no lo hiciera?
-- La consulta de `/estaciones/{id}/retiros` usa `?` en lugar de concatenar el número en el texto SQL. ¿Qué podría pasar si un cliente envía un texto malicioso como estación?
+Para un análisis no necesitas `curl`: pandas puede leer la respuesta JSON directamente. Con la API corriendo, en un notebook:
+
+```{.python}
+import pandas as pd
+
+viajes_genero = pd.read_json("http://localhost:13000/viajes/por-genero")
+viajes_genero
+```
+
+Compara el resultado con `myquery` usando el mismo SQL de `viajes_por_genero` en `main.py`. Deberían coincidir: la API solo cambia la forma de entregar el resultado.
+
+### Paso 5. Preguntas de análisis
+
+- ¿Qué datos pediría otra persona para su análisis, y qué endpoint los entrega?
+- `/estaciones/{id}/retiros` tiene un límite máximo de 100. ¿Por qué lo pondrías? ¿Qué pasaría con una consulta sin límite sobre 1.3 millones de filas?
+- Si llegan datos de marzo a la base, ¿cambian los números de `/resumen`? ¿Cómo lo comprobarías?
 - `/resumen` muestra una fecha `desde` de 2013, aunque los archivos son de 2014. ¿Qué validación de m10 ayudaría a detectar eso?
-- Hoy cualquiera que conozca la URL puede consultar la API. ¿Qué cambiaría si la expusieras en internet?
+- ¿Qué información de la base no deberías exponer a cualquiera que conozca la URL?
 
 ## 4. Relación con las unidades anteriores
 
