@@ -112,7 +112,7 @@ app.layout = html.Div(
             style=PAGE_STYLE,
             children=[
                 html.P("\n ", style={"color": COLORS["accent"], "fontWeight": "bold"}),
-                html.H1("\n ¿Cuándo se registran los retiros de Ecobici?"),
+                html.H1("\n ¿Cuándo se registran los retiros de Ecobici? hola"),
                 html.P(
                     "Un reporte parcial para aprender a combinar consultas SQL, "
                     "interpretaciones y controles en Dash.",
