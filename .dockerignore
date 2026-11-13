@@ -1,0 +1,31 @@
+# Lo que NO entra a la imagen. Así el build es rápido y no se filtran credenciales.
+
+# Git y artefactos locales
+.git
+graphify-out
+**/__pycache__
+
+# Entorno local de tu computadora (Linux/macOS/Windows no son compatibles con el de la imagen)
+.venv
+
+# Datos: se montan como volumen en docker-compose.yaml, no se copian a la imagen
+data
+
+# Contenido que no necesita el pipeline
+materiales
+tareas
+docs
+imgs
+notebooks
+.quarto
+_site
+_freeze
+*.html
+
+# Credenciales: NUNCA dentro de la imagen (ver m11)
+.envrc
+.env
+.env.*
+.secrets
+credentials.*
+database.yaml

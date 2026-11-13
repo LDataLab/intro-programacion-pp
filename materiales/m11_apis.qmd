@@ -1,0 +1,358 @@
+---
+title: "Del notebook al reporte, la app y la API"
+subtitle: "Quarto, Dash y FastAPI: comunicar resultados y ofrecer servicios"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    highlight-style: github
+    code-copy: true
+date: today
+execute:
+  eval: false
+---
+
+## Retomemos: ¿para qué hemos aprendido estas herramientas?
+
+En las unidades anteriores trabajamos con la terminal, Git/GitHub, Python, `uv` y DuckDB. Ahora nos preguntaremos: **una vez que tenemos datos limpios y un análisis reproducible, ¿cómo entregamos sus resultados a otras personas o sistemas?**
+
+Si está disponible en el repositorio, retomemos el diagrama del pipeline de la unidad anterior: `../imgs/pipeline.png`.
+
+### Objetivos de aprendizaje
+
+Al finalizar podrás:
+
+- Distinguir los propósitos de un **notebook**, un **reporte Quarto**, una **app Dash** y una **API FastAPI**.
+- Construir un reporte `.qmd` que integre imágenes ya generadas, interpretación y fuentes sin ejecutar Python en el renderizado.
+- Leer un ejemplo local de Dash: `layout`, `id`, `Input`, `Output` y `callback`.
+- Reconocer por qué **los datos para presentar** se preparan con SQL, preferentemente en la capa `model`, y no se extraen arbitrariamente con `LIMIT`.
+- Entender una solicitud HTTP, un endpoint y una respuesta JSON; probar una API con `curl` y `/docs`.
+- Recuperar resultados de una API en Python y explicar cuándo conviene consultar DuckDB directamente.
+
+### Ruta de la sesión
+
+1. **Notebook → Quarto**: guardar figuras y construir un reporte narrativo sin ejecutar Python al publicar.
+2. **Dash**: conocer una app dinámica local y entender sus callbacks.
+3. **Reporte → servicio**: qué cambia cuando el consumidor es otro programa.
+4. **FastAPI**: levantar y probar una API local que consulta EcoBici.
+5. **Cierre**: separar análisis, publicación y servicios.
+
+**Antes de empezar:** para el reporte Quarto bastan el archivo `.qmd` y las imágenes. Para las demostraciones locales de Dash y FastAPI sí necesitamos `data/db/ecobici.duckdb`, el entorno sincronizado con `uv sync` y la función `myquery` del paquete `progra`.
+
+## 1. Un mismo análisis, cuatro formas de trabajar con sus resultados
+
+Imaginemos la pregunta **¿cómo varía el número de retiros de Ecobici según la hora?** La investigación empieza con los datos y termina con productos distintos según quién vaya a usarlos.
+
+| Herramienta | Propósito | ¿Qué se ejecuta al consultar el resultado? | Producto |
+|---|---|---|---|
+| **Notebook** | Explorar, limpiar, visualizar y documentar decisiones | Python cuando la persona ejecuta el notebook | Código, tablas y figuras |
+| **Quarto** | Redactar y publicar un **reporte narrativo reproducible** | En nuestro curso, **no ejecuta Python al renderizar**: incorpora figuras ya guardadas | Página HTML con texto, imágenes y referencias |
+| **Dash** | Construir una app con filtros y cálculos bajo demanda | Puede ejecutar Python en un servidor ante cada interacción | Aplicación web interactiva |
+| **FastAPI** | Dar acceso a datos o funciones desde otros programas | Python se ejecuta cuando llega una solicitud HTTP | Respuesta JSON |
+
+La distinción importante es **cuándo ocurre el cálculo**. En nuestro flujo, el análisis y las figuras se generan localmente en Python; Quarto **presenta los resultados ya calculados**. En Dash, un `callback` puede consultar la base nuevamente; FastAPI responde a solicitudes de otros programas.
+
+```text
+CSV → DuckDB (raw → clean → model)
+                         |
+                         v
+                 Notebooks / Python
+                 análisis y figuras
+                         |
+               guardar PNG o SVG
+                         |
+                         v
+                   Quarto (.qmd) ──render──> HTML estático / GitHub Pages
+
+DuckDB ──> Dash (servidor Python local) ──> navegador con controles
+DuckDB ──> FastAPI (servidor Python local) ──> clientes HTTP / JSON
+```
+
+## 2. Del notebook a un reporte con Quarto
+
+### 2.1 Notebook: análisis; Quarto: comunicación
+
+En los notebooks documentamos **cómo obtuvimos** un resultado: unidad de observación, calidad, transformaciones, exploración y límites. En el reporte redactamos **qué debería entender** una persona que no participó en el análisis.
+
+Un reporte debe contener: título y fuente, pregunta central, resumen de resultados, dos o tres figuras **seleccionadas**, interpretaciones, conclusiones y limitaciones. Una imagen sola no es un reporte: necesita contexto y una afirmación respaldada por los datos.
+
+### 2.2 De DuckDB a una figura guardada
+
+Por ejemplo, para contar retiros por hora, conviene agregar en SQL y no tomar arbitrariamente las primeras 10,000 filas:
+
+```{.sql}
+SELECT
+    EXTRACT(hour FROM fecha_retiro) AS hora,
+    COUNT(*) AS total_retiros
+FROM clean.ecobici
+WHERE fecha_retiro IS NOT NULL
+GROUP BY 1
+ORDER BY 1;
+```
+
+La unidad de observación de la consulta resultante es **una hora del día**, no un viaje. El conteo describe retiros registrados; **no es disponibilidad de bicicletas**.
+
+En un notebook, una vez obtenida la tabla agregada como DataFrame (`df`), podemos crear una figura y **guardarla**:
+
+```{.python}
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.bar(df["hora"], df["total_retiros"])
+ax.set(xlabel="Hora del día", ylabel="Número de retiros",
+       title="Retiros registrados por hora")
+fig.tight_layout()
+fig.savefig("imgs/retiros_por_hora.png", dpi=160, bbox_inches="tight")
+plt.close(fig)
+```
+
+El directorio `imgs/` debe existir y la ruta es relativa al directorio desde el cual se ejecuta el notebook. Para trabajar en equipo, acuerden una ubicación estable para las imágenes del reporte. También pueden usar SVG para figuras vectoriales. **Se versionan las figuras finales seleccionadas, no los datos originales**.
+
+### 2.3 Escribir el reporte `.qmd`
+
+Quarto combina Markdown, imágenes y configuración del documento. Este ejemplo **no contiene bloques ejecutables de Python**:
+
+````markdown
+---
+title: "Patrones de uso de Ecobici"
+format:
+  html:
+    toc: true
+    theme: cosmo
+---
+
+## Pregunta
+
+¿Cómo se distribuyen los retiros registrados a lo largo del día?
+
+## Resultado
+
+![Retiros registrados por hora. Fuente: datos de Ecobici; elaboración propia.](imgs/retiros_por_hora.png){fig-alt="Gráfico de barras con número de retiros por hora del día."}
+
+La figura muestra ... [escriban aquí una interpretación respaldada por su análisis].
+
+## Limitaciones
+
+Los retiros no permiten conocer cuántas bicicletas había disponibles en cada estación.
+````
+
+La ruta de la imagen es relativa **al archivo `.qmd`**, no necesariamente al directorio desde el que lanzamos Quarto. Para la publicación, el archivo PNG debe existir y estar incorporado al repositorio.
+
+```{.sh}
+quarto render docs/reporte_ecobici.qmd
+```
+
+El comando anterior genera un HTML con las figuras y el texto preparados. **No vuelve a calcular el análisis**. Si cambia la base o la pregunta, primero regeneramos las imágenes desde el notebook, después renderizamos el reporte.
+
+::: {.callout-note}
+## ¿Por qué no colocar Python dentro del `.qmd` de este curso?
+
+Quarto **sí puede ejecutar Python** durante el renderizado. Esa es una opción válida en otros proyectos, pero aquí no la usaremos: nuestro sitio se publica con un GitHub Actions sencillo y no tiene acceso a la base `.duckdb` ni a los CSV locales. Separar cálculo y publicación evita introducir instalaciones de Python, kernels y descargas de datos en ese workflow.
+:::
+
+### 2.4 Reproducción y publicación no son exactamente lo mismo
+
+- **Reproducir el análisis:** descargar los datos, ejecutar los SQL y notebooks y volver a generar las figuras.
+- **Reconstruir el sitio:** ejecutar `quarto render .` con los archivos `.qmd` y las figuras que ya están versionadas.
+- **Actualizar el reporte:** regenerar las figuras cuando cambien los datos, revisar el texto y confirmar los cambios mediante Git.
+
+Nuestro repositorio conserva los **insumos para reconstruir el análisis**, aunque el servidor de GitHub Pages no ejecute ese análisis en cada despliegue. Esta distinción es parte del objetivo de reproducibilidad de la clase.
+
+### 2.5 ¿Y cuándo usaríamos Dash?
+
+Quarto puede presentar figuras de Plotly con interactividad ya incorporada en HTML, pero **eso no implica que Python se ejecute cuando alguien abre la página**. Para esta tarea usaremos principalmente figuras estáticas (PNG o SVG) porque son fáciles de revisar, versionar y publicar.
+
+Si queremos que una persona seleccione una estación y que la aplicación **consulte DuckDB al cambiar la selección**, necesitamos un servicio en ejecución. Ahí tiene sentido Dash.
+
+Nuestro archivo demostrativo `app_ecobici_guia.py` muestra una **aplicación local**, no una segunda vía obligatoria para la Tarea 4:
+
+| Bloque de Dash | Para qué sirve |
+|---|---|
+| `Dash(__name__)` | Crea la aplicación web |
+| `app.layout` | Organiza títulos, texto, controles y gráficas |
+| `dcc.Dropdown` y `dcc.Graph` | Reciben una selección y muestran una figura |
+| `id` | Permite identificar componentes |
+| `@app.callback`, `Input`, `Output` | Conectan una interacción con una función de Python |
+| `myquery` | Consulta DuckDB desde el código de la aplicación |
+
+```{.python}
+@app.callback(
+    Output("grafico", "figure"),
+    Input("estacion", "value"),
+)
+def actualizar(estacion):
+    # Una app real podría consultar DuckDB usando esta selección.
+    # Es un fragmento conceptual, no un programa autónomo.
+    ...
+```
+
+En la demostración identifica **qué cambia al modificar el control**, qué datos se cargan una vez y cuáles podrían volver a consultarse. Tener un control no garantiza por sí mismo datos actualizados: depende de la implementación del callback.
+
+Para ejecutar el ejemplo, ubica `app_ecobici_guia.py` en `src/progra/apps/` (o ajusta la ruta a la organización real de tu repositorio), conserva el import de `myquery` que corresponda al proyecto y ejecútalo desde la raíz:
+
+```{.sh}
+uv run python -m progra.apps.app_ecobici_guia
+```
+
+Abre `http://127.0.0.1:8050` y detén el proceso con `Ctrl+C`. **Este servidor no se publica con `quarto render` ni con GitHub Pages.**
+
+### 2.6 Actividad corta de clase
+
+1. Identifica en un notebook qué cálculo genera una figura.
+2. Explica por qué el `.qmd` puede publicarla sin volver a consultar DuckDB.
+3. En el ejemplo Dash, identifica `layout`, `id` y `callback`.
+4. Discute qué ocurriría si mañana se agregan viajes nuevos: ¿qué habría que actualizar en Quarto?, ¿y en Dash?
+
+## 3. Del reporte visual a una API
+
+Quarto ofrece un **reporte ya generado** y Dash permite que una **persona interactúe con una aplicación**. ¿Qué sucede si un equipo quiere incorporar los retiros por género a **su propio programa**? No tiene sentido obligarla a leer una gráfica ni a copiar y pegar números.
+
+Una **API** (*Application Programming Interface*) define cómo interactúa un programa con otro. Una **API web** suele recibir solicitudes HTTP y devolver respuestas estructuradas, frecuentemente JSON. Una API puede devolver datos, ejecutar una operación o generar predicciones; no necesita mostrar gráficas.
+
+```text
+Personas → navegador → Dash → DuckDB
+Programas → solicitud HTTP → FastAPI → DuckDB → respuesta JSON
+```
+
+En este ejemplo, Dash **no llama** a FastAPI: ambos usan la misma fuente de datos. Es una simplificación intencional para comparar responsabilidades.
+
+### 3.1 Solicitudes y respuestas HTTP
+
+Un **endpoint** es una ruta que ofrece una operación o recurso, por ejemplo `/resumen`.
+
+| Elemento | Ejemplo | Significado |
+|---|---|---|
+| Método | `GET` | Solicitar información |
+| Ruta | `/resumen` | Recurso o acción solicitada |
+| Parámetro | `?limite=5` | Ajusta una consulta |
+| Código de estado | `200`, `404`, `422` | Indica el resultado de la solicitud |
+| Encabezado | `Content-Type: application/json` | Describe el formato del contenido |
+| Cuerpo de respuesta | `{"viajes": 120}` | Información entregada en JSON |
+
+Métodos habituales:
+
+- `GET`: recuperar recursos o resultados sin modificar el estado del servidor.
+- `POST`: enviar datos para crear un recurso o solicitar una operación; **no** significa necesariamente insertar en una tabla.
+- `PUT` / `PATCH`: reemplazar / modificar un recurso.
+- `DELETE`: eliminar un recurso.
+
+Códigos frecuentes: `200 OK`, `201 Created`, `400 Bad Request`, `404 Not Found`, `422 Unprocessable Content` (parámetros inválidos según las reglas del endpoint) y `500 Internal Server Error`.
+
+Las APIs que organizan recursos mediante URLs y utilizan las convenciones de HTTP suelen denominarse **REST**. Por ahora basta reconocer los elementos de una solicitud y una respuesta; no diseñaremos un sistema distribuido completo.
+
+### 3.2 FastAPI: rutas que ejecutan código Python
+
+```{.python}
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/health")
+def health():
+    return {"estado": "ok"}
+```
+
+- `@app.get("/health")` registra una ruta para solicitudes `GET`.
+- La función se ejecuta cuando llega una solicitud a esa ruta.
+- El diccionario se serializa como JSON.
+- A diferencia del callback de Dash, aquí el disparador es **una solicitud HTTP**, no el cambio de un componente visual.
+
+### 3.3 Práctica con la API existente del repositorio
+
+En el proyecto de la clase la API está en `src/progra/api/main.py`. Usa `myquery` para consultar `clean.ecobici`. **Este archivo ya existe en el material de la clase**; los fragmentos anteriores explican su funcionamiento, no pretenden reemplazarlo.
+
+| Método | Endpoint | Contenido |
+|---|---|---|
+| `GET` | `/health` | Estado del servicio |
+| `GET` | `/resumen` | Resumen de viajes y cobertura |
+| `GET` | `/viajes/por-genero` | Conteo de viajes por género |
+| `GET` | `/estaciones/{estacion_id}/retiros?limite=10` | Retiros recientes de una estación |
+
+**Paso 1. Iniciar el servidor** desde la raíz del proyecto:
+
+```{.sh}
+uv run uvicorn progra.api.main:app --reload --host 127.0.0.1 --port 13000
+```
+
+`progra.api.main:app` identifica el módulo de Python y el objeto `app`. La opción `--reload` es para desarrollo local.
+
+**Paso 2. Abrir otra terminal y hacer solicitudes**:
+
+```{.sh}
+curl -i http://127.0.0.1:13000/health
+curl http://127.0.0.1:13000/resumen
+curl http://127.0.0.1:13000/viajes/por-genero
+curl "http://127.0.0.1:13000/estaciones/1/retiros?limite=5"
+```
+
+`-i` incluye los encabezados y el código de estado. Observa la diferencia entre lo que escribes (solicitud) y lo que responde el servidor (JSON).
+
+**Paso 3. Explorar la documentación interactiva**: abre `http://127.0.0.1:13000/docs`, selecciona una ruta, elige *Try it out* y ejecuta una petición.
+
+**Paso 4. Provocar errores controlados**:
+
+```{.sh}
+# Si esa estación no existe en los registros, el endpoint devuelve 404.
+curl -i http://127.0.0.1:13000/estaciones/99999/retiros
+
+# Si la API limita el máximo a 100, este valor produce 422.
+curl -i "http://127.0.0.1:13000/estaciones/1/retiros?limite=500"
+```
+
+**Paso 5. Consumir desde Python**, con la API encendida:
+
+```{.python}
+import pandas as pd
+
+por_genero = pd.read_json("http://127.0.0.1:13000/viajes/por-genero")
+por_genero
+```
+
+Compara el resultado con la consulta SQL correspondiente sobre DuckDB. Deben representar la misma agregación; lo que cambia es **el mecanismo de acceso**. Si la estructura JSON no es tabular, puede requerirse `requests` y conversión explícita a DataFrame.
+
+### 3.4 ¿Una API es automáticamente segura o pública?
+
+No. El ejemplo es **local**. Si se expone en una red, habría que considerar autenticación, autorización, validación, privacidad, límites de uso y despliegue. También importa qué columnas se comparten: un consumidor no necesita acceso indiscriminado a todas las filas para consultar un agregado.
+
+### 3.5 ¿Y una API de predicciones?
+
+En otra aplicación, una ruta como `POST /predict` podría recibir una estación y una hora, cargar un modelo entrenado y devolver una probabilidad en JSON. **No es requisito de la Tarea 4**, porque esa tarea se concentra en transformar datos y presentar hallazgos. Además, agregar datos nuevos a la base **no reentrena automáticamente** un modelo.
+
+## 4. Comparación y cierre
+
+| Pregunta | Notebook | Quarto (nuestro flujo) | Dash | FastAPI |
+|---|---|---|---|---|
+| Propósito | Investigar y documentar el proceso | Comunicar hallazgos en un reporte | Explorar resultados en una aplicación | Ofrecer datos o funciones a programas |
+| Producto | `.ipynb` | `.qmd` + imágenes → HTML | Servidor y página interactiva | Endpoints HTTP y JSON |
+| ¿Cuándo corre Python? | Al ejecutar celdas | **No durante el renderizado en este curso** | Cuando la app ejecuta su lógica o callbacks | Cuando se recibe una solicitud |
+| ¿Consulta DuckDB? | Puede hacerlo | No; recibe figuras ya calculadas | Puede consultar en tiempo de uso | Puede consultar por petición |
+| ¿Se publica con GitHub Pages? | No automáticamente | **Sí**, como HTML estático | **No** en esta unidad | **No** en esta unidad |
+
+### Preguntas de discusión
+
+1. Si mañana cambia la base, ¿qué archivos habría que regenerar para que Quarto refleje los resultados nuevos?
+2. ¿Por qué no es equivalente que DuckDB construya un agregado a extraer las primeras 10,000 filas?
+3. ¿Qué información narrativa necesita un reporte para que sus figuras tengan sentido?
+4. Si quisiéramos calcular algo nuevo cada vez que un usuario cambia una selección, ¿cuándo conviene Dash?
+5. ¿Por qué otro programa preferiría una respuesta JSON de FastAPI en lugar de leer un reporte HTML?
+
+### Relación con la Tarea 4
+
+- Construirán `raw` → `clean` → `model` en DuckDB y documentarán el análisis en notebooks.
+- Guardarán **las figuras seleccionadas** y crearán con Quarto un **reporte narrativo** con resultados, fuente, interpretación y limitaciones.
+- **No** se requiere escribir código Python ejecutable dentro del `.qmd` ni desplegar Dash o FastAPI.
+- El uso de ramas, Pull Requests y revisión entre integrantes es parte de su flujo normal; el producto se evalúa en conjunto.
+
+### Lo que sigue
+
+Docker y GitHub Actions permiten pensar en ejecución y verificaciones reproducibles. **El workflow de GitHub Pages del curso seguirá siendo sencillo:** construirá el sitio Quarto a partir de documentos e imágenes versionadas, sin ejecutar los notebooks ni reconstruir DuckDB.
+
+## Referencias
+
+- [Quarto: documentos HTML](https://quarto.org/docs/output-formats/html-basics.html)
+- [Quarto: figuras](https://quarto.org/docs/authoring/figures.html)
+- [Dash: layout](https://dash.plotly.com/layout)
+- [Dash: callbacks](https://dash.plotly.com/basic-callbacks)
+- [FastAPI: primeros pasos](https://fastapi.tiangolo.com/tutorial/first-steps/)
+- [MDN: métodos HTTP](https://developer.mozilla.org/es/docs/Web/HTTP/Methods)

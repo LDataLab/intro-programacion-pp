@@ -19,6 +19,8 @@ website:
             href: tareas/tarea_02.html
           - text: "3. Práctica cli y git"
             href: tareas/tarea_03.html
+          - text: "4. Bases de datos y GEDA"
+            href: tareas/tarea_04.html
       - section: "**Documentos**"
         contents:
           - text: "Temario detallado"
@@ -29,8 +31,8 @@ website:
             href: docs/d01_csvkit.html
           - text: "Instalación Python"
             href: docs/d03_instalacion_python.html
-          - text: "Quarto"
-            href: docs/d04_quarto.html
+          - text: "Ejemplo reporte"
+            href: reports/reporte_ecobici_quarto.html
 
 html:
   theme: minty

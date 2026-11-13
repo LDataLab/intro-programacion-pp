@@ -1,0 +1,21 @@
+# Define cómo se ejecutan los servicios del proyecto (m12 y m13).
+# Las variables como ${API_TOKEN} se toman de tu terminal (direnv, ver m11) o de un archivo .env.
+
+services:
+  # Pipeline de m10 empaquetado (m12). Se ejecuta una vez: docker compose run --rm etl
+  etl:
+    build: .
+    volumes:
+      - ./data:/app/data
+
+  # API REST de m13. Lee la base en modo solo lectura: docker compose up api
+  api:
+    build: .
+    command: uvicorn progra.api.main:app --host 0.0.0.0 --port 13000
+    ports:
+      - "13000:13000"
+    volumes:
+      - ./data:/app/data:ro
+    environment:
+      ECOBICI_DB_PATH: /app/data/db/ecobici.duckdb
+      API_TOKEN: ${API_TOKEN}
