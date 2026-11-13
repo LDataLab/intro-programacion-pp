@@ -1,6 +1,6 @@
 """API REST de ejemplo sobre la base de EcoBici (m11).
 
-La base DuckDB se consulta con `myquery` (src/progra/tools/mydb.py).
+La base DuckDB se consulta con `myquery` (src/progra/db/mydb.py).
 """
 
 from typing import Annotated
@@ -16,7 +16,7 @@ def consultar(sql: str, parametros: list | None = None) -> list[dict]:
     """Ejecuta SQL con myquery y devuelve filas como diccionarios."""
     if not DB_PATH.exists():
         raise HTTPException(status_code=500, detail=f"No existe la base: {DB_PATH}")
-    return myquery(sql).to_dict(orient="records")
+    return myquery(sql, parametros).to_dict(orient="records")
 
 
 @app.get("/health")

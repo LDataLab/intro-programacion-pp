@@ -4,10 +4,10 @@ No es una solución de la Tarea 4. Contiene dos visualizaciones de ejemplo:
 una estática y una interactiva, para discutir su implementación.
 
 Requiere el paquete `progra` del repositorio de la clase y su función
-`progra.tools.mydb.myquery`, además de `data/db/ecobici.duckdb`.
+`progra.db.mydb.myquery`, además de `data/db/ecobici.duckdb`.
 
 Desde la raíz del proyecto:
-    uv run python src/progra/analysis/app_ecobici_guia.py
+    uv run python src/progra/apps/ecobici.py
 """
 
 import plotly.express as px

@@ -213,9 +213,9 @@ WHERE fecha_arribo < fecha_retiro;
 
 ## 7. Desde Python Duckdb con función propia: `myquery`
 
-El archivo `src/progra/tools/mydb.py` encapsula la conexión en una función:
+El archivo `src/progra/db/mydb.py` encapsula la conexión en una función:
 
-```{.python filename="src/progra/tools/mydb.py"}
+```{.python filename="src/progra/db/mydb.py"}
 from pathlib import Path
 
 import duckdb
@@ -241,7 +241,7 @@ Puntos importantes:
 El notebook importa la función y la usa como cualquier otra:
 
 ```{.python}
-from progra.tools.mydb import myquery
+from progra.db.mydb import myquery
 
 df = myquery("SELECT * FROM clean.ecobici LIMIT 10")
 df.head()
