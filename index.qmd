@@ -20,7 +20,7 @@ bibliography: references.bib
 
 ## Materiales
 
-::: {.callout-tip collapse="false"}
+::: {.callout-warning collapse="false"}
 ### 01: Introducción
 
 - Introducción a programación para ciencia de datos en políticas públicas
