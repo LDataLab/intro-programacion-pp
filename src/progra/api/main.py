@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Query
 
-from progra.tools.mydb import DB_PATH, myquery
+from progra.db.mydb import DB_PATH, myquery
 
 app = FastAPI(title="API EcoBici", version="0.1.0")
 
@@ -16,7 +16,7 @@ def consultar(sql: str, parametros: list | None = None) -> list[dict]:
     """Ejecuta SQL con myquery y devuelve filas como diccionarios."""
     if not DB_PATH.exists():
         raise HTTPException(status_code=500, detail=f"No existe la base: {DB_PATH}")
-    return myquery(sql, parametros).to_dict(orient="records")
+    return myquery(sql).to_dict(orient="records")
 
 
 @app.get("/health")
