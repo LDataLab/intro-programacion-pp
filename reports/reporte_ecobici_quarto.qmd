@@ -1,0 +1,40 @@
+---
+title: "Reporte de ejemplo: patrones de movilidad"
+subtitle: "Estructura narrativa de un reporte con Quarto"
+format:
+  html:
+    toc: true
+    theme: cosmo
+    code-copy: true
+---
+
+## Contexto y pregunta
+
+Este documento muestra la estructura de un reporte.
+Los datos y las figuras son **ilustrativos**; deben sustituirse
+por resultados reales de su análisis.
+
+**Pregunta:** ¿cómo varía el número de viajes entre los días
+de una semana de ejemplo?
+
+## Resumen ejecutivo
+
+Un buen resumen explica uno o dos resultados sustantivos
+y sus límites. No basta con insertar una gráfica.
+
+## Resultados
+
+![Viajes diarios simulados, elaborados para ilustrar el formato del reporte.](imgs/viajes_ejemplo.png){fig-alt="Gráfico de barras ilustrativo de viajes simulados durante siete días."}
+
+**Interpretación de ejemplo.** La figura ilustra cómo presentar
+una distribución temporal y acompañarla de una lectura escrita.
+No representa viajes reales de Ecobici.
+
+## Conclusiones y limitaciones
+
+El reporte se construye con Markdown e imágenes ya generadas.
+No ejecuta Python al renderizarse y su contenido solo cambia
+cuando se actualizan sus archivos fuente.
+
+**Limitación:** la figura usa datos simulados y no permite
+inferencias sobre la movilidad real.

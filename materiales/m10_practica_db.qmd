@@ -49,7 +49,7 @@ intro-programacion-pp/
 
 Esto lo puedes realizar desde tu home:
 
-```.bash
+```{.bash}
 curl https://install.duckdb.org | bash
 ```
 
@@ -85,7 +85,7 @@ duckdb data/db/ecobici.duckdb
 ```
 
 Observa como cambia la terminal.
-```
+```{.sql}
 show all tables;
 ```
 
@@ -162,7 +162,7 @@ duckdb data/db/ecobici.duckdb
 ```
 
 - La línea de instalación está comentada; se ejecutó una sola vez al preparar el ambiente.
-- La línea final abre la base `data/db/ecobici.duckdb`. Si el archivo no existe, DuckDB lo crea al guardar el primer cambio.
+- La línea final abre la base `data/db/ecobici.duckdb`. Si el archivo no existe, DuckDB lo crea al abrirlo; la carpeta `data/db/` debe existir antes.
 - Se corre **una vez** para crear la base o cuando se quiera explorarla de manera interactiva. Para salir de la CLI, escribir `.quit`.
 
 ```{.sh}
@@ -197,6 +197,7 @@ Se corre desde la raíz del repositorio:
 ```{.sh}
 bash pipelines/etl-ecobici.sh
 ```
+
 ## 6. Verificaciones
 
 Desde la CLI, o desde el notebook con `myquery`:
@@ -212,9 +213,9 @@ WHERE fecha_arribo < fecha_retiro;
 
 ## 7. Desde Python Duckdb con función propia: `myquery`
 
-El archivo `src/progra/tools/mydb.py` encapsula la conexión en una función:
+El archivo `src/progra/db/mydb.py` encapsula la conexión en una función:
 
-```{.python filename="src/progra/tools/mydb.py"}
+```{.python filename="src/progra/db/mydb.py"}
 from pathlib import Path
 
 import duckdb
@@ -240,7 +241,7 @@ Puntos importantes:
 El notebook importa la función y la usa como cualquier otra:
 
 ```{.python}
-from progra.tools.mydb import myquery
+from progra.db.mydb import myquery
 
 df = myquery("SELECT * FROM clean.ecobici LIMIT 10")
 df.head()
