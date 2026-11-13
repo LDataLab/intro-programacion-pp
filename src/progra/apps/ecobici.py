@@ -1,7 +1,5 @@
-"""Ejemplo docente para m11: reporte parcial con Dash y DuckDB.
-
-No es una solución de la Tarea 4. Contiene dos visualizaciones de ejemplo:
-una estática y una interactiva, para discutir su implementación.
+"""
+Reporte parcial con Dash y DuckDB.
 
 Requiere el paquete `progra` del repositorio de la clase y su función
 `progra.db.mydb.myquery`, además de `data/db/ecobici.duckdb`.
@@ -113,8 +111,8 @@ app.layout = html.Div(
         html.Main(
             style=PAGE_STYLE,
             children=[
-                html.P("EJEMPLO DOCENTE · M11", style={"color": COLORS["accent"], "fontWeight": "bold"}),
-                html.H1("¿Cuándo se registran los retiros de Ecobici?"),
+                html.P("\n ", style={"color": COLORS["accent"], "fontWeight": "bold"}),
+                html.H1("\n ¿Cuándo se registran los retiros de Ecobici?"),
                 html.P(
                     "Un reporte parcial para aprender a combinar consultas SQL, "
                     "interpretaciones y controles en Dash.",
