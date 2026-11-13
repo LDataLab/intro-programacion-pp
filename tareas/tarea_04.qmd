@@ -1,5 +1,5 @@
 ---
-title: "Tarea 4: De datos crudos a un reporte analítico interactivo"
+title: "Tarea 4: De datos crudos a un reporte reproducible con Quarto"
 format:
   html:
     toc: true
@@ -10,7 +10,7 @@ format:
 date: today
 ---
 
-El objetivo de esta tarea es recorrer el flujo de un **producto de datos descriptivo**: seleccionar una fuente abierta, construir una base reproducible en DuckDB, explorar sus características y comunicar los hallazgos mediante un **reporte HTML reproducible en Quarto con figuras interactivas de Plotly**.
+El objetivo de esta tarea es recorrer el flujo de un **producto de datos descriptivo**: seleccionar una fuente abierta, construir una base reproducible en DuckDB, explorar sus características y comunicar los hallazgos mediante un **reporte narrativo en Quarto** con figuras previamente generadas en Python.
 
 Trabajarán en equipo y utilizarán el flujo de Git/GitHub practicado en la Tarea 3. **Ustedes decidirán cómo organizar el trabajo**: no se asignarán notebooks, apartados o responsabilidades por integrante. La evaluación se centrará en la calidad, coherencia y reproducibilidad del producto integrado, no en una división artificial de actividades.
 
@@ -19,10 +19,10 @@ Trabajarán en equipo y utilizarán el flujo de Git/GitHub practicado en la Tare
 
 - Scripts SQL que construyen tres capas: `raw`, `clean` y `model`.
 - **Dos notebooks complementarios**: perfilado de los datos y análisis con preguntas y visualizaciones.
-- **Un reporte analítico en Quarto** (`.qmd` y HTML renderizado) que comunique hallazgos seleccionados mediante Plotly.
+- **Un reporte analítico en Quarto** que comunique hallazgos seleccionados mediante figuras estáticas y texto interpretativo.
 - Un `README.md` que documente fuente, decisiones y pasos para reproducir el proyecto.
 
-**No se pide entrenar un modelo predictivo, construir una API, utilizar Dash ni publicar un servicio web.**
+**No se pide entrenar un modelo predictivo, construir una API, desarrollar una app Dash ni desplegar servidores.**
 :::
 
 ## 1. Equipo y repositorio
@@ -43,9 +43,9 @@ Estructura sugerida (conserven las carpetas previas y agreguen las que falten):
 ├── notebooks/
 │   ├── nb01_estructura_perfilado.ipynb
 │   └── nb02_preguntas_visualizaciones.ipynb
-├── reports/
-│   └── reporte.qmd
-├── docs/                  # materiales previos, si ya existen
+├── docs/
+│   ├── reporte.qmd
+│   └── imgs/             # figuras seleccionadas para publicar
 ├── .gitignore
 ├── pyproject.toml
 ├── uv.lock
@@ -198,7 +198,7 @@ Para **cada pregunta**, incluyan:
 4. **Interpretación** escrita debajo de la figura (no solo descripción visual).
 5. **Limitación** o precaución, cuando sea pertinente.
 
-Al final, seleccionen **dos o tres hallazgos** para el reporte interactivo y expliquen por qué son los más importantes para su audiencia.
+Al final, seleccionen **dos o tres hallazgos** para el reporte Quarto y expliquen por qué son los más importantes para su audiencia.
 
 ::: {.callout-important}
 ## No hagan limpieza manual escondida en los notebooks
@@ -206,51 +206,82 @@ Al final, seleccionen **dos o tres hallazgos** para el reporte interactivo y exp
 Las reglas centrales de limpieza deben vivir en `sql/02_clean.sql` y las tablas que alimentan el reporte, en `model` o `clean`. Un notebook debe poder ejecutarse de principio a fin al reiniciar el kernel, sin depender de pasos omitidos ni de archivos que no hayan explicado cómo obtener.
 :::
 
-## 5. Publicar un reporte analítico en Quarto
+## 5. Construir un reporte analítico con Quarto
 
-El objetivo es entregar **un reporte reproducible con interpretación**, no una página con gráficas aisladas. Otra persona debe poder comprender el fenómeno y los hallazgos sin abrir los notebooks.
+**No se trata de juntar todas las gráficas del notebook en una página.** El objetivo es construir un reporte que explique los resultados a una persona que no participó en el análisis.
 
-### 5.1 Estructura mínima del reporte
+### 5.1 Estructura del reporte
 
-**A. Introducción y contexto:** título sustantivo, pregunta central, fenómeno estudiado, fuente, cobertura temporal o geográfica y audiencia.
+Guarden el documento principal en `docs/reporte.qmd`. Debe incluir:
 
-**B. Resumen ejecutivo:** dos o tres hallazgos principales en lenguaje claro, sustentados en los datos.
+1. **Introducción:** título, pregunta central, fuente, periodo de estudio y audiencia prevista.
+2. **Resumen ejecutivo:** dos o tres hallazgos respaldados por el análisis.
+3. **Resultados:** **tres figuras seleccionadas**, con títulos, ejes, unidades, interpretación y relación con la pregunta central.
+4. **Conclusiones:** síntesis de resultados y posibles implicaciones.
+5. **Limitaciones:** qué no permiten afirmar los datos, problemas de cobertura o calidad.
 
-**C. Resultados:** **tres visualizaciones seleccionadas**, cada una asociada con una pregunta, un título, una explicación e interpretación. Al menos **una visualización debe ser interactiva con Plotly** (por ejemplo, consulta de valores con el cursor, zoom o control de series mediante la leyenda).
+### 5.2 Generación de figuras y publicación
 
-**D. Conclusiones y limitaciones:** qué indican los datos, qué no permiten afirmar y cómo podría mejorarse el análisis.
+Generen las figuras **en los notebooks utilizando Python**, y guarden los archivos finales en `docs/imgs/` como PNG o SVG. Esas figuras **sí deben versionarse** porque forman parte del reporte publicado. No suban CSV ni archivos DuckDB.
 
-### 5.2 Requisitos técnicos
+Ejemplo de guardar una figura que ustedes ya generaron:
 
-- Escriban el reporte en **`reports/reporte.qmd`**, con encabezado YAML, texto Markdown y bloques ejecutables de Python.
-- Alimenten las figuras con datos consultados desde DuckDB, preferentemente desde la capa `model`; pueden usar tablas de `clean` cuando esté justificado.
-- Hagan las agregaciones en SQL cuando corresponda, en lugar de graficar un `LIMIT` arbitrario de registros.
-- Incluyan al menos **una figura interactiva de Plotly** y tres figuras seleccionadas en total. Las demás pueden ser interactivas o estáticas según el argumento del reporte.
-- El `.qmd` debe poder **renderizarse de nuevo** para incorporar datos actualizados; el HTML resultante no necesita un servidor Python para leerse.
-- No es necesario implementar callbacks, construir una API ni desplegar la página en Internet.
-
-Desde la raíz del repositorio, después de instalar Quarto y sincronizar las dependencias del proyecto:
-
-```{.sh}
-uv sync
-QUARTO_PYTHON="$PWD/.venv/bin/python" quarto render reports/reporte.qmd
+```{.python}
+# 'fig' es una figura de Matplotlib creada previamente en el notebook.
+fig.savefig("docs/imgs/figura_01.png", dpi=160, bbox_inches="tight")
 ```
 
-Para revisar los cambios durante la edición:
+El ejemplo supone que ejecutan el notebook desde la raíz del repositorio. Si ejecutan desde otra carpeta, ajusten la ruta. Documenten el procedimiento para volver a crear las imágenes.
+
+Incorporen las figuras desde Quarto **sin ejecutar Python en el documento**:
+
+````markdown
+---
+title: "Título de su reporte"
+format:
+  html:
+    toc: true
+    theme: cosmo
+---
+
+## Pregunta central
+
+Escriban aquí la pregunta que guía su análisis.
+
+## Resultados
+
+![Título y fuente de la figura](imgs/figura_01.png){fig-alt="Descripción accesible de la figura"}
+
+**Interpretación.** Expliquen qué muestra la figura y por qué es relevante.
+
+## Limitaciones
+
+Describan lo que los datos no permiten concluir.
+````
+
+Rendericen desde la raíz del repositorio:
 
 ```{.sh}
-QUARTO_PYTHON="$PWD/.venv/bin/python" quarto preview reports/reporte.qmd --no-browser
+quarto render docs/reporte.qmd
 ```
 
-Los comandos indican explícitamente a Quarto qué Python usar. Ejecuten desde la raíz del repositorio en macOS, Linux o WSL. **Documenten en el README desde qué directorio se debe renderizar** y cómo se resuelven las rutas de la base de datos.
+::: {.callout-important}
+## No ejecutaremos Python dentro de Quarto
 
-Entreguen **ambos archivos**, `reports/reporte.qmd` y `reports/reporte.html`. El archivo `.qmd` es la fuente reproducible; el HTML es el resultado que leerá otra persona.
-
-::: {.callout-tip}
-## Ejemplo, no respuesta para copiar
-
-El ejemplo `reporte_ecobici_quarto.qmd` de m11 muestra cómo leer agregados de DuckDB, crear gráficas Plotly y escribir una explicación. **No es un reporte completo ni sustituye sus preguntas, sus tablas y sus interpretaciones.**
+Para esta tarea, el `.qmd` contiene **Markdown, imágenes y referencias**, no bloques ejecutables de Python. Esto permite construir el HTML con Quarto sin instalar Python ni descargar las bases en GitHub Actions. El análisis sigue siendo reproducible mediante los SQL y notebooks documentados en el repositorio.
 :::
+
+### 5.3 ¿Qué sucede si cambian los datos?
+
+El reporte HTML **no se actualiza automáticamente** cuando cambia la base. Deben:
+
+1. Reconstruir DuckDB si cambió la fuente.
+2. Ejecutar de nuevo los notebooks.
+3. Regenerar las imágenes seleccionadas.
+4. Revisar interpretaciones y conclusiones.
+5. Renderizar Quarto y versionar las imágenes y el `.qmd` actualizados.
+
+Dash y FastAPI se presentan en `m11` para comparar otras formas de entregar resultados, pero **no forman parte de esta entrega ni necesitan publicarse**.
 
 ## 6. README y reproducibilidad
 
@@ -262,21 +293,21 @@ El `README.md` debe permitir que una persona que clone el proyecto entienda y re
 - Decisiones importantes de limpieza y advertencias sobre calidad.
 - Cómo recuperar el CSV original usando CLI.
 - Cómo instalar dependencias (`uv sync`) y construir DuckDB con los SQL, desde una base vacía.
-- Cómo ejecutar ambos notebooks y renderizar `reports/reporte.qmd`; dónde se obtiene el HTML.
-- Audiencia, preguntas e interpretaciones principales del reporte, y qué partes de sus figuras son interactivas.
+- Cómo ejecutar ambos notebooks, regenerar las figuras y renderizar `docs/reporte.qmd`, en ese orden.
+- Audiencia, preguntas e interpretaciones principales del reporte; rutas de las figuras publicadas.
 - Breve reflexión: ¿qué fue lo más difícil?, ¿qué hallazgo es más sólido y cuál más frágil?, ¿qué cambiarían con más tiempo?
 
 ## 7. Entrega y criterios de revisión
 
-Entreguen **un enlace al repositorio** en Canvas. Revisaré el producto final integrado en `main`, los scripts, los notebooks, el `.qmd`, su HTML y el README. El uso de ramas y Pull Requests seguirá siendo parte del flujo de colaboración, pero **no voy a calificar una división específica del trabajo por integrante**.
+Entreguen **un enlace al repositorio** en Canvas. Revisaré el producto final integrado en `main`, los scripts, los notebooks, el reporte Quarto y el README. El uso de ramas y Pull Requests seguirá siendo parte del flujo de colaboración, pero **no voy a calificar una división específica del trabajo por integrante**.
 
 | Criterio | Evidencia observable |
 |---|---|
 | **Datos y calidad** | Fuente clara, unidades bien identificadas, tres capas coherentes, limpieza justificada |
 | **Reproducibilidad** | SQL ejecutable, dependencias declaradas, instrucciones suficientes |
 | **Análisis** | Cinco preguntas, cinco gráficas pertinentes, interpretación y limitaciones |
-| **Comunicación** | Reporte Quarto legible con pregunta central, tres gráficas seleccionadas, texto y conclusiones |
-| **Interactividad** | Al menos una visualización Plotly interactiva, que funcione al abrir el HTML |
+| **Comunicación** | Reporte Quarto legible con pregunta central, tres figuras seleccionadas, texto y conclusiones |
+| **Publicación** | El `.qmd` renderiza sin ejecutar Python y encuentra las imágenes versionadas |
 | **Integración** | Archivos consistentes entre sí y repositorio funcional en `main` |
 
 ### Checklist final
@@ -285,9 +316,9 @@ Entreguen **un enlace al repositorio** en Canvas. Revisaré el producto final in
 - [ ] Los scripts reconstruyen `raw`, `clean` y `model` desde cero.
 - [ ] Los dos notebooks son reproducibles y están conectados entre sí.
 - [ ] Hay cinco preguntas, cinco gráficas e interpretaciones.
-- [ ] El HTML es un **reporte**: contexto, hallazgos, tres gráficas, interactividad y límites.
-- [ ] El `.qmd` usa datos preparados de DuckDB y se renderiza sin errores.
-- [ ] El `README.md` explica cómo reproducir el proyecto con `uv`, DuckDB y Quarto.
+- [ ] El reporte Quarto incluye contexto, hallazgos, tres figuras, interpretación y limitaciones.
+- [ ] Las figuras se generan desde los notebooks, se guardan en `docs/imgs/` y están versionadas.
+- [ ] El `README.md` explica cómo reproducir el análisis con `uv` y DuckDB y volver a generar el reporte con Quarto.
 - [ ] Se respetó el flujo de colaboración con Git y no se subieron datos ni secretos.
 - [ ] El repositorio está integrado en `main` y se entregó el enlace en Canvas.
 
