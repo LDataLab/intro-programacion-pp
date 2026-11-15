@@ -20,7 +20,7 @@ bibliography: references.bib
 
 ## Materiales
 
-::: {.callout-warning collapse="false"}
+::: {.callout-tip collapse="false"}
 ### 01: Introducción
 
 - Introducción a programación para ciencia de datos en políticas públicas
@@ -84,8 +84,8 @@ bibliography: references.bib
 :::
 
 ::: {.callout-tip collapse="false"}
-### 07. Herramientas para despliegue y monitoreo
-- APIs y apps
+### 07. Herramientas para reportes, despliegue y monitoreo
+- Quarto, apps y APIs
     - [Material 11](materiales/m11_apis.html) 
 :::
 

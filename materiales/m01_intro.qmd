@@ -1,5 +1,5 @@
 ---
-title: "Introducción a la programación para políticas públicas elena     elena "
+title: "Introducción a la programación para políticas públicas"
 
 format:
   html:
