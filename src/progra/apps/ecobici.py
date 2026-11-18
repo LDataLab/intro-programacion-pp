@@ -114,7 +114,7 @@ app.layout = html.Div(
             style=PAGE_STYLE,
             children=[
                 html.P("EJEMPLO DOCENTE · M11", style={"color": COLORS["accent"], "fontWeight": "bold"}),
-                html.H1("¿Cuándo se registran los retiros de Ecobici?"),
+                html.H1("¿Cuándo se registran los retiros de Ecobici en la CDMX?"),
                 html.P(
                     "Un reporte parcial para aprender a combinar consultas SQL, "
                     "interpretaciones y controles en Dash.",
