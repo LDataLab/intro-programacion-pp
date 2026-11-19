@@ -1,0 +1,12 @@
+services:
+  bashquiz:
+    build: ./bashquiz
+    image: bashquizclase
+    stdin_open: true
+    tty: true
+
+  api:
+    build: ./api
+    image: irisclase
+    ports:
+      - "13000:13000"
