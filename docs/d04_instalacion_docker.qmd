@@ -100,6 +100,41 @@ El resultado puede ser:
 5. Abrir **Docker Desktop** y completar la configuración inicial, autorizando los permisos necesarios.
 6. Esperar a que Docker Desktop indique que el motor está en funcionamiento.
 
+# 3. Ubuntu
+
+
+
+Sigue la instalación oficial desde el repositorio de Docker:
+
+```{.sh}
+# Dependencias y llave del repositorio
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Repositorio de Docker
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Instalación
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+Para usar Docker sin `sudo`, agrega tu usuario al grupo `docker` y reinicia la sesión:
+
+```{.sh}
+sudo usermod -aG docker $USER
+```
+
+Prueba la instalación:
+
+```{.sh}
+docker run hello-world
+```
+
+
 ## Paso 3. Verificar Docker desde Terminal
 
 Ejecutar:
@@ -139,3 +174,6 @@ Hello from Docker!
 
 Si aparece **`Hello from Docker!`**, la instalación quedó lista para las actividades de clase.
 :::
+
+
+
