@@ -100,7 +100,7 @@ bibliography: references.bib
 
 :::
 
-::: {.callout-tip collapse="false"}
+::: {.callout-warning collapse="false"}
 ### 07. Pipelines reproducibles
 
 - Pipelines
