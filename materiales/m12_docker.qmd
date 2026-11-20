@@ -1,202 +1,1128 @@
 ---
-title: "Docker"
-subtitle: "Empaquetar el pipeline de EcoBici para que corra en cualquier computadora"
+title: "Introducción a Docker"
+subtitle: "Imágenes, contenedores y aplicaciones reproducibles"
 format:
   html:
     toc: true
     toc-depth: 3
     theme: cosmo
     highlight-style: github
+    code-copy: true
 date: today
 execute:
   eval: false
 ---
 
-## Objetivos de aprendizaje
+# 1. ¿Qué es Docker?
 
-- Instalar Docker desde la terminal en Ubuntu, WSL2 o macOS.
-- Explicar la diferencia entre imagen y contenedor.
-- Construir una imagen a partir de un `Dockerfile` y ejecutarla.
-- Usar `docker compose` para definir cómo corre el pipeline y dónde quedan sus datos.
-- Verificar que el resultado del contenedor es el mismo que el de m10.
+[Docker](https://www.docker.com/) es una herramienta que permite crear, probar y ejecutar aplicaciones de manera consistente en diferentes entornos.
 
-## 1. ¿Qué es Docker?
+Docker empaqueta software en unidades estandarizadas llamadas **contenedores**, que incluyen todo lo necesario para ejecutar una aplicación: código, bibliotecas, dependencias y herramientas del sistema.
 
-Docker empaqueta una aplicación junto con todo lo que necesita para correr: Python, bibliotecas, el CLI de DuckDB y el código. Ese paquete se llama **contenedor**.
+Esto permite que una aplicación desarrollada en una computadora pueda ejecutarse en otra sin tener que configurar manualmente todas sus dependencias.
 
-- **Imagen**: una plantilla inmutable que describe cómo construir el entorno. Se guarda en un registro (por ejemplo, Docker Hub).
-- **Contenedor**: una instancia en ejecución de una imagen. Puedes crear muchos a partir de la misma imagen.
-- **Dockerfile**: el archivo de texto con los pasos para construir la imagen.
-- **docker compose**: el archivo `docker-compose.yaml` describe cómo se ejecuta uno o más contenedores: puertos, volúmenes y dependencias.
+Por ejemplo, supongamos que desarrollamos una aplicación de Python que utiliza `scikit-learn` y `FastAPI`.
 
-Un contenedor es más ligero que una máquina virtual porque comparte el kernel del sistema operativo anfitrión. Por eso basta con tener Docker instalado para correr el proyecto.
+Para ejecutarla en otra computadora normalmente necesitaríamos:
 
-## 2. Instalación
+1. Instalar Python.
+2. Instalar las versiones correctas de las bibliotecas.
+3. Configurar el entorno de ejecución.
+4. Ejecutar nuestra aplicación.
 
-Recomendación: instala **Docker Engine desde la terminal** en Ubuntu y en WSL2, porque es el mismo flujo de trabajo que usamos en el resto del curso. En macOS usa **Docker Desktop**, que es la forma más directa de tener Docker en Mac.
+Con Docker podemos empaquetar la aplicación y sus dependencias dentro de una **imagen**, a partir de la cual se pueden crear contenedores.
 
-### 2.1 Ubuntu (Docker Engine)
+## 1.1. Ventajas de Docker
 
-Sigue la instalación oficial desde el repositorio de Docker:
+- **Portabilidad:** permite ejecutar la misma aplicación en Windows, macOS o Linux, siempre que exista un entorno Docker compatible.
+- **Consistencia:** todos los integrantes de un equipo pueden trabajar con el mismo entorno, reduciendo problemas de compatibilidad.
+- **Aislamiento:** los contenedores tienen su propio sistema de archivos, procesos y configuración, separados del resto de las aplicaciones.
+- **Reproducibilidad:** podemos documentar cómo se construye el entorno de ejecución mediante un archivo llamado `Dockerfile`.
+- **Escalabilidad:** una misma imagen puede utilizarse para crear múltiples contenedores.
 
-```{.sh}
-# Dependencias y llave del repositorio
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
+## 1.2. Docker y las máquinas virtuales
 
-# Repositorio de Docker
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+Docker utiliza mecanismos de aislamiento del sistema operativo para ejecutar aplicaciones en contenedores.
 
-# Instalación
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+Una diferencia importante respecto a las máquinas virtuales tradicionales es que los contenedores **comparten el kernel del sistema operativo donde se ejecuta Docker Engine**.
+
+En cambio, una máquina virtual normalmente ejecuta un sistema operativo completo, incluyendo su propio kernel.
+
+Por esta razón, los contenedores suelen ser más ligeros y rápidos de iniciar que las máquinas virtuales tradicionales.
+
+::: {.callout-note}
+## Docker en Windows y macOS
+
+Los contenedores Linux necesitan un kernel de Linux.
+
+Por eso, Docker Desktop utiliza un entorno Linux virtualizado para ejecutar estos contenedores en Windows y macOS.
+
+Aunque trabajemos desde nuestra terminal de Ubuntu (WSL2) o macOS, los contenedores Linux se ejecutan utilizando ese entorno.
+
+:::
+
+::: {.callout-note}
+## ¿Qué es un kernel
+
+El kernel (núcleo) es la parte central de un sistema operativo. Se encarga de administrar los recursos de la computadora y permitir que los programas interactúen con el hardware.
+
+:::
+
+
+# 2. Conceptos fundamentales de Docker
+
+Para trabajar con Docker debemos distinguir varios conceptos:
+
+- **Dockerfile:** archivo de texto con las instrucciones para construir una imagen.
+- **Imagen:** paquete que contiene el sistema de archivos, las dependencias, el código y la configuración necesarios para ejecutar una aplicación.
+- **Contenedor:** instancia de una imagen que tiene su propio ciclo de vida y en la que se ejecuta uno o varios procesos.
+- **Docker Hub:** registro público donde podemos buscar, descargar y compartir imágenes.
+- **Docker Compose:** herramienta que permite definir y administrar aplicaciones compuestas por uno o varios servicios.
+
+## 2.1. Imágenes
+
+Una imagen Docker contiene todo lo necesario para crear un contenedor que ejecute una aplicación.
+
+Por ejemplo, podemos utilizar una imagen que ya incluya Python:
+
+```bash
+docker pull python:3.11-slim
 ```
 
-Para usar Docker sin `sudo`, agrega tu usuario al grupo `docker` y reinicia la sesión:
+Este comando descarga una imagen desde Docker Hub.
 
-```{.sh}
-sudo usermod -aG docker $USER
+En este caso:
+
+- `python` es el nombre de la imagen.
+- `3.11` indica la versión de Python.
+- `slim` identifica una variante ligera de la imagen.
+
+Podemos revisar las imágenes que tenemos descargadas:
+
+```bash
+docker images
 ```
 
-Prueba la instalación:
+Las imágenes son **inmutables**: no modificamos directamente una imagen existente. Cuando necesitamos agregar código o dependencias, construimos una nueva imagen a partir de ella.
 
-```{.sh}
-docker run hello-world
+Una misma imagen puede utilizarse para crear múltiples contenedores.
+
+## 2.2. Contenedores
+
+Un contenedor es una instancia de una imagen.
+
+Por ejemplo, podemos ejecutar:
+
+```bash
+docker run --rm hello-world
 ```
 
-### 2.2 WSL2 (Ubuntu dentro de Windows)
+Docker realiza las siguientes operaciones:
 
-Primero activa **systemd** dentro de tu distribución de Ubuntu en WSL. Edita `/etc/wsl.conf` (con `sudo vim /etc/wsl.conf`) y agrega:
+1. Busca la imagen `hello-world` en nuestra computadora.
+2. Si no la encuentra, la descarga desde Docker Hub.
+3. Crea un contenedor a partir de esa imagen.
+4. Ejecuta el programa definido por la imagen.
+5. Elimina el contenedor cuando termina, gracias a `--rm`.
 
-```ini
-[boot]
-systemd=true
+En este ejemplo no construimos una imagen propia: utilizamos una imagen que ya existe.
+
+Para consultar los contenedores:
+
+```bash
+# Contenedores en ejecución
+docker ps
+
+# Todos los contenedores, incluidos los detenidos
+docker ps -a
 ```
 
-Luego, desde PowerShell en Windows, reinicia WSL:
+::: {.callout-important}
+## Imagen y contenedor no son lo mismo
 
-```{.sh}
-wsl --shutdown
+Una **imagen** es el paquete que utilizamos para crear contenedores.
+
+Un **contenedor** es una instancia de esa imagen.
+
+Podemos eliminar un contenedor sin eliminar la imagen a partir de la cual fue creado.
+:::
+
+## 2.3. ¿Qué es un Dockerfile?
+
+Un `Dockerfile` es un archivo de texto que contiene las instrucciones necesarias para construir una imagen.
+
+Generalmente comenzamos utilizando una imagen base que ya contiene parte del software que necesitamos.
+
+Después podemos agregar nuestros archivos, instalar dependencias y especificar qué programa debe ejecutarse.
+
+Por ejemplo:
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
+COPY main.py .
+
+CMD ["python", "main.py"]
 ```
 
-Abre de nuevo Ubuntu y sigue exactamente los pasos de la sección 2.1. Verifica que el servicio esté activo:
+Las instrucciones principales son:
 
-```{.sh}
-sudo systemctl status docker
+| Instrucción | Función |
+|---|---|
+| `FROM` | Selecciona la imagen base. |
+| `WORKDIR` | Define el directorio de trabajo dentro de la imagen. |
+| `COPY` | Copia archivos desde el contexto de construcción a la imagen. |
+| `RUN` | Ejecuta comandos durante la construcción de la imagen. |
+| `ENV` | Define variables de entorno. |
+| `EXPOSE` | Documenta el puerto que utiliza una aplicación. |
+| `CMD` | Define el comando predeterminado al iniciar un contenedor. |
+
+Es importante distinguir `RUN` y `CMD`.
+
+- `RUN` se ejecuta durante la **construcción de la imagen**.
+- `CMD` establece el comando que se ejecutará cuando **iniciemos un contenedor**.
+
+## 2.4. Flujo de trabajo: Dockerfile, imagen y contenedor
+
+El proceso general es:
+
+```text
+          Dockerfile
+              |
+              | docker build
+              v
+            Imagen
+              |
+              | docker run
+              v
+          Contenedor
+              |
+              | Ejecuta el programa
+              v
+         Proceso termina
+              |
+              v
+       Contenedor detenido
+```
+
+Para construir una imagen:
+
+```bash
+docker build -t nombre-imagen .
+```
+
+Aquí:
+
+- `docker build`: construye una imagen.
+- `-t`: asigna un nombre y, opcionalmente, una etiqueta a la imagen.
+- `.`: indica el **contexto de construcción**, es decir, el directorio cuyos archivos estarán disponibles para las instrucciones como `COPY`.
+
+Para crear y ejecutar un contenedor:
+
+```bash
+docker run nombre-imagen
 ```
 
 ::: {.callout-note}
-Si tu versión de WSL no soporta systemd, instala **Docker Desktop** para Windows y activa la integración con tu distribución en *Settings → Resources → WSL Integration*. En ese caso el comando `docker` funciona igual dentro de Ubuntu.
+## ¿Siempre necesitamos un Dockerfile?
+
+No.
+
+Podemos descargar y ejecutar imágenes existentes de Docker Hub sin escribir un Dockerfile.
+
+Cuando queremos empaquetar nuestras propias aplicaciones, normalmente construimos una imagen personalizada utilizando un Dockerfile.
 :::
 
-### 2.3 macOS (Docker Desktop)
+# 3. Práctica 1: nuestro primer contenedor
 
-1. Descarga Docker Desktop desde [docker.com](https://www.docker.com/products/docker-desktop/) según tu chip (Apple Silicon o Intel).
-2. Instálalo y ábrelo una vez para completar la configuración.
-3. En una terminal:
+Comenzaremos con una aplicación sencilla que ya podemos comprender: un **quiz interactivo escrito en Bash**.
 
-```{.sh}
-docker run hello-world
+El objetivo es construir una imagen que contenga un script y ejecutarlo dentro de un contenedor.
+
+Esta primera práctica no requiere Docker Compose.
+
+## 3.1. Estructura del proyecto
+
+Dentro del repositorio de la clase tenemos:
+
+```text
+docker/
+├── bashquiz/
+│   ├── Dockerfile
+│   └── run.sh
+├── api/
+└── compose.yaml
 ```
 
-## 3. Imágenes y contenedores
+Nos concentraremos primero en `bashquiz/`.
 
-El `Dockerfile` del proyecto está en la raíz del repositorio. Léelo de arriba hacia abajo:
+## 3.2. Revisar el código de Bash
 
-- `FROM python:3.12-slim`: la imagen base (Python sobre Debian mínimo).
-- `RUN apt-get ...`: instala `curl`, que se usa para descargar los CSV y el CLI de DuckDB.
-- `RUN curl ... duckdb_cli...`: instala el CLI de DuckDB que usa `pipelines/etl-ecobici.sh`.
-- `COPY --from=ghcr.io/astral-sh/uv ...`: copia `uv` a la imagen.
-- `COPY pyproject.toml uv.lock` y `RUN uv sync`: instala las dependencias **antes** de copiar el código. Así, si solo cambias un script, Docker reutiliza la capa de dependencias y el build es más rápido.
-- `CMD [...]`: el comando que corre al iniciar el contenedor.
+El archivo `docker/bashquiz/run.sh` contiene:
 
-Construye la imagen desde la raíz del proyecto:
+```bash
+#!/bin/bash
 
-```{.sh}
+echo "Quiz de bash"
+echo
+
+read -p "1) ¿Qué comando sirve para listar archivos? " r1
+
+if [[ "$r1" == "ls" ]]; then
+    echo "Correcto"
+else
+    echo "Incorrecto"
+fi
+
+read -p "2) ¿Qué comando te lleva a tu directorio personal? " r2
+
+if [[ "$r2" == "cd" ]]; then
+    echo "Correcto"
+else
+    echo "Incorrecto"
+fi
+
+read -p "3) ¿Con qué comando copias archivos? " r3
+
+if [[ "$r3" == "cp" ]]; then
+    echo "Correcto"
+else
+    echo "Incorrecto"
+fi
+
+echo
+echo "Fin del quiz"
+```
+
+El programa recibe respuestas del usuario mediante `read` y utiliza condicionales para determinar si son correctas.
+
+Podríamos ejecutar este script directamente desde nuestra terminal, pero ahora queremos ejecutarlo dentro de un contenedor.
+
+## 3.3. Dockerfile del quiz
+
+El archivo `docker/bashquiz/Dockerfile` contiene:
+
+```dockerfile
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+COPY run.sh .
+
+RUN chmod +x run.sh
+
+CMD ["./run.sh"]
+```
+
+Revisemos cada instrucción.
+
+**1. Imagen base**
+
+```dockerfile
+FROM ubuntu:22.04
+```
+
+Utilizamos Ubuntu como sistema base de nuestro contenedor.
+
+**2. Directorio de trabajo**
+
+```dockerfile
+WORKDIR /app
+```
+
+Establecemos `/app` como el directorio desde el cual se ejecutarán las siguientes instrucciones.
+
+**3. Copiar el archivo**
+
+```dockerfile
+COPY run.sh .
+```
+
+Copiamos nuestro archivo `run.sh` al directorio `/app` de la imagen.
+
+**4. Permisos de ejecución**
+
+```dockerfile
+RUN chmod +x run.sh
+```
+
+Durante la construcción, modificamos los permisos para que el archivo pueda ejecutarse.
+
+**5. Comando principal**
+
+```dockerfile
+CMD ["./run.sh"]
+```
+
+Indicamos que, cuando se inicie el contenedor, debe ejecutarse el script.
+
+## 3.4. Construir la imagen
+
+Desde la carpeta `docker/`:
+
+```bash
+docker build -t bashquiz ./bashquiz
+```
+
+Este comando utiliza el Dockerfile que se encuentra dentro de `./bashquiz` para construir una imagen llamada `bashquiz`.
+
+Al terminar, verificamos:
+
+```bash
+docker images
+```
+
+Deberíamos encontrar la imagen `bashquiz` en la lista.
+
+## 3.5. Ejecutar el contenedor
+
+Ejecutamos:
+
+```bash
+docker run -it --rm bashquiz
+```
+
+Las banderas utilizadas son:
+
+| Bandera | Significado |
+|---|---|
+| `-i` | Mantiene disponible la entrada estándar del contenedor. |
+| `-t` | Asigna una terminal interactiva. |
+| `--rm` | Elimina automáticamente el contenedor cuando termina. |
+
+En este caso necesitamos `-it` porque nuestro script utiliza `read` para recibir respuestas.
+
+El contenedor ejecutará el quiz y terminará cuando finalice el script.
+
+Podemos repetir el programa tantas veces como queramos:
+
+```bash
+docker run -it --rm bashquiz
+```
+
+Cada ejecución crea un nuevo contenedor a partir de la misma imagen.
+
+## 3.6. Explorar imágenes y contenedores
+
+Ejecuta:
+
+```bash
+docker images
+```
+
+Observa que la imagen `bashquiz` sigue disponible.
+
+Ahora:
+
+```bash
+docker ps -a
+```
+
+Si ejecutamos el quiz con `--rm`, el contenedor se habrá eliminado al terminar.
+
+Probemos nuevamente, pero sin `--rm`:
+
+```bash
+docker run -it bashquiz
+```
+
+Cuando termine, ejecuta:
+
+```bash
+docker ps -a
+```
+
+Ahora el contenedor aparecerá como detenido.
+
+Podemos eliminarlo con:
+
+```bash
+docker rm <container_id>
+```
+
+Reemplaza `<container_id>` por el identificador del contenedor que quieras eliminar.
+
+::: {.callout-important}
+## ¿Qué aprendimos?
+
+La imagen permanece disponible incluso después de que el contenedor termina.
+
+Podemos crear varios contenedores utilizando la misma imagen.
+
+Además, un contenedor no necesariamente tiene que ejecutar un servidor: también puede utilizarse para ejecutar programas que realizan una tarea y después terminan.
+:::
+
+# 4. Docker Compose
+
+Hasta ahora hemos construido y ejecutado una imagen utilizando los comandos:
+
+```bash
+docker build
+docker run
+```
+
+Pero cuando trabajamos con aplicaciones que tienen varios componentes, escribir todos los comandos manualmente puede resultar complicado.
+
+Docker Compose permite definir en un archivo YAML cómo construir y ejecutar uno o varios **servicios**.
+
+Cada servicio especifica la imagen que utiliza, los puertos, los volúmenes y otras opciones de ejecución.
+
+## 4.1. ¿Qué es un servicio?
+
+Un servicio en Docker Compose es una definición de cómo deben ejecutarse los contenedores de una aplicación.
+
+Por ejemplo, podemos tener:
+
+- Un servicio que ejecuta nuestra API.
+- Otro servicio que ejecuta una base de datos.
+- Otro servicio que ejecuta un programa de procesamiento de datos.
+
+Un servicio puede administrar uno o varios contenedores.
+
+Debemos distinguir tres conceptos:
+
+| Concepto | Ejemplo |
+|---|---|
+| Imagen | `bashquizclase` |
+| Contenedor | Una instancia de `bashquizclase` |
+| Servicio | `bashquiz` |
+
+Los nombres pueden ser iguales, pero representan conceptos diferentes.
+
+## 4.2. El archivo `compose.yaml`
+
+Dentro de la carpeta `docker/` tenemos:
+
+```yaml
+services:
+  bashquiz:
+    build: ./bashquiz
+    image: bashquizclase
+    stdin_open: true
+    tty: true
+
+  api:
+    build: ./api
+    image: irisclase
+    ports:
+      - "13000:13000"
+```
+
+Este archivo define dos servicios:
+
+- `bashquiz`: ejecuta nuestro quiz interactivo.
+- `api`: ejecuta una API desarrollada en Python.
+
+Observemos algunas propiedades:
+
+- `build`: indica dónde está el contexto de construcción y, por defecto, el Dockerfile.
+- `image`: establece el nombre de la imagen que utilizaremos.
+- `stdin_open`: mantiene disponible la entrada estándar.
+- `tty`: asigna una terminal.
+- `ports`: permite publicar puertos del contenedor en nuestra computadora.
+
+## 4.3. Construir con Docker Compose
+
+Desde la carpeta `docker/`:
+
+```bash
 docker compose build
 ```
 
-Los archivos que **no** deben entrar a la imagen están en `.dockerignore`: `.venv`, `data/`, `.git` y, sobre todo, credenciales como `.envrc`.
+Este comando construye las imágenes de los servicios que lo necesitan.
 
-## 4. Práctica: correr el pipeline en un contenedor
+También podemos construir únicamente un servicio:
 
-El proyecto tiene tres archivos que trabajan juntos:
-
-```text
-intro-programacion-pp/
-├── Dockerfile              # cómo construir la imagen (entorno + CLI de DuckDB + uv)
-├── .dockerignore           # qué NO copiar a la imagen
-├── docker-compose.yaml     # cómo correr el servicio etl y qué carpeta de datos usa
-├── pipelines/etl-ecobici.sh   # el mismo pipeline de m10
-├── sql/t01_create_clean.sql
-└── data/                   # NO se copia a la imagen: se monta como volumen
-    ├── raw/
-    └── db/ecobici.duckdb
+```bash
+docker compose build bashquiz
 ```
 
-**Paso 1.** Crea la carpeta de datos en tu computadora (si no existe):
+La diferencia respecto a `docker build` es que Compose lee las configuraciones del archivo `compose.yaml`.
 
-```{.sh}
-mkdir -p data/raw data/db
+## 4.4. Ejecutar el quiz con Compose
+
+Podemos ejecutar nuestro quiz con:
+
+```bash
+docker compose run --rm bashquiz
 ```
 
-**Paso 2.** Ejecuta el pipeline dentro del contenedor:
+Este comando crea un contenedor nuevo utilizando la configuración del servicio `bashquiz`.
 
-```{.sh}
-docker compose run --rm etl
+Al terminar el programa, elimina el contenedor debido a `--rm`.
+
+Observa que utilizamos el **nombre del servicio**, no el nombre de la imagen.
+
+### `run`, `up` y `exec`
+
+Estos comandos cumplen funciones diferentes:
+
+| Comando | Función |
+|---|---|
+| `docker compose run` | Crea un contenedor nuevo para ejecutar un comando de un servicio. |
+| `docker compose up` | Crea e inicia los contenedores de los servicios y los mantiene administrados por Compose. |
+| `docker compose exec` | Ejecuta un comando dentro de un contenedor de servicio que ya está corriendo. |
+
+Por ejemplo:
+
+```bash
+docker compose run --rm bashquiz
 ```
 
-- `run` crea un contenedor nuevo y ejecuta el `CMD`.
-- `--rm` borra el contenedor al terminar. Los datos no se pierden porque están en `./data`, no dentro del contenedor.
+Ejecuta el quiz creando un contenedor nuevo.
 
-**Paso 3.** Verifica el resultado con el mismo CLI de m10, desde tu computadora:
+Mientras que:
 
-```{.sh}
-duckdb data/db/ecobici.duckdb -c "SELECT count(*) AS viajes FROM clean.ecobici;"
+```bash
+docker compose exec api bash
 ```
 
-Si ves un número mayor que cero, la tabla `clean.ecobici` se creó igual que en m10. Puedes repetir el paso 2 cuando quieras reconstruir la base.
+Abre una terminal Bash dentro del contenedor del servicio `api`, siempre que esté en ejecución.
 
-::: {.callout-warning}
-En Linux, el contenedor corre como `root`, así que los archivos que escribe en `./data` pueden quedar con dueño `root`. Si no puedes borrarlos desde tu usuario, usa `sudo chown -R $USER:$USER data/`.
+::: {.callout-note}
+## Docker Compose no es obligatorio
+
+Podemos utilizar Docker sin Compose.
+
+Docker Compose no es un paso intermedio entre construir una imagen y ejecutar un contenedor. Es una herramienta que simplifica la definición y administración de servicios.
+
+Si utilizamos Docker directamente, trabajamos con `docker build` y `docker run`.
+
+Si utilizamos Docker Compose, podemos trabajar con `docker compose build`, `run` y `up`.
 :::
 
-## 5. Comandos útiles
+# 5. Práctica 2: una API de machine learning
 
-Servicios de compose:
+Ahora implementaremos una aplicación diferente.
 
-```{.sh}
-docker compose build              # construir o reconstruir la imagen
-docker compose run --rm etl       # correr el pipeline una vez
-docker compose ps                 # ver servicios de compose
-docker compose down               # detener y quitar los contenedores del proyecto
+En lugar de ejecutar un script que termina después de recibir respuestas, construiremos una **API que permanece ejecutándose y recibe solicitudes mediante HTTP**.
+
+Para esto utilizaremos:
+
+- Python.
+- FastAPI.
+- scikit-learn.
+- Docker.
+
+Nuestra aplicación clasificará flores del conjunto de datos Iris utilizando un árbol de decisión.
+
+El objetivo principal de la práctica no es estudiar el modelo de machine learning, sino comprender cómo empaquetar una aplicación Python y ejecutarla como un servicio.
+
+## 5.1. Estructura de la API
+
+Dentro de `docker/api/` tenemos:
+
+```text
+api/
+├── Dockerfile
+├── main.py
+└── requirements.txt
 ```
 
-Administración general de Docker:
+Cada archivo tiene una función:
 
-```{.sh}
-docker ps                         # contenedores en ejecución
-docker ps -a                      # todos los contenedores, incluidos los detenidos
-docker images                     # imágenes locales
-docker rm <container_id>          # eliminar un contenedor detenido
-docker rmi <image_id>             # eliminar una imagen
-docker ps -s                      # tamaño de los contenedores en ejecución
-docker ps -a -s                   # tamaño de todos los contenedores
+- `main.py`: contiene el código Python de nuestra aplicación.
+- `requirements.txt`: especifica las bibliotecas necesarias.
+- `Dockerfile`: define cómo construir la imagen.
+
+## 5.2. Código Python
+
+El archivo `main.py` contiene:
+
+```python
+from fastapi import FastAPI
+from pydantic import BaseModel
+from sklearn.datasets import load_iris
+from sklearn.tree import DecisionTreeClassifier
+
+# Crear la aplicación
+app = FastAPI(title="Clasificador de flores Iris")
+
+# Cargar los datos
+iris = load_iris()
+
+# Entrenar el modelo
+modelo = DecisionTreeClassifier(random_state=42)
+modelo.fit(iris.data, iris.target)
+
+
+# Variables que recibe la API
+class Flor(BaseModel):
+    sepal_length: float
+    sepal_width: float
+    petal_length: float
+    petal_width: float
+
+
+# Ruta principal
+@app.get("/")
+def inicio():
+    return {"mensaje": "Bienvenido al clasificador Iris"}
+
+
+# Ruta de predicción
+@app.post("/predict")
+def predecir(flor: Flor):
+    datos = [[
+        flor.sepal_length,
+        flor.sepal_width,
+        flor.petal_length,
+        flor.petal_width,
+    ]]
+
+    prediccion = modelo.predict(datos)[0]
+    especie = iris.target_names[prediccion]
+
+    return {"especie": especie}
 ```
 
-## 6. Relación con el resto del curso
+En términos generales, nuestra aplicación realiza tres operaciones:
 
-- **m10**: el mismo pipeline, ahora empaquetado. El resultado es idéntico.
-- **m11**: las credenciales nunca van en el `Dockerfile` ni en la imagen; `.dockerignore` las excluye. Más adelante veremos cómo pasarlas al contenedor sin escribirlas en el código.
-- **m13**: agregaremos un servicio `api` a `docker-compose.yaml` que lee la misma base `data/db/ecobici.duckdb`.
+1. Carga un conjunto de datos.
+2. Entrena un modelo de clasificación.
+3. Recibe las características de una flor y devuelve su especie predicha.
 
-## Referencias
+El modelo se entrena cuando se inicia el proceso de la API.
 
-- [Documentación de Docker Engine: instalación en Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [Instalar WSL y Docker en Windows](https://learn.microsoft.com/windows/wsl/install)
-- [Referencia de Dockerfile](https://docs.docker.com/reference/dockerfile/)
+Como Iris es un conjunto de datos pequeño, este enfoque es suficiente para nuestra práctica.
+
+## 5.3. Dependencias
+
+El archivo `requirements.txt` contiene:
+
+```text
+fastapi
+uvicorn
+scikit-learn
+```
+
+- **FastAPI:** permite construir una API utilizando Python.
+- **Uvicorn:** ejecuta el servidor que recibe las solicitudes HTTP.
+- **scikit-learn:** proporciona las herramientas para entrenar y utilizar el modelo.
+
+## 5.4. Dockerfile de la API
+
+Revisemos el archivo `docker/api/Dockerfile`:
+
+```dockerfile
+FROM python:3.11-slim
+
+# Directorio de trabajo
+WORKDIR /app
+
+# Copiar e instalar dependencias
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar nuestra aplicación
+COPY main.py .
+
+# Puerto utilizado por la API
+EXPOSE 13000
+
+# Ejecutar la aplicación
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "13000"]
+```
+
+Observemos las diferencias respecto al Dockerfile del quiz.
+
+**Imagen base**
+
+```dockerfile
+FROM python:3.11-slim
+```
+
+Ahora partimos de una imagen que ya tiene Python instalado.
+
+**Dependencias**
+
+```dockerfile
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+```
+
+Copiamos el archivo de dependencias y ejecutamos `pip install` durante la construcción de la imagen.
+
+**Código**
+
+```dockerfile
+COPY main.py .
+```
+
+Agregamos nuestro programa Python.
+
+**Puerto**
+
+```dockerfile
+EXPOSE 13000
+```
+
+Documentamos que nuestra aplicación utiliza el puerto `13000`.
+
+Esta instrucción no publica automáticamente el puerto en nuestra computadora.
+
+**Comando principal**
+
+```dockerfile
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "13000"]
+```
+
+Esta instrucción inicia el servidor Uvicorn.
+
+- `main:app`: indica que la aplicación FastAPI está definida como `app` en `main.py`.
+- `--host 0.0.0.0`: permite que el servidor reciba conexiones desde las interfaces de red del contenedor.
+- `--port 13000`: establece el puerto donde escucha la aplicación.
+
+## 5.5. Construir la imagen
+
+Desde la carpeta `docker/`:
+
+```bash
+docker compose build api
+```
+
+Docker utilizará la configuración del servicio `api` para construir la imagen llamada `irisclase`.
+
+Podemos verificarlo:
+
+```bash
+docker images
+```
+
+## 5.6. Ejecutar nuestra API
+
+Para iniciar el servicio:
+
+```bash
+docker compose up -d api
+```
+
+La bandera `-d` significa *detached* y permite ejecutar el contenedor en segundo plano, devolviéndonos el control de la terminal.
+
+Podemos verificar que esté corriendo:
+
+```bash
+docker compose ps
+```
+
+Para observar los mensajes del servidor:
+
+```bash
+docker compose logs api
+```
+
+Para seguir los mensajes conforme se generan:
+
+```bash
+docker compose logs -f api
+```
+
+Puedes salir de la visualización de los logs con `Ctrl+C` sin detener el contenedor.
+
+## 5.7. ¿Cómo accedemos a la API desde nuestra computadora?
+
+En el archivo `compose.yaml` tenemos:
+
+```yaml
+ports:
+  - "13000:13000"
+```
+
+Esto publica el puerto `13000` del contenedor en el puerto `13000` de nuestra computadora.
+
+La sintaxis general es:
+
+```text
+"puerto_host:puerto_contenedor"
+```
+
+Los contenedores tienen su propia red. Por ello, si queremos acceder desde nuestra computadora a una aplicación que escucha dentro del contenedor, necesitamos configurar la publicación del puerto.
+
+Abramos en el navegador:
+
+[http://localhost:13000/docs](http://localhost:13000/docs)
+
+FastAPI genera automáticamente una interfaz interactiva que permite probar los endpoints de nuestra aplicación.
+
+## 5.8. Hacer una predicción
+
+Dentro de `/docs`, busca el endpoint:
+
+```text
+POST /predict
+```
+
+Selecciona **Try it out** e introduce:
+
+```json
+{
+  "sepal_length": 5.1,
+  "sepal_width": 3.5,
+  "petal_length": 1.4,
+  "petal_width": 0.2
+}
+```
+
+Estas son cuatro características de una flor Iris, medidas en centímetros.
+
+Después selecciona **Execute**.
+
+El modelo debería devolver:
+
+```json
+{
+  "especie": "setosa"
+}
+```
+
+También podemos enviar solicitudes desde nuestra terminal utilizando `curl`:
+
+```bash
+curl -X POST http://localhost:13000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sepal_length": 5.1,
+    "sepal_width": 3.5,
+    "petal_length": 1.4,
+    "petal_width": 0.2
+  }'
+```
+
+Observa que no necesitamos entrar al contenedor para utilizar el modelo.
+
+La API está recibiendo solicitudes HTTP desde nuestra computadora y ejecutando las predicciones dentro del contenedor.
+
+## 5.9. Detener la API
+
+Para detener el servicio:
+
+```bash
+docker compose stop api
+```
+
+Esto detiene el contenedor sin eliminarlo.
+
+Podemos iniciarlo nuevamente:
+
+```bash
+docker compose start api
+```
+
+Para detener y eliminar los contenedores administrados por el proyecto Compose:
+
+```bash
+docker compose down
+```
+
+Este último comando elimina los contenedores del proyecto y sus redes creadas por defecto, pero conserva las imágenes construidas.
+
+## 5.10. Comparar nuestras aplicaciones
+
+Hemos ejecutado dos aplicaciones distintas utilizando Docker.
+
+| Característica | Quiz de Bash | API Iris |
+|---|---|---|
+| Imagen base | `ubuntu:22.04` | `python:3.11-slim` |
+| Aplicación | Script Bash | FastAPI y scikit-learn |
+| Entrada | Respuestas desde terminal | Solicitudes HTTP |
+| Puerto | No necesita | 13000 |
+| Comando principal | `./run.sh` | `uvicorn` |
+| Comportamiento | Ejecuta el quiz y termina | Permanece ejecutándose |
+| Ejecución | `docker compose run --rm bashquiz` | `docker compose up -d api` |
+
+En ambos casos seguimos la misma lógica: **construimos una imagen y creamos contenedores a partir de ella**.
+
+Lo que cambia es el programa que se ejecuta dentro del contenedor.
+
+# 6. Administración de Docker
+
+Los siguientes comandos permiten consultar y administrar imágenes, contenedores y servicios.
+
+## 6.1. Imágenes
+
+Listar imágenes disponibles:
+
+```bash
+docker images
+```
+
+Eliminar una imagen:
+
+```bash
+docker rmi <image_id>
+```
+
+Docker no permite eliminar una imagen que todavía esté siendo utilizada por contenedores, salvo que se resuelvan esas referencias.
+
+## 6.2. Contenedores
+
+Mostrar contenedores en ejecución:
+
+```bash
+docker ps
+```
+
+Mostrar todos los contenedores:
+
+```bash
+docker ps -a
+```
+
+Ver el tamaño de los contenedores:
+
+```bash
+docker ps -a -s
+```
+
+Eliminar un contenedor detenido:
+
+```bash
+docker rm <container_id>
+```
+
+Ejecutar un comando dentro de un contenedor en ejecución:
+
+```bash
+docker exec -it <container_id> bash
+```
+
+En este último comando:
+
+- `exec`: ejecuta un comando dentro de un contenedor que ya está corriendo.
+- `-it`: permite interactuar con una terminal.
+- `bash`: es el programa que queremos ejecutar dentro del contenedor.
+
+## 6.3. Docker Compose
+
+Construir imágenes:
+
+```bash
+docker compose build
+```
+
+Iniciar los servicios:
+
+```bash
+docker compose up
+```
+
+Iniciar en segundo plano:
+
+```bash
+docker compose up -d
+```
+
+Reconstruir las imágenes antes de iniciar los servicios:
+
+```bash
+docker compose up --build
+```
+
+Detener servicios:
+
+```bash
+docker compose stop
+```
+
+Reiniciar un servicio:
+
+```bash
+docker compose restart <nombre_servicio>
+```
+
+Ejecutar un comando dentro de un servicio que ya está corriendo:
+
+```bash
+docker compose exec <nombre_servicio> bash
+```
+
+Consultar los contenedores del proyecto:
+
+```bash
+docker compose ps
+```
+
+Detener y eliminar los contenedores del proyecto:
+
+```bash
+docker compose down
+```
+
+Detener y eliminar también los volúmenes administrados por Compose:
+
+```bash
+docker compose down -v
+```
+
+::: {.callout-warning}
+## Cuidado con los volúmenes
+
+Los volúmenes permiten conservar datos fuera del ciclo de vida de un contenedor.
+
+El comando `docker compose down -v` elimina los volúmenes con nombre declarados en Compose y los volúmenes anónimos asociados a los contenedores, por lo que puede eliminar información persistente.
+
+No elimina los archivos de las carpetas de nuestra computadora que estén montadas mediante *bind mounts*.
+
+Utiliza esta bandera solamente cuando tengas claro qué datos estás eliminando.
+:::
+
+# 7. Relación con el resto del curso
+
+A lo largo del curso hemos utilizado diferentes herramientas para desarrollar y ejecutar programas.
+
+Cada herramienta resuelve un problema diferente:
+
+- **Git:** nos permite versionar nuestro código y colaborar con otras personas.
+- **uv:** nos permite administrar proyectos Python y sus dependencias.
+- **Docker:** nos permite empaquetar una aplicación y su entorno de ejecución.
+- **Docker Compose:** nos permite definir y administrar servicios que forman parte de una aplicación.
+
+Docker no reemplaza a Git ni a los gestores de dependencias de Python.
+
+Por ejemplo, podríamos utilizar `uv` dentro de un Dockerfile para instalar las dependencias de nuestra aplicación, y seguir utilizando Git para versionar el código y las instrucciones de construcción.
+
+## Reproducibilidad
+
+Uno de los principales beneficios de Docker es que permite documentar el entorno donde se ejecuta una aplicación.
+
+Sin embargo, utilizar Docker por sí solo no garantiza reproducibilidad completa.
+
+También debemos considerar:
+
+- Las versiones de nuestras dependencias.
+- Las versiones de las imágenes base.
+- La disponibilidad y versión de los datos.
+- Las variables de entorno y configuraciones externas.
+- Las diferencias de arquitectura de las computadoras.
+
+Por ejemplo, utilizar una imagen de Python y un archivo de dependencias con versiones fijas ayuda a controlar el entorno de ejecución.
+
+## Reflexión
+
+Después de ejecutar nuestras dos aplicaciones, considera las siguientes preguntas:
+
+1. ¿Cuál es la diferencia entre una imagen y un contenedor?
+2. ¿Por qué podemos ejecutar varias veces el quiz sin volver a construir la imagen?
+3. ¿Qué sucede con el contenedor cuando termina el script de Bash?
+4. ¿Por qué la API necesita permanecer ejecutándose?
+5. ¿Para qué utilizamos la configuración `ports` de Docker Compose?
+6. ¿Qué diferencia existe entre `docker compose run` y `docker compose up`?
+7. ¿Por qué sería útil Docker cuando colaboramos con otras personas en un proyecto de ciencia de datos?
+
+# 8. Referencias
+
+- [Docker: documentación oficial](https://docs.docker.com/)
+- [Dockerfile: referencia](https://docs.docker.com/reference/dockerfile/)
 - [Docker Compose](https://docs.docker.com/compose/)
+- [Docker Hub](https://hub.docker.com/)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [scikit-learn: Iris dataset](https://scikit-learn.org/stable/auto_examples/datasets/plot_iris_dataset.html)
+
