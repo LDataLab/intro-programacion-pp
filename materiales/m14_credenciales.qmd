@@ -387,13 +387,24 @@ volumes:
 
 Docker Compose sustituye `${NEO4J_USER}` y `${NEO4J_PASSWORD}` por los valores del ambiente. La sintaxis `:?` exige que la variable esté definida y no esté vacía. Neo4j recibe el resultado en `NEO4J_AUTH` al crear el contenedor; el valor no se incorpora a la imagen.
 
-```{mermaid}
-flowchart TD
-    A["Archivo privado: $HOME/.secrets/intro-programacion-pp/.secrets"] --> B[".envrc: source_env"]
-    B --> C["Variables de entorno de la terminal"]
-    C --> D["Docker Compose: sustitución de variables"]
-    D --> E["Contenedor Neo4j: NEO4J_AUTH"]
+```markdown
+$HOME/.secrets/intro-programacion-pp/.secrets
+                    │
+                    ▼
+                 .envrc
+                    │
+                 direnv
+                    │
+                    ▼
+         Variables de entorno
+                    │
+                    ▼
+          docker-compose.yml
+                    │
+                    ▼
+           Contenedor Neo4j
 ```
+
 
 Desde el directorio donde está el archivo Compose, dentro del proyecto autorizado:
 
