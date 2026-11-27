@@ -1,239 +1,478 @@
 ---
-title: "Variables de entorno y credenciales"
-subtitle: "Cómo configurar un proyecto sin escribir contraseñas en el código"
+title: "Configuración de ambientes de trabajo y credenciales"
+subtitle: "Del directorio HOME a la configuración de cada proyecto con direnv"
 format:
   html:
     toc: true
     toc-depth: 3
     theme: cosmo
     highlight-style: github
+    code-copy: true
 date: today
 execute:
   eval: false
 ---
 
-## Objetivos de aprendizaje
+En esta sesión revisaremos como:
 
-- Explicar qué es una variable de entorno y cómo se lee desde Python, Bash y Docker.
-- Configurar el proyecto con `.envrc` y `direnv` sin exponer valores.
-- Mantener credenciales fuera del repositorio, de los commits y de la imagen de Docker.
-- Aplicar reglas de seguridad al trabajar con agentes de programación.
-- Revisar qué se va a subir a Git antes de hacer un commit.
+- Distinguir la configuración de nuestro usuario de la configuración de un proyecto.
+- Utilizar variables de entorno y `direnv` para configurar un repositorio.
+- Separar las credenciales del código y utilizarlas en Docker Compose.
+- Reconocer los riesgos de exponer credenciales en Git, notebooks y agentes de programación.
 
-## 1. Variables de entorno
+## 1. Nuestro directorio HOME
 
-Una **variable de entorno** es un par `NOMBRE=valor` que el sistema operativo entrega a los programas que se ejecutan en una sesión. Sirve para configurar un programa sin cambiar su código: la ruta a una base de datos, el nombre de un usuario o una contraseña.
+Cada usuario de un sistema operativo tiene un directorio personal (*home directory*). Además de nuestros documentos y proyectos, ahí se almacenan muchos archivos de configuración de las herramientas que utilizamos.
 
 ```{.sh}
-export DB_USUARIO="analista"        # solo existe en esta terminal
-echo "$DB_USUARIO"                  # imprime: analista
+echo "$HOME"
+cd ~
+pwd
+ls -la
 ```
 
-Desde Python se leen con `os.environ`:
+`$HOME` contiene la ruta del directorio personal; `~` es una abreviación que normalmente representa esa misma ruta. En Ubuntu y WSL suele ser `/home/usuario` y en macOS `/Users/usuario`.
 
-```{.python}
-import os
+Por ejemplo, nuestro HOME podría tener la siguiente estructura:
 
-usuario = os.environ["DB_USUARIO"]         # falla si no existe
-puerto = os.environ.get("DB_PUERTO", "5432")  # valor por omisión
+```text
+$HOME/
+├── .bashrc
+├── .zshrc
+├── .gitconfig
+├── .vimrc
+├── .ssh/
+├── .config/
+├── .secrets/
+└── proyectos/
+```
+
+| Archivo o directorio | ¿Para qué se utiliza? |
+|---|---|
+| `.bashrc` | Configuración de sesiones interactivas de Bash. |
+| `.zshrc` | Configuración de sesiones interactivas de Zsh. |
+| `.gitconfig` | Configuración de Git para nuestro usuario. |
+| `.vimrc` | Configuración del editor Vim. |
+| `.ssh/` | Configuración y llaves SSH. |
+| `.config/` | Configuración de distintas aplicaciones. |
+| `.secrets/` | Directorio que utilizaremos para organizar nuestras credenciales. |
+
+No todos estos archivos existen necesariamente en todas las computadoras. Los nombres que comienzan con un punto suelen estar ocultos en un `ls` convencional. **Que un archivo esté oculto no significa que esté protegido.**
+
+
+### 1.1. Configuración general de nuestro shell
+
+En `.bashrc` o `.zshrc`, según el shell que utilicemos, podemos definir
+configuraciones que queremos tener disponibles en nuestras sesiones
+interactivas, independientemente del proyecto.
+
+Estos archivos contienen instrucciones que se ejecutan al iniciar una
+sesión interactiva del shell. Podemos utilizarlos para definir variables
+de entorno, crear abreviaciones de comandos, configurar herramientas y
+personalizar la apariencia de nuestra terminal.
+
+```{.sh filename=".bashrc o .zshrc"}
+# Abreviaciones de comandos
+alias ll='ls -lah'
+alias gs='git status'
+
+# Agregar un directorio de ejecutables a PATH
+export PATH="$HOME/.local/bin:$PATH"
+
+# Definir nuestro editor de texto preferido
+export EDITOR=vim
+```
+
+| Concepto | Ejemplo | Función |
+|---|---|---|
+| Variable del shell | `PROYECTO=ecobici` | Almacena un valor en el shell. |
+| Variable de entorno | `export EDITOR=vim` | Hace que el valor pueda ser heredado por los procesos hijos. |
+| Alias | `alias gs='git status'` | Define una abreviación para un comando. |
+| `PATH` | `echo "$PATH"` | Lista de directorios donde el shell busca ejecutables. |
+
+#### Ejemplo: personalizar la apariencia de nuestra terminal
+
+Una de las configuraciones más comunes es la personalización del
+*prompt*, es decir, el texto que aparece en nuestra terminal antes
+de escribir un comando.
+
+Por ejemplo, podemos decidir qué información queremos visualizar:
+el nombre de nuestro usuario, el nombre de la computadora, el
+directorio de trabajo actual y los colores de cada elemento.
+
+**En Ubuntu o WSL (Bash)**
+
+En Bash, la variable `PS1` controla la apariencia del prompt principal.
+Si revisamos el archivo `.bashrc` que viene por defecto en Ubuntu,
+encontraremos una configuración similar a la siguiente:
+
+```{.bash filename="~/.bashrc"}
+PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+```
+
+**En macOS (Zsh)**
+
+En Zsh podemos utilizar la variable `PROMPT` para realizar una
+configuración equivalente, con una sintaxis diferente:
+
+```{.bash filename="~/.zshrc"}
+PROMPT='%F{green}%n@%m%f:%F{blue}%~%f %# '
+```
+
+Ambas configuraciones generan un prompt que muestra el usuario y
+el nombre de la computadora en verde, y el directorio de trabajo
+actual en azul.
+
+| Elemento | Bash | Zsh |
+|---|---|---|
+| Variable del prompt | `PS1` | `PROMPT` |
+| Nombre del usuario | `\u` | `%n` |
+| Nombre de la computadora | `\h` | `%m` |
+| Directorio actual | `\w` | `%~` |
+| Color verde | `\033[01;32m` | `%F{green}` |
+| Color azul | `\033[01;34m` | `%F{blue}` |
+| Restablecer color | `\033[00m` | `%f` |
+
+::: {.callout-tip}
+## Personalicen su terminal
+
+Pueden experimentar con estas configuraciones directamente desde
+la terminal. Si quieren conservar los cambios para futuras sesiones,
+deben incorporarlos al archivo `.bashrc` o `.zshrc`, según corresponda.
+
+También existen herramientas como [Starship](https://starship.rs/)
+que permiten incorporar información adicional al prompt, como la
+rama actual de Git, la versión de Python o el estado de nuestro
+repositorio.
+:::
+
+#### Aplicar cambios en nuestros archivos de configuración
+
+Para aplicar cambios en estos archivos sin abrir otra terminal,
+utilizamos `source`, un comando que ejecuta las instrucciones de
+un archivo dentro de nuestra sesión actual del shell:
+
+```{.sh}
+# Si utilizamos Bash
+source ~/.bashrc
+
+# Si utilizamos Zsh
+source ~/.zshrc
 ```
 
 ::: {.callout-important}
-## Nunca imprimas los valores de las credenciales
+## Configuración general vs. configuración por proyecto
 
-Al compartir una terminal, pegar un log o trabajar con un agente, **no** imprimas los valores. Para revisar que una variable existe, muestra solo su nombre:
+Las configuraciones que definimos en `.bashrc` o `.zshrc` están
+asociadas a nuestro usuario y a las sesiones de nuestro shell.
 
-```{.sh}
-env | cut -d= -f1 | sort | grep -i db_
-```
+Sin embargo, no todas las configuraciones que necesitamos son
+generales. Cada proyecto puede requerir diferentes ambientes
+virtuales, rutas de archivos, conexiones a bases de datos y
+credenciales.
+
+Para administrar estas configuraciones particulares utilizaremos
+una herramienta llamada `direnv`.
 :::
 
-## 2. Configurar el proyecto con `.envrc` y direnv
 
-Los valores del proyecto se guardan en un archivo `.envrc` en la raíz del repositorio. **direnv** carga esas variables automáticamente cuando entras a la carpeta y las quita al salir.
+## 2. Configuración específica de un proyecto
 
-Instala direnv:
+En distintos repositorios podemos utilizar diferentes versiones de Python, bases de datos, rutas de archivos y servicios externos. No conviene guardar todas estas especificaciones en `.bashrc` o `.zshrc`: podríamos sobrescribir variables entre proyectos o cargar credenciales que no necesitamos.
+
+```markdown
+Configuración general del usuario
+       ~/.bashrc o ~/.zshrc
+                │
+       ┌────────┴────────┐
+       ▼                 ▼
+ Proyecto Ecobici   Proyecto Fiscus
+     .envrc             .envrc
+       │                 │
+       ▼                 ▼
+    DuckDB           PostgreSQL
+    Python           Python
+                     rclone
+```
+
+Una **variable de entorno** permite configurar un programa sin modificar su código. Algunas variables son reconocidas por las propias herramientas; otras las definimos nosotros por conveniencia.
+
+### 2.1. direnv y el archivo `.envrc`
+
+[direnv](https://direnv.net/) es una herramienta que carga automáticamente las variables de entorno definidas en un archivo `.envrc` al entrar a un proyecto y restaura el ambiente anterior al salir.
+
+Instalación:
 
 ```{.sh}
 # Ubuntu y WSL2
-sudo apt-get install -y direnv
-```
+sudo apt install direnv
 
-```{.sh}
 # macOS
 brew install direnv
 ```
 
-Agrega el hook a tu shell (una sola vez). En bash, en `~/.bashrc`; en zsh, en `~/.zshrc`:
+Agreguen el hook correspondiente al final del archivo de configuración de su shell (una sola vez):
 
-```{.sh}
-eval "$(direnv hook bash)"    # o: eval "$(direnv hook zsh)"
+```{.sh filename="~/.bashrc"}
+eval "$(direnv hook bash)"
 ```
 
-Crea `.envrc` con la forma siguiente, reemplazando los valores por los tuyos:
-
-```{.sh filename=".envrc"}
-export DB_USUARIO="analista"
-export DB_HOST="localhost"
-export DB_PUERTO="5432"
-export DB_CONTRASENA="cambia-esto"
+```{.sh filename="~/.zshrc"}
+eval "$(direnv hook zsh)"
 ```
 
-Autoriza el archivo la primera vez y cada vez que lo cambies:
-
-```{.sh}
-direnv allow
-```
-
-::: {.callout-warning}
-## `.envrc` nunca se sube a Git
-
-El `.gitignore` del proyecto ignora `.envrc` y `.env.*`. Antes de cada commit revisa que no aparezcan:
-
-```{.sh}
-git status --short
-git diff --cached --stat
-```
-
-Si ves `.envrc` o un archivo `.env` en la lista de cambios, **no** hagas `git add`.
-:::
-
-## 3. Dónde viven las credenciales
-
-| Ubicación | ¿Se sube a Git? | Uso recomendado |
-|---|---|---|
-| `.envrc` o `.env` en la raíz | No (ignorado) | Valores del proyecto en tu computadora |
-| `~/.config/<proyecto>/` | No (fuera del repositorio) | Credenciales que usas en varios proyectos |
-| Código fuente, notebooks, SQL, README | **Sí** | Nunca: no escribas contraseñas ahí |
-| Imagen de Docker | Sí, si la construyes | Nunca: se queda dentro de la imagen |
-
-Para credenciales que no deben estar cerca del código, guárdalas fuera del repositorio con permisos restringidos:
-
-```{.sh}
-mkdir -p ~/.config/progra
-touch ~/.config/progra/db.env
-chmod 600 ~/.config/progra/db.env   # solo tu usuario puede leerlo
-```
-
-Y en `.envrc` cárgalas así:
-
-```{.sh filename=".envrc"}
-source_env_if_exists ~/.config/progra/db.env
-```
+Recarguen el archivo correspondiente con `source` o abran una nueva terminal.
 
 ::: {.callout-note}
-## Si una credencial se subió por error
+## ¿Por qué necesitamos autorizar `.envrc`?
 
-Borrar la línea en un commit nuevo **no** la elimina del historial de Git, y GitHub puede tenerla en caché. Si una contraseña o token llegó a un repositorio:
+direnv ejecuta instrucciones de shell. Antes de autorizar un archivo que recibimos de otra persona, debemos revisar su contenido. Ejecutamos `direnv allow` la primera vez y cuando modificamos `.envrc`.
 
-1. Revócala o cámbiala en el servicio correspondiente.
-2. Crea una nueva y guárdala fuera del repositorio.
-3. Reescribir el historial es posible, pero siempre debes asumir que la credencial anterior ya fue vista.
+Los alias y funciones definidos en `.envrc` no se transfieren automáticamente al shell interactivo: direnv trabaja principalmente con cambios en las variables de entorno. Para alias generales utilizaremos `.bashrc` o `.zshrc`.
 :::
 
-## 4. Credenciales y agentes de programación
+### 2.2. Ejemplo: configuración de proyectoX
 
-Un agente de programación puede leer archivos, ejecutar comandos y proponer cambios. Por eso necesita reglas claras sobre qué información puede ver:
-
-- **Nunca pegues credenciales en el chat** ni en instrucciones (por ejemplo, `CLAUDE.md`) ni en memorias del agente. Todo lo que se escribe ahí puede quedar guardado.
-- **Dale solo lo que necesita.** Para consultar la base, crea un usuario de PostgreSQL con permisos de solo lectura, no uses tu usuario administrador.
-- **Bloquea la lectura de archivos sensibles.** En proyectos que usan Claude Code, las reglas de permisos en `.claude/settings.json` pueden impedir que el agente lea archivos como `.envrc` o `.env`:
-
-```{.json filename=".claude/settings.json"}
-{
-  "permissions": {
-    "deny": [
-      "Read(./.envrc)",
-      "Read(./.env)",
-      "Read(./.env.*)"
-    ]
-  }
-}
-```
-
-- **Revisa antes de aceptar.** Usa `git diff` para ver cada cambio del agente antes de agregarlo con `git add`. Así detectas si incluyó un valor sensible en el código.
-- **Si el agente necesita una variable,** pídele que use `os.environ` o `${NOMBRE}`, nunca que escriba el valor.
-
-## 5. Credenciales y Docker
-
-El `Dockerfile` **no** debe contener credenciales: lo que se escribe ahí queda guardado en la imagen. El proyecto lo protege con `.dockerignore`, que excluye `.envrc`, `.env` y `credentials.*`.
-
-Para pasar valores al contenedor, Docker Compose puede leerlos del entorno de tu computadora o de un archivo `.env`. Así lo hace el servicio `api` del proyecto (m13):
-
-```{.yaml filename="docker-compose.yaml"}
-services:
-  api:
-    build: .
-    environment:
-      ECOBICI_DB_PATH: /app/data/db/ecobici.duckdb
-      API_TOKEN: ${API_TOKEN}
-```
-
-- `${API_TOKEN}` se toma de tu terminal (cargada por direnv) o de un archivo `.env` en la raíz.
-- El valor entra al contenedor en tiempo de ejecución; no queda en la imagen.
-- Si la variable no está definida, la API no arranca y muestra un error claro en lugar de quedar sin protección.
-
-Verifica que la variable llegó al contenedor sin mostrar su valor:
-
-```{.sh}
-docker compose run --rm api bash -c 'test -n "$API_TOKEN" && echo "API_TOKEN: presente"'
-```
-
-## 6. Práctica
-
-Vamos a leer una conexión a PostgreSQL sin escribir la contraseña en el código.
-
-**Paso 1.** Crea `.envrc` con valores **de ejemplo** (no tus credenciales reales):
+Este es un ejemplo de configuración de un proyecto que utiliza PostgreSQL, Python y rclone:
 
 ```{.sh filename=".envrc"}
-export DB_USUARIO="analista"
-export DB_HOST="localhost"
-export DB_PUERTO="5432"
-export DB_NOMBRE="ecobici"
-export DB_CONTRASENA="ejemplo-no-real"
+# Nombre base de datos
+export PGDATABASE=proyectoX
+
+# Ambiente virtual (requiere antes uv sync)
+source .venv/bin/activate
+
+# Credenciales
+export RCLONE_CONFIG="$HOME/.secrets/proyectoX/rclone.conf"
+source "$HOME/.secrets/proyectoX/.secrets"
 ```
 
-**Paso 2.** Autoriza el archivo y comprueba que las variables existen, sin mostrar la contraseña:
+| Instrucción | Propósito |
+|---|---|
+| `export PGDATABASE=proyectoX` | Establece la base predeterminada que reconoce `psql`. |
+| `source .venv/bin/activate` | Incorpora el ambiente virtual del proyecto al entorno. |
+| `export RCLONE_CONFIG=...` | Indica a rclone la ubicación de su archivo de configuración. |
+| `source "$HOME/..."` | Carga las variables definidas en un archivo externo al repositorio. |
+
+Si los demás parámetros de conexión están configurados, podemos ejecutar `psql` sin volver a indicar el nombre de la base de datos.
+
+## 3. Credenciales por proyecto
+
+Las credenciales permiten autenticar a un usuario o programa ante un servicio: contraseñas, tokens, llaves de acceso, entre otros. Queremos mantenerlas separadas del código y de los archivos que compartimos con nuestro equipo.
+
+Para este curso utilizaremos la siguiente convención de organización (no es una ruta obligatoria del sistema):
+
+```markdown
+$HOME/
+├── .secrets/
+│   ├── fiscus/
+│   │   ├── .secrets
+│   │   └── rclone.conf
+│   └── intro-programacion-pp/
+│       └── .secrets
+└── proyectos/
+    └── intro-programacion-pp/
+        ├── .envrc
+        ├── pyproject.toml
+        └── data/
+```
+
+Creamos el directorio y el archivo privado correspondiente al proyecto:
 
 ```{.sh}
+mkdir -p "$HOME/.secrets/intro-programacion-pp"
+touch "$HOME/.secrets/intro-programacion-pp/.secrets"
+```
+
+Editamos el archivo con nuestro editor de texto. Para la demostración de Neo4j utilizaremos:
+
+```{.sh filename="$HOME/.secrets/intro-programacion-pp/.secrets"}
+export NEO4J_USER="neo4j"
+export NEO4J_PASSWORD="reemplazar-por-tu-contraseña"
+```
+
+El valor de la contraseña es ilustrativo: cada persona debe definir el suyo. Mantengan este directorio privado y fuera del repositorio, en una ubicación accesible únicamente a usuarios autorizados.
+
+### 3.1. El `.envrc` del curso
+
+En la raíz del repositorio `intro-programacion-pp` tendremos el siguiente archivo **versionado en Git**:
+
+```{.sh filename=".envrc"}
+# Base de datos DuckDB
+export DB="$PWD/data/db/ecobici.duckdb"
+
+# Ambiente virtual (requiere antes uv sync)
+source .venv/bin/activate
+
+# Credenciales
+source_env "$HOME/.secrets/intro-programacion-pp/.secrets"
+```
+
+`source_env` es una función de direnv para cargar otro archivo de configuración y detectar cambios en él. El archivo debe existir para que esta configuración se cargue correctamente. Primero creamos nuestro archivo privado y sincronizamos el ambiente de Python.
+
+```{.sh}
+uv sync
 direnv allow
-env | cut -d= -f1 | grep '^DB_' | sort
 ```
 
-**Paso 3.** Construye la cadena de conexión en Python:
+Ahora podemos consultar DuckDB sin escribir nuevamente la ruta completa de la base (suponiendo que ya la construimos):
 
-```{.python}
-import os
-
-def cadena_conexion() -> str:
-    usuario = os.environ["DB_USUARIO"]
-    contrasena = os.environ["DB_CONTRASENA"]
-    host = os.environ.get("DB_HOST", "localhost")
-    puerto = os.environ.get("DB_PUERTO", "5432")
-    nombre = os.environ["DB_NOMBRE"]
-    return f"postgresql://{usuario}:{contrasena}@{host}:{puerto}/{nombre}"
+```{.sh}
+echo $DB
+duckdb $DB
 ```
 
-**Paso 4.** Responde y comenta con tu equipo:
+También podemos ejecutar consultas o scripts SQL desde la raíz del proyecto:
 
-- ¿Qué pasa si `DB_CONTRASENA` no existe? ¿Conviene un error o un valor por omisión? ¿Por qué?
-- ¿Por qué la función devuelve la cadena en lugar de imprimirla?
-- ¿Dónde quedaría la contraseña si la escribieras directamente en `notebooks/nb02_exploracion_ecobici.ipynb`?
+```{.sh}
+duckdb $DB -c "SHOW ALL TABLES;"
+duckdb $DB -f sql/01_raw.sql
+```
 
-## 7. Lista de revisión antes de un commit
+A diferencia de `PGDATABASE`, que PostgreSQL reconoce directamente, `DB` es una variable que nosotros definimos. El shell sustituye `$DB` por su valor antes de ejecutar DuckDB.
 
-- [ ] `git status` no muestra `.envrc`, `.env*` ni `credentials.*`.
-- [ ] `git diff` no contiene contraseñas, tokens ni cadenas de conexión con contraseña.
-- [ ] Los notebooks no tienen salidas con valores de credenciales.
-- [ ] El `Dockerfile` no tiene `ENV` ni `COPY` con credenciales.
+Podemos verificar el ambiente virtual sin imprimir las credenciales:
 
-## Siguiente unidad
+```{.sh}
+which python
+echo $VIRTUAL_ENV
+```
 
-Conexión remota, autenticación, usuarios, roles y permisos en PostgreSQL: el servidor decide quién se conecta y qué puede hacer cada usuario. Ese tema es la base para crear usuarios de solo lectura como el de la sección 4.
+Al salir del repositorio, direnv restaura las variables anteriores. Al entrar nuevamente, carga la configuración del proyecto.
+
+### 3.2. ¿Qué archivos versionamos?
+
+| Archivo | ¿Se sube a Git? |
+|---|---|
+| `.envrc` sin valores secretos | Sí: comparte la configuración del proyecto. |
+| `docker-compose.yml` sin secretos | Sí. |
+| `$HOME/.secrets/nombre-proyecto/.secrets` | No: permanece fuera del repositorio. |
+| `.env` u otros archivos con credenciales | No. |
+| Código, notebooks y README | Sí, pero nunca con valores secretos. |
+
+Si `.envrc` está en `.gitignore`, retiren esa regla específica para poder compartirlo. Mantengan las reglas que excluyen archivos con secretos. Antes de autorizar un `.envrc` versionado revisen sus instrucciones.
+
+## 4. Credenciales y Docker: Neo4j
+
+En la sesión anterior utilizamos Docker Compose para levantar distintos servicios, entre ellos Neo4j. Ahora queremos proporcionar la contraseña desde nuestro ambiente, en lugar de escribirla en el YAML.
+
+```{.yaml filename="docker-compose.yml"}
+services:
+  bashquiz:
+    build: ./bashquiz
+    image: bashquizclase
+    stdin_open: true
+    tty: true
+
+  api:
+    build: ./api
+    image: irisclase
+    ports:
+      - "13000:13000"
+
+  neo4j:
+    build: ./neo4j
+    image: neo4jclase
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    environment:
+      NEO4J_AUTH: "${NEO4J_USER:?Usuario no definido}/${NEO4J_PASSWORD:?Contraseña no definida}"
+    volumes:
+      - neo4j_data:/data
+
+volumes:
+  neo4j_data:
+```
+
+Docker Compose sustituye `${NEO4J_USER}` y `${NEO4J_PASSWORD}` por los valores del ambiente. La sintaxis `:?` exige que la variable esté definida y no esté vacía. Neo4j recibe el resultado en `NEO4J_AUTH` al crear el contenedor; el valor no se incorpora a la imagen.
+
+```markdown
+$HOME/.secrets/intro-programacion-pp/.secrets
+                    │
+                    ▼
+                 .envrc
+                    │
+                 direnv
+                    │
+                    ▼
+         Variables de entorno
+                    │
+                    ▼
+          docker-compose.yml
+                    │
+                    ▼
+           Contenedor Neo4j
+```
+
+
+Desde el directorio donde está el archivo Compose, dentro del proyecto autorizado:
+
+```{.sh}
+test -n "$NEO4J_PASSWORD" && echo "Credencial disponible"
+docker compose up -d neo4j
+docker compose ps
+```
+
+Podemos acceder a Neo4j Browser en <http://localhost:7474> e iniciar sesión con el usuario `neo4j` y la contraseña que configuramos.
+
+::: {.callout-warning}
+## ¿Qué pasa si ya existe el volumen de Neo4j?
+
+`NEO4J_AUTH` configura la autenticación inicial. Si el volumen ya contiene una base inicializada, cambiar la variable no modifica automáticamente la contraseña existente. En ese caso debemos cambiarla mediante Neo4j. No eliminen el volumen si necesitan conservar los datos.
+:::
+
+## 5. Consideraciones de seguridad
+
+Separar los secretos del código reduce el riesgo de subirlos accidentalmente a Git, pero las variables de entorno **no son un almacén seguro de credenciales**. Los programas que ejecutamos pueden heredar esas variables.
+
+::: {.callout-important}
+## No impriman las credenciales
+
+Un programa de Python, un notebook o un agente de programación puede consultar las variables de entorno que heredó de la terminal. Eviten imprimir el ambiente completo o compartir salidas que incluyan secretos. Carguen únicamente las credenciales que requiere el proyecto y no ejecuten código desconocido con ellas disponibles.
+
+Comandos como `env`, `printenv`, `docker compose config` y `docker inspect` pueden exponer valores sensibles. Para revisar únicamente los nombres de las variables, podemos utilizar:
+
+```{.sh}
+printenv | cut -d= -f1 | grep '^NEO4J_'
+```
+
+:::
+
+### 5.1. Git, Docker y agentes de programación
+
+- Revisen los cambios antes de hacer un commit (`git status`, `git diff` y `git diff --cached`). Revisen también las salidas de los notebooks.
+- No copien secretos al `Dockerfile` ni al contexto de construcción de una imagen. Utilicen `.dockerignore` para excluir archivos sensibles.
+- No peguen credenciales en chats, instrucciones de agentes o archivos como `CLAUDE.md`. Den a los agentes el acceso mínimo necesario; bloquear la lectura del archivo privado no impide por sí solo que consulten las variables heredadas.
+- Si una credencial llegó a Git, cámbienla o revóquenla. Borrarla en un nuevo commit no elimina su valor del historial.
+
+### 5.2. Credenciales y GitHub Actions
+
+Las variables cargadas por direnv en nuestra computadora no se transfieren automáticamente a los runners de GitHub Actions ni a los contenedores. Cada ambiente necesita su propia configuración.
+
+En GitHub podemos almacenar credenciales en **Settings → Secrets and variables → Actions** y proporcionarlas a un step que las necesite mediante `env`:
+
+```{.yaml}
+- name: Ejecutar proceso
+  env:
+    NEO4J_USER: ${{ secrets.NEO4J_USER }}
+    NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+  run: bash scripts/procesar.sh
+```
+
+Este fragmento es ilustrativo: nuestro workflow de publicación de Quarto no necesita credenciales de Neo4j.
 
 ## Referencias
 
-- direnv: <https://direnv.net/>
-- Variables de entorno en Docker Compose: <https://docs.docker.com/compose/how-tos/environment-variables/>
-- Permisos en Claude Code: <https://docs.claude.com/en/docs/claude-code/settings>
-- PostgreSQL, roles y autenticación: <https://www.postgresql.org/docs/current/user-manag.html>
+- [GNU Bash: archivos de inicio](https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html)
+- [Zsh: archivos de inicio](https://zsh.sourceforge.io/Doc/Release/Files.html)
+- [direnv: documentación](https://direnv.net/)
+- [direnv: funciones de configuración](https://direnv.net/man/direnv-stdlib.1.html)
+- [PostgreSQL: variables de entorno](https://www.postgresql.org/docs/current/libpq-envars.html)
+- [Docker Compose: sustitución de variables](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)
+- [Neo4j: configuración con Docker](https://neo4j.com/docs/operations-manual/current/docker/configuration/)
+- [GitHub Actions: uso de secretos](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions)
+- [Bash: Controlling the Prompt](https://www.gnu.org/software/bash/manual/html_node/Controlling-the-Prompt.html)
+- [Zsh: Prompt Expansion](https://zsh.sourceforge.io/Doc/Release/Prompt-Expansion.html)
+
+

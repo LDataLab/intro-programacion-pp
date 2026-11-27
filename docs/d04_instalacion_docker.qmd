@@ -1,0 +1,179 @@
+---
+title: "Instalación de Docker: Windows (WSL2) y macOS"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+    code-copy: true
+date: today
+---
+
+
+
+Para la instalación:
+
+- **Windows:** instalaremos Docker Desktop en Windows, pero ejecutaremos los comandos desde **Ubuntu (WSL2)**.
+- **macOS:** instalaremos Docker Desktop y ejecutaremos los comandos desde **Terminal**.
+
+
+# 1. Windows con WSL2 (Ubuntu)
+
+## Paso 1. Verificar WSL2
+
+Abrir **PowerShell** y ejecutar:
+
+```{.powershell}
+wsl --version
+wsl -l -v
+```
+
+Verificar que la distribución **Ubuntu** aparezca con la versión **2** de WSL.
+
+Si es necesario actualizar WSL, ejecutar en PowerShell:
+
+```{.powershell}
+wsl --update
+```
+
+Si Ubuntu aparece con `VERSION 1`, convertirla a WSL2 (sustituyendo `Ubuntu` por el nombre exacto que muestre `wsl -l -v`):
+
+```{.powershell}
+wsl --set-version Ubuntu 2
+```
+
+## Paso 2. Instalar Docker Desktop en Windows
+
+1. Abrir la [página oficial de instalación de Docker Desktop para Windows](https://docs.docker.com/desktop/setup/install/windows-install/).
+2. Descargar el instalador para Windows.
+3. Ejecutar el instalador y utilizar el motor basado en **WSL 2** cuando se solicite.
+4. Abrir **Docker Desktop** y completar la configuración inicial.
+5. Esperar a que Docker Desktop indique que el motor de Docker está en funcionamiento.
+
+## Paso 3. Habilitar la integración con Ubuntu
+
+Dentro de **Docker Desktop**:
+
+1. Abrir **Settings**.
+2. Ir a **Resources → WSL Integration**.
+3. Activar la integración para **Ubuntu**.
+4. Seleccionar **Apply & Restart**.
+
+::: {.callout-important}
+## Importante
+
+A partir de este momento, los comandos se ejecutan desde la **terminal de Ubuntu (WSL2)**, no desde PowerShell.
+:::
+
+## Paso 4. Verificar Docker desde Ubuntu
+
+Abrir Ubuntu y ejecutar:
+
+```{.bash}
+docker --version
+```
+
+El comando debe mostrar la versión de Docker instalada. Si aparece `docker: command not found`, revisar que Docker Desktop esté abierto y que la integración con Ubuntu esté activada.
+
+# 2. macOS
+
+## Paso 1. Identificar el procesador
+
+Abrir **Terminal** y ejecutar:
+
+```{.bash}
+uname -m
+```
+
+El resultado puede ser:
+
+- `arm64`: Mac con procesador **Apple Silicon** (M1, M2, M3, etc.).
+- `x86_64`: Mac con procesador **Intel**.
+
+## Paso 2. Instalar Docker Desktop
+
+1. Abrir la [página oficial de instalación de Docker Desktop para macOS](https://docs.docker.com/desktop/setup/install/mac-install/).
+2. Descargar la versión correspondiente al procesador de la computadora.
+3. Abrir el archivo `.dmg` descargado.
+4. Arrastrar **Docker** a la carpeta **Applications**.
+5. Abrir **Docker Desktop** y completar la configuración inicial, autorizando los permisos necesarios.
+6. Esperar a que Docker Desktop indique que el motor está en funcionamiento.
+
+# 3. Ubuntu
+
+
+
+Sigue la instalación oficial desde el repositorio de Docker:
+
+```{.sh}
+# Dependencias y llave del repositorio
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Repositorio de Docker
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Instalación
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+Para usar Docker sin `sudo`, agrega tu usuario al grupo `docker` y reinicia la sesión:
+
+```{.sh}
+sudo usermod -aG docker $USER
+```
+
+Prueba la instalación:
+
+```{.sh}
+docker run hello-world
+```
+
+
+## Paso 3. Verificar Docker desde Terminal
+
+Ejecutar:
+
+```{.bash}
+docker --version
+```
+
+El comando debe mostrar la versión de Docker instalada.
+
+# 3. Primera prueba: Hello from Docker!
+
+Este paso es **igual en Windows (Ubuntu/WSL2) y macOS (Terminal)**.
+
+Con **Docker Desktop abierto y en funcionamiento**, ejecutar:
+
+```{.bash}
+docker run --rm hello-world
+```
+
+¿Qué hace este comando?
+
+1. Busca la imagen `hello-world` en la computadora.
+2. Si no está disponible, la descarga automáticamente de Docker Hub.
+3. Crea y ejecuta un contenedor a partir de esa imagen.
+4. Muestra un mensaje de confirmación.
+5. Elimina el contenedor al terminar gracias a la opción `--rm`.
+
+Si todo funciona correctamente, la salida incluirá:
+
+```text
+Hello from Docker!
+```
+
+::: {.callout-tip}
+## Resultado esperado
+
+Si aparece **`Hello from Docker!`**, la instalación quedó lista para las actividades de clase.
+:::
+
+
+

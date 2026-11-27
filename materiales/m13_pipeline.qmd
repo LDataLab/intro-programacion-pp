@@ -1,64 +1,327 @@
 ---
-title: "Tarea 2: Exploración de datos"
+title: "Automatización de pipelines con GitHub Actions"
+subtitle: "De la ejecución local a la publicación automatizada de productos de datos"
 format:
   html:
     toc: true
     toc-depth: 2
     theme: cosmo
     highlight-style: github
+    code-copy: true
 date: today
+execute:
+  eval: false
 ---
 
-# Programación para _Pipelines_
+## 1. De la ejecución manual a la automatización
 
-## CI/CD
+Hasta ahora hemos utilizado la terminal para descargar datos, construir bases de datos, ejecutar código de Python y generar reportes. En cada caso, nosotros decidimos cuándo ejecutar los comandos.
 
-CI/CD (Integración Continua y Despliegue Continuo) es una práctica de desarrollo de software que automatiza la integración de cambios en el código y el despliegue de la aplicación. Esto incluye pruebas automáticas y la actualización continua del entorno de prueba o incluso producción.
+¿Qué sucede si queremos que un proceso se ejecute automáticamente cada vez que se modifica el código o en un horario determinado, sin tener nuestra computadora encendida?
 
-### CI/CD en GitLab
+Podemos automatizar distintas etapas de un pipeline de ciencia de datos. Para ello necesitamos definir **cuándo ejecutar un proceso, en qué entorno, qué instrucciones seguir y qué hacer con los resultados**.
 
-GitLab proporciona herramientas integradas para CI/CD, lo que significa que no necesitas usar servicios externos; todo el proceso se gestiona directamente dentro de la plataforma. Flujo:
+## 2. GitHub Actions
 
-1. **Commit y Push**: Cuando se realiza un cambio en el código y se sube al repositorio de GitLab, el sistema CI/CD se activa automáticamente.
-2. **Pruebas Automáticas**: Se puede hacer uso de contenedores de Docker para ejecutar entornos o aplicaciones ya establecidas, y solo correr parte de tu código.
-3. **Despliegue**: Si las pruebas son exitosas, el código se despliega automáticamente en un entorno de producción o en un servidor de pruebas.
+[GitHub Actions](https://docs.github.com/es/actions) es una herramienta integrada en GitHub que permite automatizar procesos asociados a un repositorio. No solamente podemos almacenar y versionar nuestro código en GitHub: también podemos ejecutarlo en infraestructura de cómputo.
 
-#### El archivo culpable de que esto funcione es .gitlab-ci.yml
+Algunas aplicaciones en ciencia de datos son:
 
-El archivo .gitlab-ci.yml es el que define cómo y cuándo se ejecutan las tareas de CI/CD:
+- Descargar y procesar datos periódicamente.
+- Ejecutar scripts de Python, SQL o Bash.
+- Realizar pruebas de código y validaciones de calidad de datos.
+- Construir imágenes de Docker.
+- Entrenar y evaluar modelos pequeños.
+- Generar y publicar reportes o documentación.
 
-- Tareas a Ejecutar: Puedes especificar pruebas, compilación, generación de reportes y más.
-- Condiciones de Ejecución: Configura en qué ramas o bajo qué circunstancias deben ejecutarse los trabajos.
-- Imagen de Docker: Indica el entorno necesario para ejecutar tu código.
+En esta sesión nos concentraremos en el último ejemplo: **cómo se construye y publica automáticamente la página de nuestro curso**.
 
-Ejemplo de clase:
+### 2.1. Conceptos principales
 
-```{.yml}
-image: registry.gitlab.com/quarto-forge/docker/polyglot  # utilizamos docker que ya tiene quarto
+| Concepto | Descripción |
+|---|---|
+| **Workflow** | Proceso automatizado definido en un archivo YAML dentro de `.github/workflows/`. |
+| **Event / trigger** | Evento que inicia el workflow: un `push`, un Pull Request, un horario o una solicitud manual. |
+| **Runner** | Entorno de cómputo donde se ejecuta un job. Puede ser proporcionado por GitHub o administrado por nosotros. |
+| **Job** | Conjunto de pasos que se ejecutan en un runner. |
+| **Step** | Instrucción individual dentro de un job. |
+| **Action** | Componente reutilizable que realiza una tarea específica. |
+| **Artifact** | Archivos generados que podemos conservar o transferir entre jobs. |
 
-pages: # Define que el trabajo se ejecutará en GitLab Pages
-  script: # Comandos que ejecutarás para generar el contenido
-    - quarto render index.qmd --output-dir public
-  artifacts:
-    paths:
-      - public
-  rules:
-    - changes:
-        - "_quarto.yml"
-        - "index.qmd"
-        - "references.bib"
+### 2.2. CI/CD
 
+En desarrollo de software es común utilizar estas herramientas para implementar CI/CD:
+
+- **Continuous Integration (CI):** integrar cambios frecuentemente y verificar automáticamente que el código sigue funcionando.
+- **Continuous Delivery (CD):** preparar automáticamente una versión que está lista para desplegarse.
+- **Continuous Deployment (CD):** desplegar automáticamente los cambios que superan las verificaciones necesarias.
+
+No todos los workflows son procesos de CI/CD. Descargar datos todos los días, por ejemplo, también es una automatización. En nuestro ejemplo automatizaremos principalmente el despliegue del sitio; un renderizado exitoso funciona como una verificación básica de su construcción.
+
+## 3. Ejemplo: la página del curso
+
+La [página del curso](https://ldatalab.github.io/intro-programacion-pp/) se construye con Quarto y se publica mediante GitHub Pages. Su código está en el [repositorio del curso](https://github.com/LDataLab/intro-programacion-pp).
+
+| Herramienta | ¿Qué hace? |
+|---|---|
+| **Quarto** | Convierte los documentos `.qmd` en HTML y construye el sitio. |
+| **GitHub Actions** | Ejecuta las instrucciones para construir y publicar el sitio. |
+| **GitHub Pages** | Aloja y sirve los archivos estáticos del sitio. No mantiene una API o aplicación Python ejecutándose. |
+
+### 3.1. Estructura del proyecto
+
+```{.markdown}
+intro-programacion-pp/
+├── .github/
+│   └── workflows/
+│       └── pages.yml
+├── materiales/
+├── tareas/
+├── docs/
+├── reports/
+├── _quarto.yml
+├── index.qmd
+└── references.bib
 ```
 
-- **GitLab Pages** es un servicio que permite desplegar contenido estático como sitios web o informes directamente desde tu repositorio.
-- La carpeta `public` es importante porque GitLab Pages solo puede servir contenido que esté en este directorio.
-- Los artifacts son los archivos generados que se guardarán al final de la ejecución del trabajo.
-- `paths`: Aquí especificas que todo el contenido en la carpeta public debe guardarse como artifact, para que GitLab Pages pueda usarlo para desplegar el sitio.
-- `rules`: La opción only: - develop especifica que este trabajo solo se ejecutará cuando haya cambios en la rama develop.
-Esto significa que el sitio solo se actualizará cuando se hagan actualizaciones en esa rama específica.
+El archivo `_quarto.yml` contiene la configuración general; `index.qmd` contiene la página de inicio y los demás `.qmd` contienen los materiales, tareas y reportes. `pages.yml` define la automatización, no el diseño del sitio.
 
+### 3.2. El archivo `_quarto.yml`
 
-Para ver el resultado de este código tienes que ir a `Deploy/Pages/Deployments`:
+Este es un extracto de la configuración del curso, con las opciones de HTML organizadas dentro de `format`:
 
+```{.yaml}
+project:
+  type: website
 
+website:
+  navbar:
+    background: "#f5ddce"
+    title: "Inicio"
+    href: "index.html"
+  sidebar:
+    style: "docked"
+    background: "#fdf4f0"
+    contents:
+      - section: "**Tareas**"
+        contents:
+          - text: "1. Set up"
+            href: tareas/tarea_01_q.html
+          - text: "2. Conexión ssh-github"
+            href: tareas/tarea_02.html
 
+format:
+  html:
+    theme: minty
+    toc: false
+  revealjs:
+    theme: white
+    highlight-style: ayu
+    code-block-border-left: "#ecbb9a"
+    code-overflow: wrap
+    footer: "[← Regresar al inicio](../index.html)"
+
+lang: es-MX
+
+execute:
+  echo: false
+  warning: false
+  freeze: auto
+  cache: true
+```
+
+- `project.type: website`: indica que los documentos forman parte de un sitio web. La carpeta de salida por defecto es `_site/`.
+- `website`: define la navegación, los colores y el menú lateral.
+- `format`: establece las opciones generales para páginas HTML y presentaciones Reveal.js.
+- `lang`: configura el idioma del documento.
+- `execute`: controla aspectos de la ejecución de código. `freeze: auto` permite reutilizar resultados congelados de documentos que no han cambiado y `cache: true` habilita la caché del motor de ejecución cuando es compatible.
+
+### 3.3. El archivo `index.qmd`
+
+Es la página de inicio. Su encabezado YAML define opciones particulares del documento y el resto contiene el contenido en Markdown. Por ejemplo, un extracto del curso:
+
+````markdown
+---
+title: "Introducción a la programación para políticas públicas"
+subtitle: "Materiales de la clase"
+format:
+  html:
+    other-links:
+      - text: Repo del curso
+        href: https://github.com/LDataLab/intro-programacion-pp
+        icon: github
+bibliography: references.bib
+---
+
+## Materiales
+
+::: {.callout-tip collapse="false"}
+### 01: Introducción
+
+- Introducción a programación para ciencia de datos en políticas públicas
+  - [Material 01](materiales/m01_intro.html)
+
+:::
+````
+
+Desde la raíz del proyecto podemos visualizar y construir el sitio localmente:
+
+```{.sh}
+quarto preview .
+quarto render .
+```
+
+El primer comando permite visualizar el sitio mientras trabajamos; el segundo genera los archivos que publicaremos en `_site/`.
+
+::: {.callout-note}
+## ¿Qué estamos automatizando?
+
+En el flujo del curso, las figuras se generan previamente en Python y se versionan junto con los documentos. El workflow no instala las dependencias de análisis ni reconstruye DuckDB. Las opciones `freeze` y `cache` no desactivan por sí solas la ejecución de código: si hay documentos computacionales, necesitamos sus resultados congelados o sus dependencias; también podemos desactivar explícitamente la ejecución cuando corresponda.
+:::
+
+## 4. El workflow de publicación: `pages.yml`
+
+El siguiente archivo se encuentra en `.github/workflows/pages.yml`. Está basado en el workflow del curso, con las rutas de activación ampliadas para incluir los materiales, reportes, imágenes y bibliografía.
+
+```{.yaml}
+name: Publish Quarto site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "slides/**"
+      - "materiales/**"
+      - "tareas/**"
+      - "docs/**"
+      - "reports/**"
+      - "imgs/**"
+      - "*.qmd"
+      - "*.yml"
+      - "*.yaml"
+      - "*.bib"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Render Quarto project
+        run: quarto render .
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+### 4.1. ¿Cuándo y con qué permisos se ejecuta?
+
+| Instrucción | Función |
+|---|---|
+| `name` | Nombre que aparece en la pestaña Actions. |
+| `on.push.branches` | Activa el workflow cuando se hace push a `main`. |
+| `paths` | Restringe la activación a cambios en las rutas indicadas. `**` permite incluir subdirectorios. |
+| `workflow_dispatch` | Permite ejecutar manualmente el workflow desde Actions, una vez disponible en la rama predeterminada. |
+| `permissions` | Autoriza leer el repositorio, desplegar Pages y solicitar un token de identidad para el despliegue. |
+| `concurrency` | Agrupa ejecuciones de publicación; con `cancel-in-progress: true` una nueva ejecución puede cancelar la anterior. |
+
+Si no necesitamos filtrar qué archivos cambiaron, podemos omitir `paths` y ejecutar el workflow con cualquier push a `main`.
+
+### 4.2. Job `build`: construir el sitio
+
+GitHub proporciona un runner temporal con Ubuntu (`runs-on: ubuntu-latest`). En él se ejecutan los siguientes pasos:
+
+| Step | ¿Qué sucede? |
+|---|---|
+| Checkout repository | Obtiene una copia del código del repositorio. |
+| Set up Quarto | Instala Quarto en el runner. |
+| Render Quarto project | Ejecuta `quarto render .` y construye el sitio. |
+| Upload site | Empaqueta el contenido de `_site/` como artifact de Pages. |
+
+Noten la diferencia entre `uses`, que invoca una acción reutilizable; `run`, que ejecuta comandos de terminal; y `with`, que proporciona parámetros a una acción. Las referencias como `@v6` indican la versión principal de una acción.
+
+### 4.3. Job `deploy`: publicar el sitio
+
+`needs: build` indica que este job debe esperar a que termine exitosamente `build`. Como utiliza otro runner, los archivos del primero no están disponibles directamente: el artifact permite transferir el sitio construido al proceso de publicación.
+
+La acción `actions/deploy-pages@v4` publica el sitio. `environment` identifica el entorno de despliegue y la expresión `${{ steps.deployment.outputs.page_url }}` recupera la URL que devuelve el step identificado como `deployment`.
+
+```{mermaid}
+flowchart TD
+    A[Push a main o ejecución manual] --> B
+    subgraph B[Job build · Ubuntu]
+        C[Checkout del repositorio] --> D[Instalar Quarto]
+        D --> E[quarto render .]
+        E --> F[Subir artifact de _site/]
+    end
+    B --> G[Artifact de Pages]
+    G --> H
+    subgraph H[Job deploy · Ubuntu]
+        I[Publicar con deploy-pages]
+    end
+    H --> J[Sitio web en GitHub Pages]
+```
+
+## 5. Configuración y seguimiento en GitHub
+
+Para que este mecanismo funcione, además de versionar el archivo `pages.yml`:
+
+1. En el repositorio, entrar a **Settings → Pages**.
+2. En **Build and deployment → Source**, seleccionar **GitHub Actions**.
+3. Integrar el workflow a `main` y consultar la pestaña **Actions**.
+4. Seleccionar una ejecución para revisar los jobs, sus pasos y los logs. También se puede utilizar **Run workflow** para iniciar una ejecución manual.
+5. Una vez completado el despliegue, consultar la URL del sitio en **Settings → Pages** o en el entorno de despliegue.
+
+::: {.callout-tip}
+## Relación con su proyecto final
+
+Podrán reutilizar este mecanismo para publicar el reporte de la Tarea 4. No necesitan replicar el menú ni toda la estructura del curso. Para su sitio, conviene indicar en `project.render` cuáles documentos se publicarán (por ejemplo, `index.qmd` y `docs/reporte.qmd`) y desactivar la ejecución con `execute.enabled: false` si el reporte solamente incorpora figuras previamente generadas. Así no se reconstruye DuckDB ni se ejecutan los notebooks en GitHub.
+
+Recuerden versionar las figuras del reporte, pero no los CSV originales, las bases DuckDB ni las credenciales. Revisen también qué información quedará accesible al publicar el sitio.
+:::
+
+## 6. Consideraciones finales
+
+GitHub Actions permite trasladar comandos que ejecutamos localmente a un entorno automatizado. No es un servidor permanente, y sus recursos y tiempos de ejecución tienen límites.
+
+En nuestro ejemplo, no necesitamos escribir una contraseña personal para publicar. Pero ¿qué sucede si un workflow necesita acceder a una base de datos privada o a una API que requiere un token? En el siguiente material veremos cómo configurar nuestros programas mediante variables de entorno y manejar credenciales sin exponerlas en el código.
+
+## Referencias
+
+- [GitHub Actions: sintaxis de workflows](https://docs.github.com/es/actions/reference/workflows-and-actions/workflow-syntax)
+- [GitHub Pages: publicación con workflows personalizados](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+- [Quarto: creación de sitios web](https://quarto.org/docs/websites/)
+- [Quarto: publicación en GitHub Pages](https://quarto.org/docs/publishing/github-pages.html)
+- [Quarto: administración de la ejecución](https://quarto.org/docs/projects/code-execution.html)

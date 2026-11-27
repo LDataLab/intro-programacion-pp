@@ -1,0 +1,3 @@
+# Excluir notebooks de las estadísticas
+*.ipynb linguist-detectable=false
+

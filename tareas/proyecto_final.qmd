@@ -1,0 +1,480 @@
+---
+title: "Proyecto final: Desarrollo y entrega de un producto de datos reproducible"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+    highlight-style: github
+    code-copy: true
+date: today
+execute:
+  eval: false
+---
+
+## 1. Contexto y objetivo
+
+En la Tarea 4 desarrollaron un producto de datos descriptivo: desde la obtención de los datos originales y la construcción de una base de datos en DuckDB hasta la comunicación de sus hallazgos mediante un reporte en Quarto.
+
+Imaginen ahora que deben **entregar este producto a un equipo técnico que no participó en su desarrollo**. Este equipo necesita entender el análisis, reproducirlo en otra computadora y continuar trabajando con él sin depender de ustedes.
+
+El objetivo del proyecto final es mejorar el producto de la Tarea 4 y proporcionar dos alternativas para reproducir su análisis: una utilizando las herramientas instaladas localmente y otra utilizando Docker. Además, deberán automatizar la publicación de su reporte con GitHub Actions.
+
+::: {.callout-important}
+## Un solo proyecto, dos ambientes de ejecución
+
+No deben desarrollar dos versiones del análisis. Los scripts de descarga, los archivos SQL, los notebooks y las funciones de Python deben ser los mismos en ambos ambientes. A partir de los mismos datos deben obtener resultados analíticos equivalentes.
+
+Quarto se mantiene fuera del contenedor. GitHub Actions se encargará de construir y publicar el reporte con las figuras previamente generadas y versionadas.
+:::
+
+```text
+             Repositorio del proyecto
+                       |
+           +-----------+-----------+
+           |                       |
+    Ejecución local        Ejecución con Docker
+           |                       |
+           +-----------+-----------+
+                       |
+          Descargar datos (Bash/curl)
+                       |
+          DuckDB: raw, clean, model
+                       |
+           Notebooks y figuras
+                       |
+           Reporte narrativo Quarto
+                       |
+        GitHub Actions -> GitHub Pages
+```
+
+## 2. Correcciones de la Tarea 4
+
+Continúen trabajando en el mismo repositorio `progra-<nombre-equipo>`. Incorporen las observaciones realizadas durante la revisión de la Tarea 4 y mantengan los requisitos analíticos de esa entrega.
+
+- Revisen las decisiones de limpieza, las capas `raw`, `clean` y `model` y la documentación de la fuente.
+- Mejoren los dos notebooks: perfilado de los datos y preguntas con visualizaciones e interpretaciones. Mantengan el mínimo de cinco preguntas, cinco gráficas e interpretaciones solicitado en la Tarea 4.
+- Actualicen el reporte Quarto con los hallazgos seleccionados, sus interpretaciones, conclusiones y limitaciones.
+- Verifiquen que las figuras publicadas correspondan a los resultados de la versión final del análisis.
+
+En un archivo `CHANGELOG.md`, documenten brevemente la retroalimentación recibida y los cambios que realizaron. Por ejemplo:
+
+| Retroalimentación | Cambio realizado |
+|---|---|
+| Las gráficas eran principalmente univariadas. | Incorporamos comparaciones por región y periodo. |
+| No se justificaba la eliminación de registros. | Documentamos los criterios de limpieza. |
+
+## 3. Organización del repositorio
+
+Conserven la estructura de la Tarea 4 y agreguen los archivos necesarios para la entrega técnica. La siguiente estructura es una referencia; adapten los nombres a su proyecto.
+
+```text
+.
+├── .github/
+│   └── workflows/
+│       └── pages.yml
+├── data/
+│   ├── raw/                     # No versionar los datos
+│   └── db/                      # No versionar la base DuckDB
+├── scripts/
+│   ├── download_data.sh
+│   └── build_db.sh
+├── sql/
+│   ├── 01_raw.sql
+│   ├── 02_clean.sql
+│   └── 03_model.sql
+├── notebooks/
+│   ├── nb01_estructura_perfilado.ipynb
+│   └── nb02_preguntas_visualizaciones.ipynb
+├── docs/
+│   ├── reporte.qmd
+│   └── imgs/                    # Figuras seleccionadas, versionadas
+├── src/                         # Funciones reutilizables, si aplica
+├── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
+├── .gitignore
+├── .envrc
+├── _quarto.yml
+├── index.qmd
+├── pyproject.toml
+├── uv.lock
+├── CHANGELOG.md
+└── README.md
+```
+
+Todos los comandos de las siguientes secciones se ejecutan desde la raíz del repositorio, salvo que se indique lo contrario.
+
+## 4. Preparación de los datos
+
+En la Tarea 4 documentaron cómo descargar los datos y construir DuckDB. Ahora deberán reunir esas instrucciones en dos scripts de Bash reutilizables. Los mismos scripts deberán funcionar dentro y fuera del contenedor.
+
+### 4.1. Descargar los datos
+
+```{.sh filename="scripts/download_data.sh"}
+#!/usr/bin/env bash
+set -e
+
+mkdir -p data/raw
+
+curl -fL --retry 3 \
+    "URL_DE_LA_FUENTE_DE_DATOS" \
+    -o data/raw/datos.csv
+```
+
+Sustituyan la URL y el nombre del archivo por los de su fuente. Si necesitan descargar varios archivos o descomprimirlos, incorporen esos pasos al script. Documenten la cobertura o versión de la fuente y cualquier paso adicional necesario para reproducir la descarga.
+
+### 4.2. Construir DuckDB
+
+```{.sh filename="scripts/build_db.sh"}
+#!/usr/bin/env bash
+set -e
+
+mkdir -p data/db
+
+# Utilizar la ruta configurada en el ambiente
+: "${DB:?La variable DB no está definida}"
+
+duckdb -bail "$DB" -f sql/01_raw.sql
+duckdb -bail "$DB" -f sql/02_clean.sql
+duckdb -bail "$DB" -f sql/03_model.sql
+
+echo "Base de datos construida correctamente"
+```
+
+La variable `DB` indica dónde se encuentra la base de datos. Los scripts SQL son los que ya desarrollaron en la Tarea 4. Verifiquen que puedan ejecutarse en ese orden partiendo de una base vacía, y documenten si se requiere alguna acción para reconstruir una base existente.
+
+::: {.callout-note}
+## Separar los datos del ambiente de trabajo
+
+No descarguen los datos desde el Dockerfile. Construir la imagen y obtener los datos son dos procesos distintos. Así podrán actualizar los datos sin reconstruir la imagen y utilizar el mismo script de descarga sin Docker.
+:::
+
+## 5. Opción A: ejecución local (sin Docker)
+
+Esta alternativa requiere tener instalados `uv`, DuckDB CLI, Bash, `curl` y, para visualizar el reporte, Quarto. Incluyan en el README los requisitos de su proyecto.
+
+Instalen las dependencias declaradas en `pyproject.toml` y `uv.lock`:
+
+```{.sh}
+uv sync --locked
+```
+
+Asegúrense de incluir JupyterLab y las bibliotecas necesarias para sus notebooks entre las dependencias del proyecto. Si falta JupyterLab, pueden agregarlo con `uv add jupyterlab` y versionar los cambios de `pyproject.toml` y `uv.lock`.
+
+Configuren su ambiente utilizando `direnv`, como vimos en clase:
+
+```{.sh filename=".envrc"}
+# Base de datos DuckDB
+export DB="$PWD/data/db/proyecto.duckdb"
+
+# Ambiente virtual (requiere antes uv sync)
+source .venv/bin/activate
+```
+
+Adapten el nombre de la base de datos. Este archivo debe estar versionado y no contener credenciales.
+
+```{.sh}
+direnv allow
+```
+
+Si no utilizan `direnv`, pueden cargar la misma configuración en su sesión de Bash o Zsh con `source .envrc` después de revisar su contenido.
+
+Preparen los datos y consulten la base:
+
+```{.sh}
+bash scripts/download_data.sh
+bash scripts/build_db.sh
+duckdb "$DB"
+```
+
+Salgan de DuckDB con `.quit` antes de abrir los notebooks para evitar conflictos de acceso a la base.
+
+```{.sh}
+uv run jupyter lab
+```
+
+Ejecuten ambos notebooks de principio a fin, en el orden establecido en la Tarea 4. Regeneren las figuras seleccionadas en `docs/imgs/`.
+
+## 6. Opción B: ejecución con Docker
+
+El equipo técnico deberá poder reproducir el mismo análisis sin instalar Python, `uv`, DuckDB ni Jupyter en su computadora: solo necesitará Docker con Docker Compose y una copia del repositorio.
+
+Les proporciono los siguientes archivos como punto de partida. No necesitan investigar desde cero cómo construir el ambiente, pero sí entender qué hace cada archivo, adaptarlo a su proyecto y verificar su funcionamiento.
+
+### 6.1. Dockerfile
+
+```{.dockerfile filename="Dockerfile"}
+FROM python:3.12-slim
+
+# Herramientas del sistema
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        bash curl ca-certificates unzip gzip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Instalar uv
+COPY --from=ghcr.io/astral-sh/uv:latest \
+    /uv /uvx /usr/local/bin/
+
+# Instalar DuckDB CLI
+RUN bash -o pipefail -c 'curl -fsSL https://install.duckdb.org | bash'
+
+# Ambiente virtual independiente del ambiente local
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV PATH="/root/.duckdb/cli/latest:/opt/venv/bin:$PATH"
+
+WORKDIR /app
+COPY . .
+
+# Instalar las dependencias del proyecto
+RUN uv sync --locked
+
+EXPOSE 8888
+
+# Iniciar JupyterLab
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+```
+
+| Instrucción | Función |
+|---|---|
+| `FROM` | Define la imagen base de Python. |
+| `RUN` | Instala herramientas y dependencias al construir la imagen. |
+| `ENV` | Configura variables de entorno del contenedor. |
+| `WORKDIR` | Establece el directorio de trabajo. |
+| `COPY` | Copia archivos a la imagen, respetando `.dockerignore`. |
+| `EXPOSE` | Documenta el puerto utilizado por Jupyter. |
+| `CMD` | Define el comando que se ejecuta al iniciar el contenedor. |
+
+Revisen la versión de Python de su proyecto y ajusten la imagen base si es necesario. Procuren utilizar la misma versión de DuckDB CLI en ambos ambientes y documenten las versiones utilizadas. El ejemplo instala las versiones disponibles de uv y DuckDB; pueden fijarlas para mejorar la reproducibilidad. Si sus datos requieren herramientas adicionales, agréguenlas aquí.
+
+### 6.2. Docker Compose
+
+```{.yaml filename="docker-compose.yml"}
+services:
+  analysis:
+    build: .
+    image: proyecto-analisis
+    ports:
+      - "127.0.0.1:8888:8888"
+    volumes:
+      - .:/app
+    environment:
+      DB: /app/data/db/proyecto.duckdb
+```
+
+Adapten el nombre de la imagen y el archivo DuckDB. El nombre de la base debe coincidir con el definido en `.envrc`. No necesitan crear un servicio independiente para DuckDB: es una base de datos embebida en un archivo.
+
+| Configuración | Función |
+|---|---|
+| `build` | Indica dónde se encuentra el Dockerfile. |
+| `ports` | Permite acceder a Jupyter desde el navegador de la computadora local. |
+| `volumes` | Comparte el repositorio con el contenedor mediante un bind mount. |
+| `environment` | Configura la ruta de DuckDB dentro del contenedor. |
+
+El volumen `.:/app` permite trabajar con los mismos archivos en ambos ambientes. Los datos descargados, la base construida, los notebooks y las figuras quedan disponibles también en la computadora local. No tienen que copiarlos manualmente al salir del contenedor.
+
+```text
+Computadora local                  Contenedor
+progra-equipo/    <------------->  /app/
+  data/                              data/
+  scripts/                           scripts/
+  sql/                               sql/
+  notebooks/                         notebooks/
+  docs/                              docs/
+  .venv/                           /opt/venv (independiente)
+```
+
+El `.venv` local puede verse bajo `/app` debido al montaje, pero el contenedor utiliza `/opt/venv`, no el ambiente local. No ejecuten `source .envrc` dentro del contenedor: Docker Compose ya define `DB` y la imagen tiene su propio ambiente virtual.
+
+### 6.3. Archivos que no deben incorporarse a la imagen
+
+```{.text filename=".dockerignore"}
+.git/
+.venv/
+data/
+_site/
+.quarto/
+.env
+.env.*
+.secrets
+.secrets/
+**/.secrets
+**/.secrets/**
+**/__pycache__/
+**/.ipynb_checkpoints/
+```
+
+Este archivo evita copiar datos, ambientes virtuales y archivos privados durante la construcción de la imagen. No sustituye a `.gitignore` ni restringe qué archivos puede ver el contenedor a través del volumen. Mantengan los secretos fuera del repositorio; no necesitan credenciales para descargar las fuentes públicas de esta tarea.
+
+### 6.4. Ejecutar el análisis
+
+Construyan la imagen e inicien el servicio:
+
+```{.sh}
+docker compose build
+docker compose up -d
+```
+
+Descarguen los datos y construyan DuckDB ejecutando los mismos scripts dentro del contenedor:
+
+```{.sh}
+docker compose exec analysis bash scripts/download_data.sh
+docker compose exec analysis bash scripts/build_db.sh
+```
+
+Para consultar la base desde la terminal del contenedor:
+
+```{.sh}
+docker compose exec analysis bash
+```
+
+Una vez dentro:
+
+```{.sh}
+duckdb "$DB"
+```
+
+Salgan de DuckDB con `.quit` y del shell del contenedor con `exit`.
+
+Para acceder a JupyterLab, consulten los logs del servicio:
+
+```{.sh}
+docker compose logs analysis
+```
+
+Abran `http://localhost:8888` en su navegador y utilicen el token que aparece en los logs. No desactiven la autenticación ni compartan ese token. Si el puerto está ocupado, pueden cambiar el puerto de la computadora local en Docker Compose (por ejemplo, `127.0.0.1:8889:8888`).
+
+Ejecuten los mismos notebooks de la opción A y comprueben que las figuras generadas aparezcan en `docs/imgs/` en su computadora local.
+
+Cuando terminen, detengan el servicio:
+
+```{.sh}
+docker compose down
+```
+
+Si modifican las dependencias o el Dockerfile, reconstruyan la imagen y vuelvan a iniciar el servicio. Eviten escribir simultáneamente en la misma base DuckDB desde ambos ambientes; cierren las conexiones o los kernels antes de cambiar de ambiente o reconstruir la base.
+
+## 7. Verificar que ambas alternativas funcionan
+
+| Actividad | Sin Docker | Con Docker |
+|---|---|---|
+| Preparar ambiente | `uv sync --locked` | `docker compose build` y `docker compose up -d` |
+| Descargar datos | `bash scripts/download_data.sh` | `docker compose exec analysis bash scripts/download_data.sh` |
+| Construir DuckDB | `bash scripts/build_db.sh` | `docker compose exec analysis bash scripts/build_db.sh` |
+| Ejecutar notebooks | `uv run jupyter lab` | JupyterLab desde el contenedor |
+| Generar figuras | Desde los notebooks | Desde los mismos notebooks |
+| Renderizar Quarto | `quarto render .` | Fuera del contenedor |
+
+No utilicen rutas absolutas asociadas a sus computadoras en los notebooks. Revisen las rutas relativas al directorio de ejecución de cada notebook: si este se encuentra en `notebooks/`, por ejemplo, la base puede estar en `../data/db/proyecto.duckdb`. Lo importante es que el mismo código funcione en ambos ambientes.
+
+Prueben las dos modalidades desde un clon nuevo o una copia limpia del repositorio, sin depender de archivos de datos o bases existentes. Comparen los conteos por capa y los resultados de las preguntas analíticas utilizando la misma versión de los datos. Documenten brevemente esta verificación en el README.
+
+## 8. Automatizar la publicación del reporte
+
+Retomen el material de GitHub Actions (Material 13). El reporte debe publicarse automáticamente en GitHub Pages cuando se integren cambios a `main`.
+
+Configuren `_quarto.yml` e `index.qmd` para que el proyecto tenga una página de inicio y acceso al reporte. Por ejemplo:
+
+```{.yaml filename="_quarto.yml"}
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.qmd
+    - docs/reporte.qmd
+
+website:
+  title: "Nombre del proyecto"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Inicio
+      - href: docs/reporte.qmd
+        text: Reporte
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+
+lang: es-MX
+execute:
+  enabled: false
+```
+
+Adapten el título, la navegación y el contenido de `index.qmd` a su producto. La configuración selecciona únicamente los documentos que se publicarán, sin renderizar los notebooks.
+
+Comprueben el sitio localmente con `quarto preview .` o `quarto render .`.
+
+Creen `.github/workflows/pages.yml` tomando como referencia el workflow de la página del curso (Material 13). Debe incluir los jobs de construcción y publicación: obtener el repositorio, instalar Quarto, renderizar, subir `_site/` como artifact y desplegar en GitHub Pages. Para simplificar, pueden quitar el filtro `paths` y conservar el trigger `push` a `main` y `workflow_dispatch`.
+
+En GitHub, entren a **Settings > Pages > Build and deployment** y seleccionen **GitHub Actions** como fuente de publicación. Verifiquen que el repositorio permita usar Pages y que la visibilidad del sitio sea apropiada. Si existe una restricción institucional, infórmenla antes de la entrega.
+
+::: {.callout-important}
+GitHub Actions solo debe renderizar y publicar el sitio. No debe descargar los datos, construir DuckDB, ejecutar los notebooks ni construir la imagen Docker. Las figuras seleccionadas deben estar previamente generadas y versionadas. Si cambian los datos, revisen también las interpretaciones antes de publicar el reporte actualizado.
+:::
+
+Incluyan en el README el enlace al reporte publicado y comprueben que el último workflow correspondiente a la entrega terminó exitosamente.
+
+## 9. README y entrega técnica
+
+El `README.md` debe funcionar como la documentación que entregarían al equipo técnico. Actualicen la documentación de la Tarea 4 e incluyan:
+
+- Descripción del producto, pregunta central, fuente, cobertura, condiciones de uso y decisiones principales del análisis.
+- Estructura del repositorio y explicación de las capas de DuckDB.
+- Instrucciones completas y ordenadas para reproducir el análisis **sin Docker** y **con Docker**, desde un clon nuevo.
+- Requisitos y versiones utilizadas, acceso a Jupyter, orden de ejecución de los notebooks y regeneración de las figuras.
+- Cómo visualizar el reporte Quarto y enlace al sitio publicado.
+- Evidencia breve de que ambas modalidades funcionan, con resultados comparables, y limitaciones conocidas.
+
+Mantengan el flujo colaborativo con ramas, commits y Pull Requests. No se asignan archivos o responsabilidades por integrante: se evalúa el producto integrado.
+
+No versionen los datos crudos, archivos DuckDB, ambientes virtuales, secretos ni directorios generados por Quarto (`_site/`, `.quarto/`). Revisen también los outputs de notebooks antes de subirlos. Las figuras finales en `docs/imgs/` sí deben versionarse, al igual que `.envrc` sin secretos, los scripts, las configuraciones y `uv.lock`.
+
+## 10. Entrega y criterios de evaluación
+
+Entreguen en Canvas el enlace al repositorio y al sitio publicado. Revisaré el producto final integrado en `main`, su documentación y la posibilidad de reproducir el análisis siguiendo sus instrucciones.
+
+| Criterio | Evidencia observable | Ponderación |
+|---|---|---:|
+| Calidad del análisis y correcciones | Incorporación de retroalimentación, coherencia de las capas, preguntas, visualizaciones, interpretación y reporte. | 30% |
+| Reproducibilidad local | Descarga, construcción de DuckDB y ejecución de notebooks desde un clon nuevo. | 15% |
+| Docker | Imagen funcional, servicio Jupyter, scripts compartidos, persistencia de resultados y reproducción del análisis. | 25% |
+| GitHub Actions y publicación | Workflow funcional y reporte actualizado en GitHub Pages. | 15% |
+| Documentación y organización | README suficiente para un equipo externo, estructura consistente y registro de correcciones. | 10% |
+| Git y seguridad | Colaboración mediante Git, exclusión de datos y secretos, configuración adecuada. | 5% |
+| **Total** | | **100%** |
+
+### Checklist final
+
+- [ ] Incorporamos la retroalimentación de la Tarea 4 y la documentamos en `CHANGELOG.md`.
+- [ ] Conservamos las tres capas SQL, los dos notebooks y el reporte analítico mejorados.
+- [ ] Los scripts de descarga y construcción de DuckDB funcionan en ambos ambientes.
+- [ ] La ejecución local funciona con las dependencias declaradas y `.envrc` sin secretos.
+- [ ] El Dockerfile, Docker Compose y `.dockerignore` están versionados y funcionan.
+- [ ] Podemos ejecutar los mismos notebooks desde Docker y sin Docker, sin duplicar código.
+- [ ] Las figuras generadas desde Docker quedan disponibles fuera del contenedor.
+- [ ] El reporte Quarto renderiza y GitHub Actions lo publica correctamente.
+- [ ] El README documenta ambas modalidades, las verificaciones y el enlace al sitio.
+- [ ] No versionamos datos originales, bases de datos ni credenciales.
+- [ ] El producto está integrado en `main` y entregamos los enlaces en Canvas.
+
+::: {.callout-note}
+## Alcance del proyecto
+
+No se pide desarrollar una API, entrenar modelos predictivos, desplegar contenedores en la nube, publicar imágenes en Docker Hub, instalar Quarto dentro de Docker ni automatizar todo el análisis con GitHub Actions.
+
+El objetivo es entregar un producto analítico que otras personas puedan comprender, reproducir y mantener.
+:::
+
+## Documentación de apoyo
+
+- Material 12: Introducción a Docker.
+- Material 13: Automatización de pipelines con GitHub Actions.
+- Material 14: Configuración de ambientes de trabajo y credenciales.
+- [Dockerfile](https://docs.docker.com/reference/dockerfile/) y [Docker Compose](https://docs.docker.com/compose/).
+- [Docker: bind mounts](https://docs.docker.com/engine/storage/bind-mounts/).
+- [uv: Using uv in Docker](https://docs.astral.sh/uv/guides/integration/docker/).
+- [DuckDB: instalación del CLI](https://duckdb.org/docs/current/operations_manual/installing_duckdb/install_script).
+- [Quarto: GitHub Pages](https://quarto.org/docs/publishing/github-pages.html).
