@@ -53,7 +53,7 @@ Quarto se mantiene fuera del contenedor. GitHub Actions se encargará de constru
 Continúen trabajando en el mismo repositorio `progra-<nombre-equipo>`. Incorporen las observaciones realizadas durante la revisión de la Tarea 4 y mantengan los requisitos analíticos de esa entrega.
 
 - Revisen las decisiones de limpieza, las capas `raw`, `clean` y `model` y la documentación de la fuente.
-- Mejoren los dos notebooks: perfilado de los datos y preguntas con visualizaciones e interpretaciones. Mantengan el mínimo de cinco preguntas, cinco gráficas e interpretaciones solicitado en la Tarea 4.
+- Mejoren los notebooks: perfilado de los datos y preguntas con visualizaciones e interpretaciones. No se limiten al mínimo de cinco preguntas ni análisis univariados en los gráficos, comparen información entre variable, ¡sean curiosos sobre su base!
 - Actualicen el reporte Quarto con los hallazgos seleccionados, sus interpretaciones, conclusiones y limitaciones.
 - Verifiquen que las figuras publicadas correspondan a los resultados de la versión final del análisis.
 
@@ -61,14 +61,14 @@ En un archivo `CHANGELOG.md`, documenten brevemente la retroalimentación recibi
 
 | Retroalimentación | Cambio realizado |
 |---|---|
-| Las gráficas eran principalmente univariadas. | Incorporamos comparaciones por región y periodo. |
-| No se justificaba la eliminación de registros. | Documentamos los criterios de limpieza. |
+| Las gráficas eran principalmente univariadas. | Incorporamos más comparaciones para varias variables. |
+| Los notebooks repetian funciones que debían venir en el módulo | Se agregaron nuevos módulos. |
 
 ## 3. Organización del repositorio
 
 Conserven la estructura de la Tarea 4 y agreguen los archivos necesarios para la entrega técnica. La siguiente estructura es una referencia; adapten los nombres a su proyecto.
 
-```text
+```markdown
 .
 ├── .github/
 │   └── workflows/
@@ -76,13 +76,13 @@ Conserven la estructura de la Tarea 4 y agreguen los archivos necesarios para la
 ├── data/
 │   ├── raw/                     # No versionar los datos
 │   └── db/                      # No versionar la base DuckDB
-├── scripts/
-│   ├── download_data.sh
-│   └── build_db.sh
+├── pipelines/
+│   ├── t01_download_data.sh
+│   └── t02_build_db.sh
 ├── sql/
-│   ├── 01_raw.sql
-│   ├── 02_clean.sql
-│   └── 03_model.sql
+│   ├── t01_raw.sql
+│   ├── t02_clean.sql
+│   └── t03_model.sql
 ├── notebooks/
 │   ├── nb01_estructura_perfilado.ipynb
 │   └── nb02_preguntas_visualizaciones.ipynb
@@ -105,13 +105,44 @@ Conserven la estructura de la Tarea 4 y agreguen los archivos necesarios para la
 
 Todos los comandos de las siguientes secciones se ejecutan desde la raíz del repositorio, salvo que se indique lo contrario.
 
+::: {.callout-warning}
+## Antes de seguir, realicen su configuración del ambiente con `.envrc`
+
+Incluyan un archivo `.envrc` en la raíz de su repositorio para definir
+las variables de entorno específicas del proyecto y activar su ambiente
+virtual de Python, como vimos en el Material 14.
+
+```{.bash filename=".envrc"}
+# Ruta de la base de datos DuckDB
+export DB="$PWD/data/db/proyecto.duckdb"
+
+# Ambiente virtual (requiere antes uv sync)
+source .venv/bin/activate
+```
+
+Adapten las rutas a su proyecto y recuerden ejecutar:
+
+```
+direnv allow
+```
+
+El `.envrc` deberá estar versionado, pero no deberá contener
+credenciales ni información sensible.
+
+Esta configuración corresponde a la ejecución local del proyecto.
+Para Docker, las variables de entorno se definirán en
+`docker-compose.yml`.
+:::
+
+
+
 ## 4. Preparación de los datos
 
 En la Tarea 4 documentaron cómo descargar los datos y construir DuckDB. Ahora deberán reunir esas instrucciones en dos scripts de Bash reutilizables. Los mismos scripts deberán funcionar dentro y fuera del contenedor.
 
 ### 4.1. Descargar los datos
 
-```{.sh filename="scripts/download_data.sh"}
+```{.sh filename="pipelines/t01_download_data.sh"}
 #!/usr/bin/env bash
 set -e
 
@@ -126,18 +157,18 @@ Sustituyan la URL y el nombre del archivo por los de su fuente. Si necesitan des
 
 ### 4.2. Construir DuckDB
 
-```{.sh filename="scripts/build_db.sh"}
+```{.sh filename="pipelines/t02_build_db.sh"}
 #!/usr/bin/env bash
 set -e
 
 mkdir -p data/db
 
 # Utilizar la ruta configurada en el ambiente
-: "${DB:?La variable DB no está definida}"
+: "${DB:?La variable DB no está definida, ya hiciste tu .envrc?}"
 
-duckdb -bail "$DB" -f sql/01_raw.sql
-duckdb -bail "$DB" -f sql/02_clean.sql
-duckdb -bail "$DB" -f sql/03_model.sql
+duckdb -bail "$DB" -f sql/t01_raw.sql
+duckdb -bail "$DB" -f sql/t02_clean.sql
+duckdb -bail "$DB" -f sql/t03_model.sql
 
 echo "Base de datos construida correctamente"
 ```
@@ -162,29 +193,11 @@ uv sync --locked
 
 Asegúrense de incluir JupyterLab y las bibliotecas necesarias para sus notebooks entre las dependencias del proyecto. Si falta JupyterLab, pueden agregarlo con `uv add jupyterlab` y versionar los cambios de `pyproject.toml` y `uv.lock`.
 
-Configuren su ambiente utilizando `direnv`, como vimos en clase:
-
-```{.sh filename=".envrc"}
-# Base de datos DuckDB
-export DB="$PWD/data/db/proyecto.duckdb"
-
-# Ambiente virtual (requiere antes uv sync)
-source .venv/bin/activate
-```
-
-Adapten el nombre de la base de datos. Este archivo debe estar versionado y no contener credenciales.
-
-```{.sh}
-direnv allow
-```
-
-Si no utilizan `direnv`, pueden cargar la misma configuración en su sesión de Bash o Zsh con `source .envrc` después de revisar su contenido.
-
 Preparen los datos y consulten la base:
 
 ```{.sh}
-bash scripts/download_data.sh
-bash scripts/build_db.sh
+bash pipelines/t01_download_data.sh
+bash pipelines/t02_build_db.sh
 duckdb "$DB"
 ```
 
@@ -278,7 +291,7 @@ El volumen `.:/app` permite trabajar con los mismos archivos en ambos ambientes.
 Computadora local                  Contenedor
 progra-equipo/    <------------->  /app/
   data/                              data/
-  scripts/                           scripts/
+  pipelines/                           scripts/
   sql/                               sql/
   notebooks/                         notebooks/
   docs/                              docs/
@@ -289,7 +302,7 @@ El `.venv` local puede verse bajo `/app` debido al montaje, pero el contenedor u
 
 ### 6.3. Archivos que no deben incorporarse a la imagen
 
-```{.text filename=".dockerignore"}
+```{.bash filename=".dockerignore"}
 .git/
 .venv/
 data/
@@ -316,11 +329,11 @@ docker compose build
 docker compose up -d
 ```
 
-Descarguen los datos y construyan DuckDB ejecutando los mismos scripts dentro del contenedor:
+Descarguen los datos y construyan DuckDB ejecutando los mismos pipelines dentro del contenedor:
 
 ```{.sh}
-docker compose exec analysis bash scripts/download_data.sh
-docker compose exec analysis bash scripts/build_db.sh
+docker compose exec analysis bash pipelines/download_data.sh
+docker compose exec analysis bash pipelines/build_db.sh
 ```
 
 Para consultar la base desde la terminal del contenedor:
@@ -360,8 +373,8 @@ Si modifican las dependencias o el Dockerfile, reconstruyan la imagen y vuelvan 
 | Actividad | Sin Docker | Con Docker |
 |---|---|---|
 | Preparar ambiente | `uv sync --locked` | `docker compose build` y `docker compose up -d` |
-| Descargar datos | `bash scripts/download_data.sh` | `docker compose exec analysis bash scripts/download_data.sh` |
-| Construir DuckDB | `bash scripts/build_db.sh` | `docker compose exec analysis bash scripts/build_db.sh` |
+| Descargar datos | `bash pipelines/download_data.sh` | `docker compose exec analysis bash scripts/download_data.sh` |
+| Construir DuckDB | `bash pipelines/build_db.sh` | `docker compose exec analysis bash scripts/build_db.sh` |
 | Ejecutar notebooks | `uv run jupyter lab` | JupyterLab desde el contenedor |
 | Generar figuras | Desde los notebooks | Desde los mismos notebooks |
 | Renderizar Quarto | `quarto render .` | Fuera del contenedor |
@@ -403,19 +416,43 @@ execute:
   enabled: false
 ```
 
+
+```{.md filename="index.qmd"}
+---
+title: "Proyecto"
+subtitle: "subtitulo"
+lang: es
+format:
+  html:
+    embed-resources: true
+---
+
+Este sitio presenta una exploración de datos...
+
+
+[Ver el reporte completo](docs/reporte.html)
+
+```
+
 Adapten el título, la navegación y el contenido de `index.qmd` a su producto. La configuración selecciona únicamente los documentos que se publicarán, sin renderizar los notebooks.
+
+
 
 Comprueben el sitio localmente con `quarto preview .` o `quarto render .`.
 
-Creen `.github/workflows/pages.yml` tomando como referencia el workflow de la página del curso (Material 13). Debe incluir los jobs de construcción y publicación: obtener el repositorio, instalar Quarto, renderizar, subir `_site/` como artifact y desplegar en GitHub Pages. Para simplificar, pueden quitar el filtro `paths` y conservar el trigger `push` a `main` y `workflow_dispatch`.
+Creen `.github/workflows/pages.yml` tomando como referencia el workflow de la página del curso. Debe incluir los jobs de construcción y publicación:
+obtener el repositorio, instalar Quarto, renderizar, subir `_site/` como artifact y desplegar en GitHub Pages. 
+Para simplificar, pueden modificar el filtro `paths` y conservar el trigger `push` a `main` y `workflow_dispatch`.
 
-En GitHub, entren a **Settings > Pages > Build and deployment** y seleccionen **GitHub Actions** como fuente de publicación. Verifiquen que el repositorio permita usar Pages y que la visibilidad del sitio sea apropiada. Si existe una restricción institucional, infórmenla antes de la entrega.
+En GitHub, entren a **Settings > Pages > Build and deployment** y seleccionen **GitHub Actions** como fuente de publicación. Verifiquen que el repositorio permita usar Pages y que la visibilidad del sitio sea apropiada. Si existe una restricción revisen permisos y que el repo sea público, infórmenla antes de la entrega.
 
 ::: {.callout-important}
 GitHub Actions solo debe renderizar y publicar el sitio. No debe descargar los datos, construir DuckDB, ejecutar los notebooks ni construir la imagen Docker. Las figuras seleccionadas deben estar previamente generadas y versionadas. Si cambian los datos, revisen también las interpretaciones antes de publicar el reporte actualizado.
 :::
 
 Incluyan en el README el enlace al reporte publicado y comprueben que el último workflow correspondiente a la entrega terminó exitosamente.
+
+Modifiquen los archivos para que vean cómo funciona el workflow.
 
 ## 9. README y entrega técnica
 
