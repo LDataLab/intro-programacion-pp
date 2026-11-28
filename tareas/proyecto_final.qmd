@@ -89,7 +89,7 @@ Conserven la estructura de la Tarea 4 y agreguen los archivos necesarios para la
 ├── docs/
 │   ├── reporte.qmd
 │   └── imgs/                    # Figuras seleccionadas, versionadas
-├── src/                         # Funciones reutilizables, si aplica
+├── src/                         # Módulos de Python con funciones reutilizables, si aplica
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .dockerignore
@@ -104,6 +104,17 @@ Conserven la estructura de la Tarea 4 y agreguen los archivos necesarios para la
 ```
 
 Todos los comandos de las siguientes secciones se ejecutan desde la raíz del repositorio, salvo que se indique lo contrario.
+
+### 3.1. Organización del código de Python
+
+Durante la revisión de la Tarea 4 observé que varios notebooks contenían demasiado código. Recuerden lo que vimos en el Material 7 sobre organización de código en Python.
+
+Si desarrollaron funciones para consultar datos, realizar transformaciones, calcular estadísticas o generar visualizaciones, deberán organizarlas en módulos de Python (`.py`) dentro de `src/` e importarlas desde los notebooks. No dupliquen funciones entre notebooks.
+
+Por ejemplo, pueden organizar sus funciones en módulos como `consultas.py` y `visualizaciones.py`, según las necesidades de su proyecto. Documenten el propósito de las funciones y sus parámetros. Asegúrense de que las importaciones funcionen tanto localmente como dentro de Docker, siguiendo la estructura de paquetes que vimos en clase.
+
+Los notebooks deben concentrarse en las preguntas analíticas, las llamadas a las funciones, las visualizaciones y la interpretación de los resultados. No es necesario trasladar cada línea de código a un módulo: el objetivo es separar el código reutilizable de la narrativa del análisis y facilitar su mantenimiento.
+
 
 ::: {.callout-warning}
 ## Antes de seguir, realicen su configuración del ambiente con `.envrc`
@@ -332,8 +343,8 @@ docker compose up -d
 Descarguen los datos y construyan DuckDB ejecutando los mismos pipelines dentro del contenedor:
 
 ```{.sh}
-docker compose exec analysis bash pipelines/download_data.sh
-docker compose exec analysis bash pipelines/build_db.sh
+docker compose exec analysis bash pipelines/t01_download_data.sh
+docker compose exec analysis bash pipelines/t02_build_db.sh
 ```
 
 Para consultar la base desde la terminal del contenedor:
@@ -373,8 +384,8 @@ Si modifican las dependencias o el Dockerfile, reconstruyan la imagen y vuelvan 
 | Actividad | Sin Docker | Con Docker |
 |---|---|---|
 | Preparar ambiente | `uv sync --locked` | `docker compose build` y `docker compose up -d` |
-| Descargar datos | `bash pipelines/download_data.sh` | `docker compose exec analysis bash scripts/download_data.sh` |
-| Construir DuckDB | `bash pipelines/build_db.sh` | `docker compose exec analysis bash scripts/build_db.sh` |
+| Descargar datos | `bash pipelines/t01_download_data.sh` | `docker compose exec analysis bash scripts/download_data.sh` |
+| Construir DuckDB | `bash pipelines/t02_build_db.sh` | `docker compose exec analysis bash scripts/build_db.sh` |
 | Ejecutar notebooks | `uv run jupyter lab` | JupyterLab desde el contenedor |
 | Generar figuras | Desde los notebooks | Desde los mismos notebooks |
 | Renderizar Quarto | `quarto render .` | Fuera del contenedor |
@@ -469,6 +480,18 @@ Mantengan el flujo colaborativo con ramas, commits y Pull Requests. No se asigna
 
 No versionen los datos crudos, archivos DuckDB, ambientes virtuales, secretos ni directorios generados por Quarto (`_site/`, `.quarto/`). Revisen también los outputs de notebooks antes de subirlos. Las figuras finales en `docs/imgs/` sí deben versionarse, al igual que `.envrc` sin secretos, los scripts, las configuraciones y `uv.lock`.
 
+### 9.1. Uso de inteligencia artificial
+
+::: {.callout-important}
+## Uso permitido de IA
+
+Recuerden que el uso de herramientas de inteligencia artificial está permitido **únicamente para consultas**, por ejemplo, para aclarar conceptos, comprender mensajes de error o resolver dudas sobre la sintaxis y la documentación.
+
+**Está prohibido utilizar agentes de IA**, incluyendo aquellos integrados en editores de código o terminales, para realizar tareas del proyecto. Tampoco está permitido delegar a la IA la generación o modificación de código, notebooks, configuraciones, reportes o documentación. Ustedes deberán implementar, revisar y comprender todo lo que entreguen.
+
+Incluyan en el `README.md` una sección titulada **Uso de inteligencia artificial**, donde documenten de manera general qué herramientas utilizaron, sobre qué temas consultaron más y en qué parte del proyecto la utilizaron.
+:::
+
 ## 10. Entrega y criterios de evaluación
 
 Entreguen en Canvas el enlace al repositorio y al sitio publicado. Revisaré el producto final integrado en `main`, su documentación y la posibilidad de reproducir el análisis siguiendo sus instrucciones.
@@ -479,14 +502,15 @@ Entreguen en Canvas el enlace al repositorio y al sitio publicado. Revisaré el 
 | Reproducibilidad local | Descarga, construcción de DuckDB y ejecución de notebooks desde un clon nuevo. | 15% |
 | Docker | Imagen funcional, servicio Jupyter, scripts compartidos, persistencia de resultados y reproducción del análisis. | 25% |
 | GitHub Actions y publicación | Workflow funcional y reporte actualizado en GitHub Pages. | 15% |
-| Documentación y organización | README suficiente para un equipo externo, estructura consistente y registro de correcciones. | 10% |
-| Git y seguridad | Colaboración mediante Git, exclusión de datos y secretos, configuración adecuada. | 5% |
+| Documentación y organización | README suficiente para un equipo externo, organización del código en módulos cuando corresponda y registro de correcciones. | 10% |
+| Git y seguridad | Colaboración mediante Git, exclusión de datos y secretos, configuración adecuada y cumplimiento de las reglas de uso de IA. | 5% |
 | **Total** | | **100%** |
 
 ### Checklist final
 
 - [ ] Incorporamos la retroalimentación de la Tarea 4 y la documentamos en `CHANGELOG.md`.
 - [ ] Conservamos las tres capas SQL, los dos notebooks y el reporte analítico mejorados.
+- [ ] Organizamos las funciones de Python en módulos reutilizables dentro de `src/`, cuando corresponde, y las importamos desde los notebooks.
 - [ ] Los scripts de descarga y construcción de DuckDB funcionan en ambos ambientes.
 - [ ] La ejecución local funciona con las dependencias declaradas y `.envrc` sin secretos.
 - [ ] El Dockerfile, Docker Compose y `.dockerignore` están versionados y funcionan.
@@ -495,6 +519,7 @@ Entreguen en Canvas el enlace al repositorio y al sitio publicado. Revisaré el 
 - [ ] El reporte Quarto renderiza y GitHub Actions lo publica correctamente.
 - [ ] El README documenta ambas modalidades, las verificaciones y el enlace al sitio.
 - [ ] No versionamos datos originales, bases de datos ni credenciales.
+- [ ] Documentamos el uso de IA en el README.
 - [ ] El producto está integrado en `main` y entregamos los enlaces en Canvas.
 
 ::: {.callout-note}
